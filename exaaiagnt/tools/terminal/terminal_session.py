@@ -47,16 +47,16 @@ class TerminalSession:
 
     @property
     def PS1(self) -> str:  # noqa: N802
-        return r"[STRIX_$?]$ "
+        return r"[EXAAI_$?]$ "
 
     @property
     def PS1_PATTERN(self) -> str:  # noqa: N802
-        return r"\[STRIX_(\d+)\]"
+        return r"\[EXAAI_(\d+)\]"
 
     def initialize(self) -> None:
         self.server = libtmux.Server()
 
-        session_name = f"strix-{self.session_id}-{uuid.uuid4()}"
+        session_name = f"exaai-{self.session_id}-{uuid.uuid4()}"
         self.session = self.server.new_session(
             session_name=session_name,
             start_directory=self.work_dir,
