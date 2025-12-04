@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # REQUIRED FOR PyPI TRUSTED PUBLISHING
+  id-token: write
 
 jobs:
   build-and-publish:
@@ -24,6 +24,13 @@ jobs:
 
       - name: Install Poetry
         run: pip install poetry
+
+      # ✔️ أهم خطوة: تغيير رقم النسخة حسب التاغ
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Using version: $VERSION"
+          poetry version $VERSION
 
       - name: Build package
         run: poetry build
