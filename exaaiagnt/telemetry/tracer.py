@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 from uuid import uuid4
-#good
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -60,7 +60,7 @@ class Tracer:
 
     def get_run_dir(self) -> Path:
         if self._run_dir is None:
-            runs_dir = Path.cwd() / "strix_runs"
+            runs_dir = Path.cwd() / "exaai_runs"
             runs_dir.mkdir(exist_ok=True)
 
             run_dir_name = self.run_name if self.run_name else self.run_id
