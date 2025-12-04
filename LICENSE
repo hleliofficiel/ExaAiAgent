@@ -186,7 +186,11 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
+<<<<<<< HEAD
    Copyright 2025 ExaaiAgnt Team
+=======
+   Copyright [yyyy] [name of copyright owner]
+>>>>>>> aa7605870830ea04cbcaa5b6abd4efe31c37d8e5
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
