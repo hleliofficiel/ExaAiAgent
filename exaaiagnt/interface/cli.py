@@ -22,7 +22,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
 
     start_text = Text()
     start_text.append("🦉 ", style="bold white")
-    start_text.append("STRIX CYBERSECURITY AGENT", style="bold green")
+    start_text.append("EXAAI CYBERSECURITY AGENT", style="bold green")
 
     target_text = Text()
     if len(args.targets_info) == 1:
@@ -39,7 +39,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
 
     results_text = Text()
     results_text.append("📊 Results will be saved to: ", style="bold cyan")
-    results_text.append(f"strix_runs/{args.run_name}", style="bold white")
+    results_text.append(f"exaai_runs/{args.run_name}", style="bold white")
 
     note_text = Text()
     note_text.append("\n\n", style="dim")
@@ -56,7 +56,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
             results_text,
             note_text,
         ),
-        title="[bold green]🛡️  STRIX PENETRATION TEST INITIATED",
+        title="[bold green]🛡️  EXAAI PENETRATION TEST INITIATED",
         title_align="center",
         border_style="green",
         padding=(1, 2),

@@ -42,7 +42,7 @@ def escape_markup(text: str) -> str:
 
 def get_package_version() -> str:
     try:
-        return pkg_version("strix-agent")
+        return pkg_version("exaai-agent")
     except PackageNotFoundError:
         return "dev"
 
@@ -50,9 +50,9 @@ def get_package_version() -> str:
 class ChatTextArea(TextArea):  # type: ignore[misc]
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._app_reference: StrixTUIApp | None = None
+        self._app_reference: ExaaiTUIApp | None = None
 
-    def set_app_reference(self, app: "StrixTUIApp") -> None:
+    def set_app_reference(self, app: "ExaaiTUIApp") -> None:
         self._app_reference = app
 
     def _on_key(self, event: events.Key) -> None:
@@ -130,7 +130,7 @@ class SplashScreen(Static):  # type: ignore[misc]
 
     def _build_welcome_text(self) -> Text:
         text = Text("Welcome to ", style=Style(color="white", bold=True))
-        text.append("Strix", style=Style(color=self.PRIMARY_GREEN, bold=True))
+        text.append("exaaiagnt", style=Style(color=self.PRIMARY_GREEN, bold=True))
         text.append("!", style=Style(color="white", bold=True))
         return text
 
@@ -143,10 +143,10 @@ class SplashScreen(Static):  # type: ignore[misc]
     def _build_start_line_text(self, phase: int) -> Text:
         emphasize = phase % 2 == 1
         base_style = Style(color="white", dim=not emphasize, bold=emphasize)
-        strix_style = Style(color=self.PRIMARY_GREEN, bold=bool(emphasize))
+        EXAAI_style = Style(color=self.PRIMARY_GREEN, bold=bool(emphasize))
 
         text = Text("Starting ", style=base_style)
-        text.append("Strix", style=strix_style)
+        text.append("exaaiagnt", style=EXAAI_style)
         text.append(" Cybersecurity Agent", style=base_style)
 
         return text
@@ -155,7 +155,7 @@ class SplashScreen(Static):  # type: ignore[misc]
 class HelpScreen(ModalScreen):  # type: ignore[misc]
     def compose(self) -> ComposeResult:
         yield Grid(
-            Label("🦉 Strix Help", id="help_title"),
+            Label("🦉 ExaaiAgnt Help", id="help_title"),
             Label(
                 "F1        Help\nCtrl+Q/C  Quit\nESC       Stop Agent\n"
                 "Enter     Send message to agent\nTab       Switch panels\n↑/↓       Navigate tree",
@@ -220,7 +220,7 @@ class StopAgentScreen(ModalScreen):  # type: ignore[misc]
 class QuitScreen(ModalScreen):  # type: ignore[misc]
     def compose(self) -> ComposeResult:
         yield Grid(
-            Label("🦉 Quit Strix? ", id="quit_title"),
+            Label("🦉 Quit ExaaiAgnt? ", id="quit_title"),
             Grid(
                 Button("Yes", variant="error", id="quit"),
                 Button("No", variant="default", id="cancel"),
@@ -261,7 +261,7 @@ class QuitScreen(ModalScreen):  # type: ignore[misc]
             self.app.pop_screen()
 
 
-class StrixTUIApp(App):  # type: ignore[misc]
+class ExaaiTUIApp(App):  # type: ignore[misc]
     CSS_PATH = "assets/tui_styles.tcss"
 
     selected_agent_id: reactive[str | None] = reactive(default=None)
@@ -440,7 +440,7 @@ class StrixTUIApp(App):  # type: ignore[misc]
             self.call_after_refresh(self._focus_agents_tree)
 
     def on_mount(self) -> None:
-        self.title = "strix"
+        self.title = "exaaiagnt"
 
         self.set_timer(4.5, self._hide_splash_screen)
 
@@ -1269,6 +1269,6 @@ class StrixTUIApp(App):  # type: ignore[misc]
 
 
 async def run_tui(args: argparse.Namespace) -> None:
-    """Run strix in interactive TUI mode with textual."""
-    app = StrixTUIApp(args)
+    \"\"\"Run ExaaiAgnt in interactive TUI mode with textual.\"\"\"
+    app = ExaaiTUIApp(args)
     await app.run_async()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Strix Agent Interface
+ExaaiAgnt Agent Interface
 """
 
 import argparse
@@ -148,7 +148,7 @@ def validate_environment() -> None:  # noqa: PLR0912, PLR0915
 
         panel = Panel(
             error_text,
-            title="[bold red]🛡️  STRIX CONFIGURATION ERROR",
+            title="[bold red]🛡️  EXAAI CONFIGURATION ERROR",
             title_align="center",
             border_style="red",
             padding=(1, 2),
@@ -174,7 +174,7 @@ def check_docker_installed() -> None:
 
         panel = Panel(
             error_text,
-            title="[bold red]🛡️  STRIX STARTUP ERROR",
+            title="[bold red]🛡️  EXAAI STARTUP ERROR",
             title_align="center",
             border_style="red",
             padding=(1, 2),
@@ -228,7 +228,7 @@ async def warm_up_llm() -> None:
 
         panel = Panel(
             error_text,
-            title="[bold red]🛡️  STRIX STARTUP ERROR",
+            title="[bold red]🛡️  EXAAI STARTUP ERROR",
             title_align="center",
             border_style="red",
             padding=(1, 2),
@@ -242,36 +242,36 @@ async def warm_up_llm() -> None:
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Strix Multi-Agent Cybersecurity Penetration Testing Tool",
+        description="ExaaiAgnt - Advanced AI Cybersecurity Penetration Testing Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Web application penetration test
-  strix --target https://example.com
+  exaaiagnt --target https://example.com
 
   # GitHub repository analysis
-  strix --target https://github.com/user/repo
-  strix --target git@github.com:user/repo.git
+  exaaiagnt --target https://github.com/user/repo
+  exaaiagnt --target git@github.com:user/repo.git
 
   # Local code analysis
-  strix --target ./my-project
+  exaaiagnt --target ./my-project
 
   # Domain penetration test
-  strix --target example.com
+  exaaiagnt --target example.com
 
   # IP address penetration test
-  strix --target 192.168.1.42
+  exaaiagnt --target 192.168.1.42
 
   # Multiple targets (e.g., white-box testing with source and deployed app)
-  strix --target https://github.com/user/repo --target https://example.com
-  strix --target ./my-project --target https://staging.example.com --target https://prod.example.com
+  exaaiagnt --target https://github.com/user/repo --target https://example.com
+  exaaiagnt --target ./my-project --target https://staging.example.com --target https://prod.example.com
 
   # Custom instructions (inline)
-  strix --target example.com --instruction "Focus on authentication vulnerabilities"
+  exaaiagnt --target example.com --instruction "Focus on authentication vulnerabilities"
 
   # Custom instructions (from file)
-  strix --target example.com --instruction ./instructions.txt
-  strix --target https://app.com --instruction /path/to/detailed_instructions.md
+  exaaiagnt --target example.com --instruction ./instructions.txt
+  exaaiagnt --target https://app.com --instruction /path/to/detailed_instructions.md
         """,
     )
 
@@ -401,7 +401,7 @@ def display_completion_message(args: argparse.Namespace, results_path: Path) -> 
 
     panel = Panel(
         panel_content,
-        title="[bold green]🛡️  STRIX CYBERSECURITY AGENT",
+        title="[bold green]🛡️  EXAAI CYBERSECURITY AGENT",
         title_align="center",
         border_style=border_style,
         padding=(1, 2),
@@ -487,7 +487,7 @@ def main() -> None:
     else:
         asyncio.run(run_tui(args))
 
-    results_path = Path("strix_runs") / args.run_name
+    results_path = Path("exaai_runs") / args.run_name
     display_completion_message(args, results_path)
 
     if args.non_interactive:
