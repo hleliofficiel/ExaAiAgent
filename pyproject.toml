@@ -2,7 +2,7 @@
 name = "exaai-agent"
 version = "1.0.0"
 description = "ExaaiAgnt - Advanced AI Security Agent for Comprehensive Penetration Testing"
-authors = ["ExaaiAgnt Team <contact@exaaiagnt.com>"]
+authors = ["ExaaiAgnt Team <mahmedhleli@gmail.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 keywords = [
