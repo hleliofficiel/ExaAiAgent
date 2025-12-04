@@ -5,9 +5,12 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: read
+  id-token: write  # REQUIRED FOR PyPI TRUSTED PUBLISHING
+
 jobs:
   build-and-publish:
-    name: Build and Publish to PyPI
     runs-on: ubuntu-latest
 
     steps:
