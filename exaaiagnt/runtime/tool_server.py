@@ -19,7 +19,7 @@ SANDBOX_MODE = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
 if not SANDBOX_MODE:
     raise RuntimeError("Tool server should only run in sandbox mode (EXAAI_SANDBOX_MODE=true)")
 
-parser = argparse.ArgumentParser(description="Start Strix tool server")
+parser = argparse.ArgumentParser(description="Start ExaaiAgnt tool server")
 parser.add_argument("--token", required=True, help="Authentication token")
 parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")  # nosec
 parser.add_argument("--port", type=int, required=True, help="Port to bind to")
