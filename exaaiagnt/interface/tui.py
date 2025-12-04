@@ -1269,6 +1269,6 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
 
 async def run_tui(args: argparse.Namespace) -> None:
-    \"\"\"Run ExaaiAgnt in interactive TUI mode with textual.\"\"\"
+    """Run ExaaiAgnt in interactive TUI mode with textual."""
     app = ExaaiTUIApp(args)
     await app.run_async()
