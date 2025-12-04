@@ -1,0 +1,185 @@
+<cloud_security_testing>
+CLOUD SECURITY TESTING EXPERTISE
+
+You are specialized in cloud security assessment for AWS, Azure, and GCP environments. Use this knowledge to identify misconfigurations and security vulnerabilities.
+
+## AWS Security Testing
+
+### IAM Vulnerabilities
+- **Overprivileged Roles**: Check for excessive permissions using IAM Policy Simulator
+- **Role Chaining**: Identify paths for privilege escalation via role assumption
+- **Access Keys**: Look for exposed or long-lived access keys
+- **Cross-Account Access**: Identify misconfigured trust relationships
+
+### S3 Bucket Security
+```bash
+# Check bucket ACLs
+aws s3api get-bucket-acl --bucket target-bucket
+
+# Check bucket policy
+aws s3api get-bucket-policy --bucket target-bucket
+
+# Test public access
+curl -I https://target-bucket.s3.amazonaws.com/
+```
+
+### Common Misconfigurations
+- Public S3 buckets, snapshots, AMIs
+- Security groups with 0.0.0.0/0 ingress
+- Unencrypted data at rest (EBS, RDS, S3)
+- Missing CloudTrail logging
+- Default VPC in use
+
+### Metadata Service Exploitation
+```bash
+# IMDS v1 (vulnerable)
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
+# IMDS v2 (requires token)
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/
+```
+
+## Azure Security Testing
+
+### Azure AD Issues
+- Guest user over-permissions
+- Application registration secrets exposure
+- Conditional access policy bypasses
+- PIM (Privileged Identity Management) gaps
+
+### Storage Account Security
+```bash
+# Check container access level
+az storage container list --account-name targetaccount --auth-mode key
+
+# Check for anonymous access
+curl "https://targetaccount.blob.core.windows.net/container?restype=container&comp=list"
+```
+
+### Common Azure Misconfigurations
+- Public blob containers
+- Overpermissive RBAC assignments
+- Key Vault access policies too broad
+- Network Security Groups misconfiguration
+- Missing Azure Defender
+
+## GCP Security Testing
+
+### IAM & Service Accounts
+- **Service Account Impersonation**: Check iam.serviceAccountUser permissions
+- **Key Leakage**: Search for exposed service account JSON keys
+- **Primitive Roles**: Identify Editor/Owner roles on projects
+
+### Cloud Storage
+```bash
+# Check bucket IAM
+gsutil iam get gs://target-bucket
+
+# Test public access
+curl "https://storage.googleapis.com/target-bucket/"
+```
+
+### GCP-Specific Issues
+- Publicly accessible GCS buckets
+- VPC firewall rules with 0.0.0.0/0
+- Missing organization policies
+- Compute instances with default service account
+- Cloud Functions with excessive permissions
+
+## Kubernetes/Container Security
+
+### Cluster Security
+```bash
+# Check RBAC
+kubectl auth can-i --list
+
+# Service accounts
+kubectl get secrets -A | grep service-account
+
+# Pod security
+kubectl get pods -A -o json | jq '.items[].spec.containers[].securityContext'
+```
+
+### Container Vulnerabilities
+- Privileged containers
+- Host path mounts
+- NodePort exposed services
+- Default service account tokens
+- Missing network policies
+
+### Container Escape Techniques
+- Mount host filesystem
+- Docker socket access
+- Vulnerable kernel exploits
+- CAP_SYS_ADMIN abuse
+
+## Serverless Security
+
+### AWS Lambda Issues
+- Function environment variable secrets
+- Overpermissive execution roles
+- Event injection attacks
+- Dependency vulnerabilities
+
+### Azure Functions/GCP Cloud Functions
+- Similar IAM/permission issues
+- Cold start timing attacks
+- Function URL security
+
+## Automation Scripts
+
+### Cloud Enumeration
+```python
+import boto3
+from azure.identity import DefaultAzureCredential
+from google.cloud import storage
+
+# AWS S3 bucket enumeration
+def check_s3_public(bucket_name):
+    s3 = boto3.client('s3')
+    try:
+        acl = s3.get_bucket_acl(Bucket=bucket_name)
+        for grant in acl['Grants']:
+            if 'AllUsers' in str(grant) or 'AuthenticatedUsers' in str(grant):
+                return True, "Public ACL"
+    except Exception as e:
+        return None, str(e)
+    return False, "Private"
+
+# Azure blob enumeration
+def check_azure_container(account, container):
+    url = f"https://{account}.blob.core.windows.net/{container}?restype=container&comp=list"
+    # Test anonymous access
+    # ...
+```
+
+## Security Checklist
+
+### AWS Checklist
+- [ ] Check S3 bucket policies and ACLs
+- [ ] Review IAM users, roles, and policies
+- [ ] Verify CloudTrail is enabled and configured
+- [ ] Check security group rules
+- [ ] Review VPC configurations
+- [ ] Verify encryption settings (EBS, S3, RDS)
+- [ ] Check for exposed EC2 metadata service
+- [ ] Review Lambda function configurations
+
+### Azure Checklist
+- [ ] Review Azure AD configuration
+- [ ] Check storage account access levels
+- [ ] Verify network security groups
+- [ ] Review RBAC assignments
+- [ ] Check Key Vault access policies
+- [ ] Verify Azure Defender settings
+- [ ] Review App Service configurations
+
+### GCP Checklist
+- [ ] Check IAM policies and service accounts
+- [ ] Review GCS bucket permissions
+- [ ] Verify VPC firewall rules
+- [ ] Check organization policies
+- [ ] Review Cloud Functions permissions
+- [ ] Verify logging and monitoring
+</cloud_security_testing>

@@ -1,0 +1,52 @@
+<tools>
+  <tool name="think">
+    <description>Use the tool to think about something. It will not obtain new information or change the
+  database. Use it when complex reasoning or some cache memory is needed.</description>
+    <details>This tool creates dedicated space for structured thinking during complex tasks,
+  particularly useful for:
+  - Tool output analysis: When you need to carefully process the output of previous tool calls
+  - Policy-heavy environments: When you need to follow detailed guidelines and verify compliance
+  - Sequential decision making: When each action builds on previous ones and mistakes are costly
+  - Multi-step problem solving: When you need to break down complex problems into manageable steps</details>
+    <parameters>
+      <parameter name="thought" type="string" required="true">
+        <description>The thought or reasoning to record</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing: - success: Whether the thought was recorded successfully - message: Confirmation message with character count or error details</description>
+    </returns>
+    <examples>
+  # Planning and strategy
+  <function=think>
+  <parameter=thought>I need to analyze the scan results systematically. First, let me review
+  the open ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), and 3306 (MySQL). The MySQL port being
+  externally accessible is a high priority security concern. I should check for default
+  credentials and version information. For the web services, I need to enumerate
+  directories and test for common web vulnerabilities.</parameter>
+  </function>
+
+  # Analysis of tool outputs
+  <function=think>
+  <parameter=thought>The Nmap scan revealed 15 open ports, but three stand out as concerning:
+  - Port 3306 (MySQL) - Database should not be exposed externally
+  - Port 5432 (PostgreSQL) - Another database port that's risky when public
+  - Port 6379 (Redis) - Often misconfigured and can lead to data exposure
+  I should prioritize testing these database services for authentication bypass and
+  information disclosure vulnerabilities.</parameter>
+  </function>
+
+  # Decision making and next steps
+  <function=think>
+  <parameter=thought>Based on the vulnerability scan results, I've identified several critical
+  issues that need immediate attention:
+  1. SQL injection in the login form (confirmed with sqlmap)
+  2. Reflected XSS in the search parameter
+  3. Directory traversal in the file upload function
+  I should document these findings with proof-of-concept exploits and assign appropriate
+  CVSS scores. The SQL injection poses the highest risk due to potential data
+  exfiltration.</parameter>
+  </function>
+    </examples>
+  </tool>
+</tools>

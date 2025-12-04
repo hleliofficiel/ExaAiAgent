@@ -1,0 +1,30 @@
+<tools>
+  <tool name="create_vulnerability_report">
+    <description>Create a vulnerability report for a discovered security issue.
+
+Use this tool to document a specific verified security vulnerability.
+Put ALL details in the content field - affected URLs, parameters, proof of concept, remediation steps, CVE references, CVSS scores, technical details, impact assessment, etc.
+
+DO NOT USE:
+- For general security observations without specific vulnerabilities
+- When you don't have concrete vulnerability details
+- When you don't have a proof of concept, or still not 100% sure if it's a vulnerability
+- For tracking multiple vulnerabilities (create separate reports)
+- For reporting multiple vulnerabilities at once. Use a separate create_vulnerability_report for each vulnerability.
+</description>
+    <parameters>
+      <parameter name="title" type="string" required="true">
+        <description>Clear, concise title of the vulnerability</description>
+      </parameter>
+      <parameter name="content" type="string" required="true">
+        <description>Complete vulnerability details including affected URLs, technical details, impact, proof of concept, remediation steps, and any relevant references. Be comprehensive and include everything relevant.</description>
+      </parameter>
+      <parameter name="severity" type="string" required="true">
+        <description>Severity level: critical, high, medium, low, or info</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing success status and message</description>
+    </returns>
+  </tool>
+</tools>

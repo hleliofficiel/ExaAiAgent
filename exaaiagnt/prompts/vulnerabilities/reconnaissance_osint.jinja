@@ -1,0 +1,208 @@
+<reconnaissance_osint>
+ADVANCED RECONNAISSANCE & OSINT EXPERTISE
+
+You are an expert in reconnaissance and Open Source Intelligence (OSINT) gathering. Master these techniques to map attack surfaces comprehensively.
+
+## Passive Reconnaissance
+
+### DNS Enumeration
+```bash
+# Subdomain discovery
+subfinder -d target.com -all -o subs.txt
+amass enum -passive -d target.com -o amass.txt
+assetfinder --subs-only target.com
+
+# DNS records
+dig target.com ANY +noall +answer
+dig target.com AXFR @ns1.target.com  # Zone transfer attempt
+host -t mx target.com
+host -t txt target.com
+
+# Historical DNS
+curl "https://securitytrails.com/domain/target.com/history/a"
+```
+
+### Certificate Transparency
+```bash
+# CT logs search
+curl "https://crt.sh/?q=%.target.com&output=json" | jq -r '.[].name_value' | sort -u
+
+# Alternative sources
+curl "https://api.certspotter.com/v1/issuances?domain=target.com&include_subdomains=true"
+```
+
+### GitHub/Code Repository Mining
+```bash
+# Search for secrets
+trufflehog github --org=targetorg --only-verified
+gitleaks detect --source=https://github.com/target/repo
+
+# Dork queries
+site:github.com "target.com" password
+site:github.com "target.com" api_key
+site:github.com "target.com" AWS_SECRET
+site:pastebin.com "target.com"
+```
+
+### Google Dorking
+```
+# Find sensitive files
+site:target.com filetype:pdf OR filetype:doc OR filetype:xls
+site:target.com filetype:sql OR filetype:bak OR filetype:log
+site:target.com intitle:"index of" 
+site:target.com inurl:admin OR inurl:login OR inurl:dashboard
+
+# Find exposed data
+site:target.com "password" OR "passwd" OR "credentials"
+site:target.com ext:env OR ext:config OR ext:ini
+```
+
+### Shodan/Censys Intelligence
+```bash
+# Shodan queries
+shodan search "hostname:target.com"
+shodan search "ssl.cert.subject.cn:target.com"
+shodan search "http.html:target.com"
+
+# Censys queries
+censys search "services.tls.certificates.leaf.subject.common_name: target.com"
+```
+
+## Active Reconnaissance
+
+### Port Scanning
+```bash
+# Fast scan
+naabu -host target.com -top-ports 1000 -o ports.txt
+
+# Comprehensive scan
+nmap -sS -sV -sC -O -p- target.com -oA full_scan
+
+# Service enumeration
+nmap -sV --version-intensity 5 -p 80,443,8080 target.com
+```
+
+### Web Application Mapping
+```bash
+# Directory discovery
+ffuf -u https://target.com/FUZZ -w /usr/share/wordlists/dirb/common.txt -mc 200,301,302,403
+gobuster dir -u https://target.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+
+# Technology detection
+whatweb https://target.com
+wappalyzer https://target.com
+
+# Spider/crawl
+gospider -s https://target.com -c 10 -d 3 -o spider_output
+katana -u https://target.com -d 5 -jc -o katana_output.txt
+```
+
+### API Discovery
+```bash
+# API endpoint discovery
+ffuf -u https://api.target.com/FUZZ -w api-wordlist.txt
+kiterunner scan https://target.com -w routes-large.kite
+
+# Swagger/OpenAPI
+curl https://target.com/swagger.json
+curl https://target.com/api-docs
+curl https://target.com/openapi.yaml
+```
+
+## OSINT Tools & Techniques
+
+### Email/User Enumeration
+```bash
+# Harvest emails
+theHarvester -d target.com -b all
+hunter.io API search
+
+# LinkedIn reconnaissance
+linkedin2username.py -c "Target Company"
+
+# Username OSINT
+sherlock username
+whatsmyname username
+```
+
+### Social Media Intelligence
+- Twitter advanced search for company mentions
+- LinkedIn employee enumeration
+- GitHub organization member discovery
+- Glassdoor for internal technology stack hints
+
+### Wayback Machine Analysis
+```bash
+# Historical pages
+waybackurls target.com | sort -u > wayback.txt
+
+# Find old endpoints
+cat wayback.txt | grep -E "\.(js|json|xml|config|bak|old)$"
+
+# Check for removed secrets
+curl "https://web.archive.org/web/2020*/target.com/config.js"
+```
+
+## Automation Scripts
+
+### Comprehensive Recon Script
+```python
+import asyncio
+import subprocess
+import json
+from pathlib import Path
+
+async def run_recon(domain):
+    """Comprehensive reconnaissance automation."""
+    output_dir = Path(f"recon_{domain}")
+    output_dir.mkdir(exist_ok=True)
+    
+    tasks = [
+        # Subdomain enumeration
+        run_cmd(f"subfinder -d {domain} -all -o {output_dir}/subdomains.txt"),
+        
+        # Port scanning
+        run_cmd(f"naabu -host {domain} -top-ports 1000 -o {output_dir}/ports.txt"),
+        
+        # Technology detection
+        run_cmd(f"httpx -l {output_dir}/subdomains.txt -tech-detect -o {output_dir}/tech.txt"),
+        
+        # Screenshots
+        run_cmd(f"gowitness file -f {output_dir}/subdomains.txt -P {output_dir}/screenshots"),
+    ]
+    
+    await asyncio.gather(*tasks)
+    
+    # Consolidate results
+    return consolidate_recon(output_dir)
+
+async def run_cmd(cmd):
+    proc = await asyncio.create_subprocess_shell(
+        cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    await proc.communicate()
+```
+
+## Attack Surface Mapping Checklist
+
+### Initial Mapping
+- [ ] Enumerate all subdomains (passive + active)
+- [ ] Identify all IP ranges and ASN info
+- [ ] Map all open ports and services
+- [ ] Identify technologies and frameworks
+- [ ] Discover APIs and documentation
+
+### Deep Enumeration
+- [ ] Find hidden directories and files
+- [ ] Identify all entry points (forms, APIs, uploads)
+- [ ] Map authentication mechanisms
+- [ ] Discover admin panels and dashboards
+- [ ] Find backup and configuration files
+
+### Intelligence Gathering
+- [ ] Collect employee information
+- [ ] Search for leaked credentials
+- [ ] Analyze historical data (Wayback)
+- [ ] Review code repositories
+- [ ] Check certificate transparency logs
+</reconnaissance_osint>

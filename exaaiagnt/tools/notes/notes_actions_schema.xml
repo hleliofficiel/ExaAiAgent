@@ -1,0 +1,150 @@
+<tools>
+  <tool name="create_note">
+    <description>Create a personal note for TODOs, side notes, plans, and organizational purposes during
+  the scan.</description>
+    <details>Use this tool for quick reminders, action items, planning thoughts, and organizational notes
+  rather than formal vulnerability reports or detailed findings. This is your personal notepad
+  for keeping track of tasks, ideas, and things to remember or follow up on.</details>
+    <parameters>
+      <parameter name="title" type="string" required="true">
+        <description>Title of the note</description>
+      </parameter>
+      <parameter name="content" type="string" required="true">
+        <description>Content of the note</description>
+      </parameter>
+      <parameter name="category" type="string" required="false">
+        <description>Category to organize the note (default: "general", "findings", "methodology", "todo", "questions", "plan")</description>
+      </parameter>
+      <parameter name="tags" type="string" required="false">
+        <description>Tags for categorization</description>
+      </parameter>
+      <parameter name="priority" type="string" required="false">
+        <description>Priority level of the note ("low", "normal", "high", "urgent")</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing: - note_id: ID of the created note - success: Whether the note was created successfully</description>
+    </returns>
+    <examples>
+  # Create a TODO reminder
+  <function=create_note>
+  <parameter=title>TODO: Check SSL Certificate Details</parameter>
+  <parameter=content>Remember to verify SSL certificate validity and check for weak ciphers
+               on the HTTPS service discovered on port 443. Also check for certificate
+               transparency logs.</parameter>
+  <parameter=category>todo</parameter>
+  <parameter=tags>["ssl", "certificate", "followup"]</parameter>
+  <parameter=priority>normal</parameter>
+  </function>
+
+  # Planning note
+  <function=create_note>
+  <parameter=title>Scan Strategy Planning</parameter>
+  <parameter=content>Plan for next phase: 1) Complete subdomain enumeration 2) Test discovered
+               web apps for OWASP Top 10 3) Check database services for default creds
+               4) Review any custom applications for business logic flaws</parameter>
+  <parameter=category>plan</parameter>
+  <parameter=tags>["planning", "strategy", "next_steps"]</parameter>
+  </function>
+
+  # Side note for later investigation
+  <function=create_note>
+  <parameter=title>Interesting Directory Found</parameter>
+  <parameter=content>Found /backup/ directory that might contain sensitive files. Low priority
+               for now but worth checking if time permits. Directory listing seems
+               disabled.</parameter>
+  <parameter=category>findings</parameter>
+  <parameter=tags>["directory", "backup", "low_priority"]</parameter>
+  <parameter=priority>low</parameter>
+  </function>
+    </examples>
+  </tool>
+  <tool name="delete_note">
+    <description>Delete a note.</description>
+    <parameters>
+      <parameter name="note_id" type="string" required="true">
+        <description>ID of the note to delete</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing: - success: Whether the note was deleted successfully</description>
+    </returns>
+    <examples>
+  <function=delete_note>
+  <parameter=note_id>note_123</parameter>
+  </function>
+    </examples>
+  </tool>
+  <tool name="list_notes">
+    <description>List existing notes with optional filtering and search.</description>
+    <parameters>
+      <parameter name="category" type="string" required="false">
+        <description>Filter by category</description>
+      </parameter>
+      <parameter name="tags" type="string" required="false">
+        <description>Filter by tags (returns notes with any of these tags)</description>
+      </parameter>
+      <parameter name="priority" type="string" required="false">
+        <description>Filter by priority level</description>
+      </parameter>
+      <parameter name="search" type="string" required="false">
+        <description>Search query to find in note titles and content</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing: - notes: List of matching notes - total_count: Total number of notes found</description>
+    </returns>
+    <examples>
+  # List all findings
+  <function=list_notes>
+  <parameter=category>findings</parameter>
+  </function>
+
+  # List high priority items
+  <function=list_notes>
+  <parameter=priority>high</parameter>
+  </function>
+
+  # Search for SQL injection related notes
+  <function=list_notes>
+  <parameter=search>SQL injection</parameter>
+  </function>
+
+  # Search within a specific category
+  <function=list_notes>
+  <parameter=search>admin</parameter>
+  <parameter=category>findings</parameter>
+  </function>
+    </examples>
+  </tool>
+  <tool name="update_note">
+    <description>Update an existing note.</description>
+    <parameters>
+      <parameter name="note_id" type="string" required="true">
+        <description>ID of the note to update</description>
+      </parameter>
+      <parameter name="title" type="string" required="false">
+        <description>New title for the note</description>
+      </parameter>
+      <parameter name="content" type="string" required="false">
+        <description>New content for the note</description>
+      </parameter>
+      <parameter name="tags" type="string" required="false">
+        <description>New tags for the note</description>
+      </parameter>
+      <parameter name="priority" type="string" required="false">
+        <description>New priority level</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing: - success: Whether the note was updated successfully</description>
+    </returns>
+    <examples>
+  <function=update_note>
+  <parameter=note_id>note_123</parameter>
+  <parameter=content>Updated content with new findings...</parameter>
+  <parameter=priority>urgent</parameter>
+  </function>
+    </examples>
+  </tool>
+</tools>

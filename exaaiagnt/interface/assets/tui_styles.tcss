@@ -1,0 +1,694 @@
+Screen {
+    background: #1a1a1a;
+    color: #d4d4d4;
+}
+
+#splash_screen {
+    height: 100%;
+    width: 100%;
+    background: #1a1a1a;
+    color: #22c55e;
+    content-align: center middle;
+    text-align: center;
+}
+
+#splash_content {
+    width: auto;
+    height: auto;
+    background: transparent;
+    text-align: center;
+    padding: 2;
+}
+
+#main_container {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background: #1a1a1a;
+}
+
+#content_container {
+    height: 1fr;
+    padding: 0;
+    background: transparent;
+}
+
+#sidebar {
+    width: 25%;
+    background: transparent;
+    margin-left: 1;
+}
+
+#agents_tree {
+    height: 1fr;
+    background: transparent;
+    border: round #262626;
+    border-title-color: #a8a29e;
+    border-title-style: bold;
+    padding: 1;
+    margin-bottom: 0;
+}
+
+#stats_display {
+    height: auto;
+    max-height: 15;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+#chat_area_container {
+    width: 75%;
+    background: transparent;
+}
+
+#chat_history {
+    height: 1fr;
+    background: transparent;
+    border: round #1a1a1a;
+    padding: 0;
+    margin-bottom: 0;
+    margin-right: 0;
+    scrollbar-background: #0f0f0f;
+    scrollbar-color: #262626;
+    scrollbar-corner-color: #0f0f0f;
+    scrollbar-size: 1 1;
+}
+
+#agent_status_display {
+    height: 1;
+    background: transparent;
+    margin: 0;
+    padding: 0 1;
+}
+
+#agent_status_display.hidden {
+    display: none;
+}
+
+#status_text {
+    width: 1fr;
+    height: 100%;
+    background: transparent;
+    color: #a3a3a3;
+    text-align: left;
+    content-align: left middle;
+    text-style: italic;
+    margin: 0;
+    padding: 0;
+}
+
+#keymap_indicator {
+    width: auto;
+    height: 100%;
+    background: transparent;
+    color: #737373;
+    text-align: right;
+    content-align: right middle;
+    text-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#chat_input_container {
+    height: 3;
+    background: transparent;
+    border: round #525252;
+    margin-right: 0;
+    padding: 0;
+    layout: horizontal;
+    align-vertical: middle;
+}
+
+#chat_input_container:focus-within {
+    border: round #22c55e;
+}
+
+#chat_input_container:focus-within #chat_prompt {
+    color: #22c55e;
+    text-style: bold;
+}
+
+#chat_prompt {
+    width: auto;
+    height: 100%;
+    padding: 0 0 0 1;
+    color: #737373;
+    content-align-vertical: middle;
+}
+
+#chat_history:focus {
+    border: round #22c55e;
+}
+
+#chat_input {
+    width: 1fr;
+    height: 100%;
+    background: #121212;
+    border: none;
+    color: #d4d4d4;
+    padding: 0;
+    margin: 0;
+}
+
+#chat_input:focus {
+    border: none;
+}
+
+#chat_input > .text-area--placeholder {
+    color: #525252;
+    text-style: italic;
+}
+
+#chat_input > .text-area--cursor {
+    color: #22c55e;
+    background: #22c55e;
+}
+
+.chat-placeholder {
+    width: 100%;
+    height: 100%;
+    content-align: center middle;
+    text-align: center;
+    color: #737373;
+    text-style: italic;
+}
+
+.chat-content {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 1;
+    background: transparent;
+    width: 100%;
+}
+
+.chat-message {
+    margin-bottom: 0;
+    padding: 0;
+    background: transparent;
+    width: 100%;
+}
+
+.user-message {
+    color: #e5e5e5;
+    border-left: thick #3b82f6;
+    padding-left: 1;
+    margin-bottom: 1;
+}
+
+.tool-call {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 1;
+    background: #0a0a0a;
+    border: round #1a1a1a;
+    border-left: thick #f59e0b;
+    width: 100%;
+}
+
+.tool-call.status-completed {
+    border-left: thick #22c55e;
+    background: #0d1f12;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.tool-call.status-running {
+    border-left: thick #f59e0b;
+    background: #1f1611;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.tool-call.status-failed,
+.tool-call.status-error {
+    border-left: thick #ef4444;
+    background: #1f0d0d;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.browser-tool,
+.terminal-tool,
+.python-tool,
+.agents-graph-tool,
+.file-edit-tool,
+.proxy-tool,
+.notes-tool,
+.thinking-tool,
+.web-search-tool,
+.finish-tool,
+.reporting-tool,
+.scan-info-tool,
+.subagent-info-tool {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.browser-tool {
+    border-left: thick #06b6d4;
+}
+
+.browser-tool.status-completed {
+    border-left: thick #06b6d4;
+    background: transparent;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.browser-tool.status-running {
+    border-left: thick #0891b2;
+    background: transparent;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.terminal-tool {
+    border-left: thick #22c55e;
+}
+
+.terminal-tool.status-completed {
+    border-left: thick #22c55e;
+    background: transparent;
+}
+
+.terminal-tool.status-running {
+    border-left: thick #16a34a;
+    background: transparent;
+}
+
+.python-tool {
+    border-left: thick #3b82f6;
+}
+
+.python-tool.status-completed {
+    border-left: thick #3b82f6;
+    background: transparent;
+}
+
+.python-tool.status-running {
+    border-left: thick #2563eb;
+    background: transparent;
+}
+
+.agents-graph-tool {
+    border-left: thick #fbbf24;
+}
+
+.agents-graph-tool.status-completed {
+    border-left: thick #fbbf24;
+    background: transparent;
+}
+
+.agents-graph-tool.status-running {
+    border-left: thick #f59e0b;
+    background: transparent;
+}
+
+.file-edit-tool {
+    border-left: thick #10b981;
+}
+
+.file-edit-tool.status-completed {
+    border-left: thick #10b981;
+    background: transparent;
+}
+
+.file-edit-tool.status-running {
+    border-left: thick #059669;
+    background: transparent;
+}
+
+.proxy-tool {
+    border-left: thick #06b6d4;
+}
+
+.proxy-tool.status-completed {
+    border-left: thick #06b6d4;
+    background: transparent;
+}
+
+.proxy-tool.status-running {
+    border-left: thick #0891b2;
+    background: transparent;
+}
+
+.notes-tool {
+    border-left: thick #fbbf24;
+}
+
+.notes-tool.status-completed {
+    border-left: thick #fbbf24;
+    background: transparent;
+}
+
+.notes-tool.status-running {
+    border-left: thick #f59e0b;
+    background: transparent;
+}
+
+.thinking-tool {
+    border-left: thick #a855f7;
+}
+
+.thinking-tool.status-completed {
+    border-left: thick #a855f7;
+    background: transparent;
+}
+
+.thinking-tool.status-running {
+    border-left: thick #9333ea;
+    background: transparent;
+}
+
+.web-search-tool {
+    border-left: thick #22c55e;
+}
+
+.web-search-tool.status-completed {
+    border-left: thick #22c55e;
+    background: transparent;
+}
+
+.web-search-tool.status-running {
+    border-left: thick #16a34a;
+    background: transparent;
+}
+
+.finish-tool {
+    border-left: thick #dc2626;
+}
+
+.finish-tool.status-completed {
+    border-left: thick #dc2626;
+    background: transparent;
+}
+
+.finish-tool.status-running {
+    border-left: thick #b91c1c;
+    background: transparent;
+}
+
+.reporting-tool {
+    border-left: thick #ea580c;
+}
+
+.reporting-tool.status-completed {
+    border-left: thick #ea580c;
+    background: transparent;
+}
+
+.reporting-tool.status-running {
+    border-left: thick #c2410c;
+    background: transparent;
+}
+
+.scan-info-tool {
+    border-left: thick #22c55e;
+    background: transparent;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.scan-info-tool.status-completed {
+    border-left: thick #22c55e;
+    background: transparent;
+}
+
+.scan-info-tool.status-running {
+    border-left: thick #16a34a;
+    background: transparent;
+}
+
+.subagent-info-tool {
+    border-left: thick #22c55e;
+    background: transparent;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.subagent-info-tool.status-completed {
+    border-left: thick #22c55e;
+    background: transparent;
+}
+
+.subagent-info-tool.status-running {
+    border-left: thick #16a34a;
+    background: transparent;
+}
+
+Tree {
+    background: transparent;
+    color: #e7e5e4;
+    scrollbar-background: transparent;
+    scrollbar-color: #404040;
+    scrollbar-corner-color: transparent;
+    scrollbar-size: 1 1;
+}
+
+Tree > .tree--label {
+    text-style: bold;
+    color: #a8a29e;
+    background: transparent;
+    padding: 0 1;
+    margin-bottom: 1;
+    border-bottom: solid #262626;
+    text-align: center;
+}
+
+.tree--node {
+    height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+.tree--node-label {
+    color: #d6d3d1;
+    background: transparent;
+    text-style: none;
+    padding: 0 1;
+    margin: 0 1;
+}
+
+.tree--node:hover .tree--node-label {
+    background: transparent;
+    color: #fafaf9;
+    text-style: bold;
+    border-left: solid #a8a29e;
+}
+
+.tree--node.-selected .tree--node-label {
+    background: transparent;
+    color: #fafaf9;
+    text-style: bold;
+    border-left: heavy #d6d3d1;
+}
+
+.tree--node.-expanded .tree--node-label {
+    text-style: bold;
+    color: #fafaf9;
+    background: transparent;
+    border-left: solid #78716c;
+}
+
+Tree:focus {
+    border: round #262626;
+}
+
+Tree:focus > .tree--label {
+    color: #fafaf9;
+    text-style: bold;
+    background: transparent;
+}
+
+.tree--node .tree--node .tree--node-label {
+    color: #a8a29e;
+    padding-left: 2;
+    border: none;
+    background: transparent;
+    margin-left: 1;
+}
+
+.tree--node .tree--node:hover .tree--node-label {
+    background: transparent;
+    color: #e7e5e4;
+}
+
+.tree--node .tree--node .tree--node .tree--node-label {
+    color: #78716c;
+    padding-left: 3;
+    text-style: none;
+    border: none;
+    background: transparent;
+    margin-left: 2;
+}
+
+StopAgentScreen {
+    align: center middle;
+    background: $background 0%;
+}
+
+#stop_agent_dialog {
+    grid-size: 1;
+    grid-gutter: 1;
+    grid-rows: auto auto;
+    padding: 1;
+    width: 30;
+    height: auto;
+    border: round #a3a3a3;
+    background: #1a1a1a 98%;
+}
+
+#stop_agent_title {
+    color: #a3a3a3;
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+#stop_agent_buttons {
+    grid-size: 2;
+    grid-gutter: 1;
+    grid-columns: 1fr 1fr;
+    width: 100%;
+    height: 1;
+}
+
+#stop_agent_buttons Button {
+    height: 1;
+    min-height: 1;
+    border: none;
+    text-style: bold;
+}
+
+#stop_agent {
+    background: transparent;
+    color: #ef4444;
+    border: none;
+}
+
+#stop_agent:hover, #stop_agent:focus {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+}
+
+#cancel_stop {
+    background: transparent;
+    color: #737373;
+    border: none;
+}
+
+#cancel_stop:hover, #cancel_stop:focus {
+    background:rgb(54, 54, 54);
+    color: #ffffff;
+    border: none;
+}
+
+QuitScreen {
+    align: center middle;
+    background: $background 0%;
+}
+
+#quit_dialog {
+    grid-size: 1;
+    grid-gutter: 1;
+    grid-rows: auto auto;
+    padding: 1;
+    width: 24;
+    height: auto;
+    border: round #525252;
+    background: #1a1a1a 98%;
+}
+
+#quit_title {
+    color: #d4d4d4;
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+#quit_buttons {
+    grid-size: 2;
+    grid-gutter: 1;
+    grid-columns: 1fr 1fr;
+    width: 100%;
+    height: 1;
+}
+
+#quit_buttons Button {
+    height: 1;
+    min-height: 1;
+    border: none;
+    text-style: bold;
+}
+
+#quit {
+    background: transparent;
+    color: #ef4444;
+    border: none;
+}
+
+#quit:hover, #quit:focus {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+}
+
+#cancel {
+    background: transparent;
+    color: #737373;
+    border: none;
+}
+
+#cancel:hover, #cancel:focus {
+    background:rgb(54, 54, 54);
+    color: #ffffff;
+    border: none;
+}
+
+HelpScreen {
+    align: center middle;
+    background: $background 0%;
+}
+
+#dialog {
+    grid-size: 1;
+    grid-gutter: 0 1;
+    grid-rows: auto auto;
+    padding: 1 2;
+    width: 40;
+    height: auto;
+    border: round #22c55e;
+    background: #1a1a1a 98%;
+}
+
+#help_title {
+    color: #22c55e;
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#help_content {
+    color: #d4d4d4;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 1;
+    padding: 0;
+    background: transparent;
+    text-style: none;
+}

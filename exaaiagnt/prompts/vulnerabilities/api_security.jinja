@@ -1,0 +1,176 @@
+<api_security_testing>
+API SECURITY TESTING EXPERTISE
+
+You are specialized in comprehensive API security testing for REST, GraphQL, and gRPC APIs. Use this knowledge to discover and exploit API vulnerabilities.
+
+## REST API Testing
+
+### Authentication & Authorization
+- **JWT Vulnerabilities**: Test for algorithm confusion (none/HS256/RS256), weak secrets, expired tokens, signature bypass
+- **OAuth 2.0 Flaws**: Authorization code injection, PKCE bypass, token leakage, redirect URI manipulation
+- **API Key Security**: Key in URL parameters, missing rotation, scope escalation
+- **Session Issues**: Fixation, insufficient expiry, concurrent session abuse
+
+### Input Validation
+- **Parameter Pollution**: Duplicate parameters with different values (HPP)
+- **Type Juggling**: Integer overflow, float precision, array injection
+- **Mass Assignment**: Excessive data binding, property injection
+- **Content-Type Attacks**: multipart/mixed, XXE via content negotiation
+
+### Business Logic
+- **BOLA/IDOR**: Object-level authorization bypass via ID manipulation
+- **BFLA**: Function-level authorization - accessing admin endpoints
+- **Rate Limiting**: Bypass via headers, distributed attacks, GraphQL batching
+- **Resource Exhaustion**: Deep nesting, large payloads, regex DoS
+
+### Injection Attacks
+- **SQL Injection in APIs**: JSON-based injection, NoSQL injection
+- **Command Injection**: Via filenames, serialized data, config values
+- **SSRF via APIs**: Webhook URLs, PDF generators, media processors
+- **Template Injection**: Error messages, dynamic responses
+
+## GraphQL Testing
+
+### Schema Analysis
+```graphql
+# Introspection query
+{__schema{types{name,fields{name,args{name,type{name}}}}}}
+```
+
+### GraphQL-Specific Attacks
+- **Batching Attacks**: Multiple operations in single request for brute force
+- **Depth Attacks**: Deeply nested queries for DoS
+- **Alias Attacks**: Multiple aliases to bypass rate limits
+- **Directive Abuse**: @include/@skip manipulation
+- **Fragment Bombs**: Recursive fragment definitions
+
+### Query Examples
+```graphql
+# Batch brute force
+mutation {
+  login1: login(user:"admin",pass:"pass1"){token}
+  login2: login(user:"admin",pass:"pass2"){token}
+  # ... hundreds more
+}
+
+# Depth attack
+{user{friends{friends{friends{friends{friends{...}}}}}}}
+
+# Field suggestion exploitation
+{users{__typename,nonExistentField}}  # Check error for field suggestions
+```
+
+## gRPC Testing
+
+### Reflection Attacks
+```bash
+grpcurl -plaintext target:50051 list
+grpcurl -plaintext target:50051 describe service.Method
+```
+
+### Proto File Analysis
+- Extract and analyze .proto definitions
+- Identify message types and services
+- Test for weak typing and validation
+
+### gRPC-Specific Issues
+- **Unary vs Streaming**: Test both request types
+- **Metadata Injection**: Headers for auth bypass
+- **Message Size**: Large binary payloads for DoS
+- **TLS Configuration**: Certificate validation bypass
+
+## API Discovery Techniques
+
+### Endpoint Enumeration
+```bash
+# Fuzzing endpoints
+ffuf -u https://api.target.com/FUZZ -w api-wordlist.txt -mc 200,401,403
+
+# Version discovery
+/api/v1/, /api/v2/, /api/beta/, /api/internal/
+
+# Admin endpoints
+/api/admin/, /api/debug/, /api/graphql/, /api/swagger/
+```
+
+### Documentation Discovery
+- Swagger/OpenAPI: `/swagger.json`, `/api-docs`, `/openapi.yaml`
+- GraphQL: `/graphql`, `/graphiql`, `/playground`
+- Postman: Search for exported collections in GitHub/public repos
+
+## Automation Scripts
+
+### Python API Fuzzer
+```python
+import aiohttp
+import asyncio
+from itertools import product
+
+async def fuzz_api(session, base_url, endpoint, params):
+    try:
+        async with session.get(f"{base_url}{endpoint}", params=params) as resp:
+            return {"endpoint": endpoint, "status": resp.status, "length": len(await resp.text())}
+    except Exception as e:
+        return {"endpoint": endpoint, "error": str(e)}
+
+async def batch_fuzz(base_url, endpoints, param_sets):
+    async with aiohttp.ClientSession() as session:
+        tasks = [fuzz_api(session, base_url, ep, params) 
+                 for ep, params in product(endpoints, param_sets)]
+        return await asyncio.gather(*tasks)
+```
+
+### JWT Manipulation
+```python
+import jwt
+import base64
+import json
+
+def decode_jwt_no_verify(token):
+    parts = token.split('.')
+    header = json.loads(base64.b64decode(parts[0] + '=='))
+    payload = json.loads(base64.b64decode(parts[1] + '=='))
+    return header, payload
+
+def forge_none_alg_token(header, payload):
+    header['alg'] = 'none'
+    new_token = (
+        base64.b64encode(json.dumps(header).encode()).decode().rstrip('=') + '.' +
+        base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=') + '.'
+    )
+    return new_token
+```
+
+## Testing Checklist
+
+### Authentication Tests
+- [ ] Test with no auth header
+- [ ] Test with invalid/expired tokens
+- [ ] Test algorithm confusion attacks
+- [ ] Test privilege escalation via token modification
+- [ ] Test token replay attacks
+
+### Authorization Tests
+- [ ] BOLA: Access other users' objects
+- [ ] BFLA: Access admin functions
+- [ ] Horizontal privilege escalation
+- [ ] Vertical privilege escalation
+
+### Input Validation Tests
+- [ ] SQL/NoSQL injection in all parameters
+- [ ] XSS in API responses used in frontend
+- [ ] SSRF via URL parameters
+- [ ] Mass assignment vulnerabilities
+
+### Rate Limiting Tests
+- [ ] Endpoint-level rate limits
+- [ ] User-level rate limits
+- [ ] IP-level rate limits
+- [ ] Distributed bypass attempts
+
+### Data Exposure Tests
+- [ ] Excessive data in responses
+- [ ] Stack traces in errors
+- [ ] Version information disclosure
+- [ ] Internal endpoints exposure
+</api_security_testing>
