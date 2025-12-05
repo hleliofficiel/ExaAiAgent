@@ -14,7 +14,7 @@ from docker.models.containers import Container
 from .runtime import AbstractRuntime, SandboxInfo
 
 
-EXAAI_IMAGE = os.getenv("EXAAI_IMAGE", "ghcr.io/usestrix/strix-sandbox:0.1.10")
+EXAAI_IMAGE = os.getenv("EXAAI_IMAGE", "ghcr.io/hleliofficiel/exaai-sandbox:1.0")
 logger = logging.getLogger(__name__)
 
 
