@@ -409,11 +409,19 @@ class LLM:
             "timeout": self.config.timeout,
         }
 
+        # Add max_tokens to limit output and reduce consumption
+        if hasattr(self.config, 'max_tokens_per_request') and self.config.max_tokens_per_request:
+            completion_args["max_tokens"] = self.config.max_tokens_per_request
+
         if self._should_include_stop_param():
             completion_args["stop"] = ["</function>"]
 
+        # Use medium reasoning effort in lightweight mode, high otherwise
         if self._should_include_reasoning_effort():
-            completion_args["reasoning_effort"] = "high"
+            if hasattr(self.config, 'lightweight_mode') and self.config.lightweight_mode:
+                completion_args["reasoning_effort"] = "medium"
+            else:
+                completion_args["reasoning_effort"] = "high"
 
         queue = get_global_queue()
         response = await queue.make_request(completion_args)
