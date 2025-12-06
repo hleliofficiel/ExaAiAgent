@@ -29,6 +29,50 @@ def get_all_module_names() -> set[str]:
     return all_modules
 
 
+def auto_detect_modules(target: str, instruction: str = "") -> list[str]:
+    """
+    Automatically detect and return relevant prompt modules based on target and instruction.
+    
+    Args:
+        target: The target URL or domain
+        instruction: The user's instruction
+        
+    Returns:
+        List of auto-detected module names
+    """
+    try:
+        from exaaiagnt.prompts.auto_loader import detect_modules_from_target
+        return detect_modules_from_target(target, instruction)
+    except ImportError:
+        return []
+
+
+def get_smart_modules(target: str, instruction: str = "", user_modules: list[str] | None = None) -> list[str]:
+    """
+    Get final list of modules combining user-specified and auto-detected modules.
+    
+    Args:
+        target: The target URL or domain
+        instruction: The user's instruction
+        user_modules: Modules explicitly specified by user
+        
+    Returns:
+        Combined list of modules (user + auto-detected, max 5)
+    """
+    final_modules = set(user_modules or [])
+    
+    # Auto-detect if user didn't specify modules
+    if not user_modules:
+        auto_modules = auto_detect_modules(target, instruction)
+        final_modules.update(auto_modules)
+    
+    # Validate and limit to 5
+    available = get_all_module_names()
+    valid_modules = [m for m in final_modules if m in available]
+    
+    return valid_modules[:5]
+
+
 def validate_module_names(module_names: list[str]) -> dict[str, list[str]]:
     available_modules = get_all_module_names()
     valid_modules = []
