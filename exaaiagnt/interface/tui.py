@@ -71,14 +71,15 @@ class ChatTextArea(TextArea):  # type: ignore[misc]
 
 
 class SplashScreen(Static):  # type: ignore[misc]
-    PRIMARY_GREEN = "#22c55e"
+    PRIMARY_CYAN = "#00d4ff"
+    PRIMARY_PURPLE = "#a855f7"
     BANNER = (
-        " ███████╗████████╗██████╗ ██╗██╗  ██╗\n"
-        " ██╔════╝╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
-        " ███████╗   ██║   ██████╔╝██║ ╚███╔╝\n"
-        " ╚════██║   ██║   ██╔══██╗██║ ██╔██╗\n"
-        " ███████║   ██║   ██║  ██║██║██╔╝ ██╗\n"
-        " ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+        " ███████╗██╗  ██╗ █████╗  █████╗ ██╗\\n"
+        " ██╔════╝╚██╗██╔╝██╔══██╗██╔══██╗██║\\n"
+        " █████╗   ╚███╔╝ ███████║███████║██║\\n"
+        " ██╔══╝   ██╔██╗ ██╔══██║██╔══██║██║\\n"
+        " ███████╗██╔╝ ██╗██║  ██║██║  ██║██║\\n"
+        " ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝"
     )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -117,7 +118,7 @@ class SplashScreen(Static):  # type: ignore[misc]
 
     def _build_panel(self, start_line: Text) -> Panel:
         content = Group(
-            Align.center(Text(self.BANNER.strip("\n"), style=self.PRIMARY_GREEN, justify="center")),
+            Align.center(Text(self.BANNER.strip("\\n"), style=self.PRIMARY_CYAN, justify="center")),
             Align.center(Text(" ")),
             Align.center(self._build_welcome_text()),
             Align.center(self._build_version_text()),
@@ -126,27 +127,30 @@ class SplashScreen(Static):  # type: ignore[misc]
             Align.center(start_line.copy()),
         )
 
-        return Panel.fit(content, border_style=self.PRIMARY_GREEN, padding=(1, 6))
+        return Panel.fit(content, border_style=self.PRIMARY_PURPLE, padding=(1, 6))
 
     def _build_welcome_text(self) -> Text:
         text = Text("Welcome to ", style=Style(color="white", bold=True))
-        text.append("exaaiagnt", style=Style(color=self.PRIMARY_GREEN, bold=True))
+        text.append("ExaAi", style=Style(color=self.PRIMARY_CYAN, bold=True))
+        text.append("Agent", style=Style(color=self.PRIMARY_PURPLE, bold=True))
         text.append("!", style=Style(color="white", bold=True))
         return text
 
     def _build_version_text(self) -> Text:
-        return Text(f"v{self._version}", style=Style(color="white", dim=True))
+        return Text(f"v{self._version}", style=Style(color=self.PRIMARY_CYAN, dim=True))
 
     def _build_tagline_text(self) -> Text:
-        return Text("Open-source AI hackers for your apps", style=Style(color="white", dim=True))
+        return Text("Advanced AI-Powered Cybersecurity Agent", style=Style(color="white", dim=True))
 
     def _build_start_line_text(self, phase: int) -> Text:
         emphasize = phase % 2 == 1
         base_style = Style(color="white", dim=not emphasize, bold=emphasize)
-        EXAAI_style = Style(color=self.PRIMARY_GREEN, bold=bool(emphasize))
+        exaai_style = Style(color=self.PRIMARY_CYAN, bold=bool(emphasize))
+        agent_style = Style(color=self.PRIMARY_PURPLE, bold=bool(emphasize))
 
         text = Text("Starting ", style=base_style)
-        text.append("exaaiagnt", style=EXAAI_style)
+        text.append("ExaAi", style=exaai_style)
+        text.append("Agent", style=agent_style)
         text.append(" Cybersecurity Agent", style=base_style)
 
         return text
