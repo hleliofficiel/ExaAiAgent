@@ -73,13 +73,14 @@ class ChatTextArea(TextArea):  # type: ignore[misc]
 class SplashScreen(Static):  # type: ignore[misc]
     PRIMARY_CYAN = "#00d4ff"
     PRIMARY_PURPLE = "#a855f7"
+    ACCENT_GREEN = "#10b981"
     BANNER = (
-        " ███████╗██╗  ██╗ █████╗  █████╗ ██╗\\n"
-        " ██╔════╝╚██╗██╔╝██╔══██╗██╔══██╗██║\\n"
-        " █████╗   ╚███╔╝ ███████║███████║██║\\n"
-        " ██╔══╝   ██╔██╗ ██╔══██║██╔══██║██║\\n"
-        " ███████╗██╔╝ ██╗██║  ██║██║  ██║██║\\n"
-        " ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝"
+        "███████╗██╗  ██╗ █████╗  █████╗ ██╗\n"
+        "██╔════╝╚██╗██╔╝██╔══██╗██╔══██╗██║\n"
+        "█████╗   ╚███╔╝ ███████║███████║██║\n"
+        "██╔══╝   ██╔██╗ ██╔══██║██╔══██║██║\n"
+        "███████╗██╔╝ ██╗██║  ██║██║  ██║██║\n"
+        "╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝"
     )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -118,7 +119,7 @@ class SplashScreen(Static):  # type: ignore[misc]
 
     def _build_panel(self, start_line: Text) -> Panel:
         content = Group(
-            Align.center(Text(self.BANNER.strip("\\n"), style=self.PRIMARY_CYAN, justify="center")),
+            Align.center(Text(self.BANNER, style=self.PRIMARY_CYAN, justify="center")),
             Align.center(Text(" ")),
             Align.center(self._build_welcome_text()),
             Align.center(self._build_version_text()),
@@ -159,7 +160,7 @@ class SplashScreen(Static):  # type: ignore[misc]
 class HelpScreen(ModalScreen):  # type: ignore[misc]
     def compose(self) -> ComposeResult:
         yield Grid(
-            Label("🦉 ExaaiAgnt Help", id="help_title"),
+            Label("🔐 ExaAiAgent Help", id="help_title"),
             Label(
                 "F1        Help\nCtrl+Q/C  Quit\nESC       Stop Agent\n"
                 "Enter     Send message to agent\nTab       Switch panels\n↑/↓       Navigate tree",
