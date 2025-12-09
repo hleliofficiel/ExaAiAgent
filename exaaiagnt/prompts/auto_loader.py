@@ -113,6 +113,65 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["auth", "jwt", "token", "session", "login", "password"],
     },
+    
+    # API Security (NEW)
+    "api_security": {
+        "url_patterns": [
+            r"/api/",
+            r"/rest/",
+            r"/v\d+/",
+            r"/swagger",
+            r"/openapi",
+        ],
+        "keywords": ["api", "rest", "endpoint", "json", "bola", "idor"],
+    },
+    
+    # SSTI - Server-Side Template Injection (NEW)
+    "ssti": {
+        "url_patterns": [
+            r"/template",
+            r"/render",
+            r"/preview",
+            r"/email",
+            r"/pdf",
+        ],
+        "keywords": ["ssti", "template", "jinja", "twig", "freemarker", "thymeleaf"],
+    },
+    
+    # HTTP Request Smuggling (NEW)
+    "http_smuggling": {
+        "url_patterns": [],
+        "keywords": ["smuggling", "desync", "cl.te", "te.cl", "chunked"],
+    },
+    
+    # Deserialization (NEW)
+    "deserialization": {
+        "url_patterns": [
+            r"/api/",
+            r"/rpc",
+            r"/soap",
+        ],
+        "keywords": ["deserialize", "pickle", "marshal", "serialized", "ysoserial", "java", "viewstate"],
+    },
+    
+    # Prototype Pollution (NEW)
+    "prototype_pollution": {
+        "url_patterns": [],
+        "keywords": ["prototype", "__proto__", "pollution", "javascript", "node", "merge", "lodash"],
+    },
+    
+    # Cache Poisoning (NEW)
+    "cache_poisoning": {
+        "url_patterns": [],
+        "keywords": ["cache", "cdn", "cloudflare", "akamai", "varnish", "poison"],
+    },
+    
+    # Advanced Recon (NEW)
+    "advanced_recon": {
+        "url_patterns": [],
+        "keywords": ["recon", "reconnaissance", "enumerate", "discover", "fingerprint", "osint"],
+        "domain_only": True,
+    },
 }
 
 
