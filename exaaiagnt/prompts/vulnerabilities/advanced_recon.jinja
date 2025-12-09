@@ -1,0 +1,332 @@
+{# Advanced Reconnaissance Module #}
+{# Elite-level reconnaissance techniques for maximum vulnerability discovery #}
+
+<advanced_recon_module>
+
+## ELITE RECONNAISSANCE FRAMEWORK
+
+### PHASE 1: DEEP ASSET DISCOVERY
+
+**Subdomain Enumeration - Multi-Source:**
+```bash
+# Passive sources (run in parallel)
+subfinder -d target.com -all -silent -o subs_subfinder.txt &
+amass enum -passive -d target.com -o subs_amass.txt &
+assetfinder --subs-only target.com > subs_assetfinder.txt &
+findomain -t target.com -q > subs_findomain.txt &
+
+# Certificate Transparency
+curl -s "https://crt.sh/?q=%.target.com&output=json" | jq -r '.[].name_value' | sort -u > subs_crt.txt
+
+# Combine and deduplicate
+cat subs_*.txt | sort -u > all_subdomains.txt
+```
+
+**DNS Resolution & Filtering:**
+```bash
+# Resolve live hosts
+cat all_subdomains.txt | httpx -silent -threads 100 -o live_hosts.txt
+
+# Get IP addresses
+cat all_subdomains.txt | dnsx -silent -a -resp-only > ips.txt
+
+# Check for wildcard DNS
+echo "random-nonexistent-12345.target.com" | dnsx -silent
+```
+
+**Port Scanning - Comprehensive:**
+```bash
+# Fast initial scan
+naabu -l live_hosts.txt -top-ports 1000 -silent -o ports_initial.txt
+
+# Full port scan on interesting hosts
+nmap -sS -sV -p- --min-rate 5000 -oA full_scan target.com
+
+# Service fingerprinting
+nmap -sV -sC -p <open_ports> target.com
+```
+
+### PHASE 2: HIDDEN CONTENT DISCOVERY
+
+**Historical Data Mining:**
+```bash
+# Wayback Machine URLs
+echo "target.com" | waybackurls | sort -u > wayback_urls.txt
+
+# GAU (GetAllUrls)
+echo "target.com" | gau --threads 5 | sort -u > gau_urls.txt
+
+# Common Crawl
+echo "target.com" | commoncrawl > cc_urls.txt
+
+# Combine sources
+cat wayback_urls.txt gau_urls.txt cc_urls.txt | sort -u | \
+  grep -E "\.(js|json|xml|config|env|bak|sql|log|txt)$" > interesting_files.txt
+```
+
+**Directory & File Bruteforce:**
+```bash
+# Fast directory discovery
+ffuf -u https://target.com/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt \
+  -mc 200,301,302,403 -o dirs.json
+
+# Hidden files
+ffuf -u https://target.com/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt \
+  -mc 200,301,302,403 -e .bak,.old,.txt,.json,.xml,.env,.config
+
+# API endpoints
+ffuf -u https://target.com/api/FUZZ -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt
+```
+
+**Sensitive File Detection:**
+```bash
+# Common sensitive files
+curl -s https://target.com/.git/config
+curl -s https://target.com/.env
+curl -s https://target.com/.DS_Store
+curl -s https://target.com/config.php.bak
+curl -s https://target.com/wp-config.php.old
+curl -s https://target.com/.htaccess
+curl -s https://target.com/robots.txt
+curl -s https://target.com/sitemap.xml
+curl -s https://target.com/crossdomain.xml
+curl -s https://target.com/clientaccesspolicy.xml
+curl -s https://target.com/security.txt
+curl -s https://target.com/.well-known/security.txt
+```
+
+### PHASE 3: JAVASCRIPT ANALYSIS
+
+**Extract & Analyze JS:**
+```bash
+# Find all JS files
+cat wayback_urls.txt gau_urls.txt | grep -E "\.js$" | sort -u > js_files.txt
+
+# Download and analyze
+while read url; do
+  curl -s "$url" >> all_js.txt
+done < js_files.txt
+
+# Extract endpoints from JS
+cat all_js.txt | grep -oE '"(/[^"]+)"' | tr -d '"' | sort -u > js_endpoints.txt
+
+# Extract API keys and secrets
+cat all_js.txt | grep -oE '(api[_-]?key|apikey|api_secret|access_token|auth_token|client_secret)["\s]*[:=]\s*["\'][^"\']+["\']' > potential_secrets.txt
+
+# Extract subdomains from JS
+cat all_js.txt | grep -oE '[a-zA-Z0-9.-]+\.target\.com' | sort -u >> all_subdomains.txt
+```
+
+**JavaScript Beautify & Search:**
+```bash
+# Beautify minified JS
+js-beautify all_js.txt > beautified.js
+
+# Search patterns
+grep -n "password" beautified.js
+grep -n "secret" beautified.js
+grep -n "admin" beautified.js
+grep -n "debug" beautified.js
+grep -n "TODO" beautified.js
+grep -n "FIXME" beautified.js
+```
+
+### PHASE 4: PARAMETER DISCOVERY
+
+**Parameter Mining:**
+```bash
+# From URLs
+cat wayback_urls.txt gau_urls.txt | grep "?" | \
+  sed 's/.*?\([^=]*\)=.*/\1/' | sort -u > params_from_urls.txt
+
+# Arjun parameter discovery
+arjun -u https://target.com/page -oT params_arjun.txt
+
+# x8 parameter fuzzing
+x8 -u https://target.com/page -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt
+```
+
+**Hidden Parameter Detection:**
+```bash
+# Common hidden params
+params="debug,test,admin,internal,dev,staging,backup,old,new,beta,v2,api_key,token,auth,key,secret,password,id,user_id,account_id,session,redirect,url,next,return,callback"
+
+for param in $(echo $params | tr ',' '\n'); do
+  curl -s "https://target.com/page?${param}=test" | wc -c
+done
+```
+
+### PHASE 5: TECHNOLOGY FINGERPRINTING
+
+**Stack Detection:**
+```bash
+# Wappalyzer-like detection
+whatweb https://target.com
+
+# Headers analysis
+curl -sI https://target.com | grep -E "^(Server|X-Powered-By|X-AspNet|X-Generator)"
+
+# CMS detection
+nuclei -u https://target.com -t technologies/
+```
+
+**Framework-Specific Enumeration:**
+```python
+# WordPress
+endpoints = [
+    "/wp-admin/", "/wp-login.php", "/wp-json/wp/v2/users",
+    "/wp-includes/", "/?author=1", "/xmlrpc.php"
+]
+
+# Laravel
+endpoints = [
+    "/.env", "/storage/logs/laravel.log",
+    "/api/user", "/_debugbar/open"
+]
+
+# Django
+endpoints = [
+    "/admin/", "/__debug__/", "/static/admin/",
+    "/api/schema/"
+]
+
+# Node.js/Express
+endpoints = [
+    "/package.json", "/node_modules/", "/.npmrc",
+    "/server.js", "/app.js"
+]
+```
+
+### PHASE 6: CLOUD & INFRASTRUCTURE
+
+**Cloud Service Detection:**
+```bash
+# AWS S3 bucket enumeration
+python3 -c "
+import requests
+buckets = ['target', 'target-dev', 'target-prod', 'target-backup', 'target-assets']
+for b in buckets:
+    r = requests.get(f'https://{b}.s3.amazonaws.com/')
+    if r.status_code != 404:
+        print(f'Found: {b} - {r.status_code}')
+"
+
+# Azure blob storage
+for name in target target-dev target-prod; do
+  curl -s "https://${name}.blob.core.windows.net/?comp=list"
+done
+
+# GCP buckets
+for name in target target-dev target-prod; do
+  curl -s "https://storage.googleapis.com/${name}/"
+done
+```
+
+**CDN & WAF Detection:**
+```bash
+# Detect CDN/WAF
+wafw00f https://target.com
+
+# Bypass techniques based on detection
+# Cloudflare: Find origin IP
+# Check DNS history: securitytrails.com
+# Check Shodan/Censys for SSL cert
+```
+
+### PHASE 7: API RECONNAISSANCE
+
+**API Endpoint Discovery:**
+```bash
+# OpenAPI/Swagger detection
+curl -s https://target.com/swagger.json
+curl -s https://target.com/api/swagger.json
+curl -s https://target.com/openapi.json
+curl -s https://target.com/api-docs
+curl -s https://target.com/v1/api-docs
+curl -s https://target.com/v2/swagger.yaml
+
+# GraphQL detection
+curl -s -X POST https://target.com/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{__typename}"}'
+```
+
+**REST API Enumeration:**
+```bash
+# Common API paths
+paths="/api /api/v1 /api/v2 /rest /graphql /gql /internal-api"
+methods="GET POST PUT DELETE PATCH OPTIONS"
+
+for path in $paths; do
+  for method in $methods; do
+    curl -s -X $method "https://target.com${path}" -o /dev/null -w "%{http_code}\n"
+  done
+done
+```
+
+### PHASE 8: AUTOMATION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+Elite Recon Automation Script
+Runs all reconnaissance phases automatically
+"""
+
+import asyncio
+import aiohttp
+import subprocess
+from pathlib import Path
+
+class EliteRecon:
+    def __init__(self, target):
+        self.target = target
+        self.results = {}
+    
+    async def run_all(self):
+        await asyncio.gather(
+            self.subdomain_enum(),
+            self.port_scan(),
+            self.content_discovery(),
+            self.js_analysis(),
+            self.param_discovery(),
+        )
+        return self.results
+    
+    async def subdomain_enum(self):
+        # Run subfinder, amass, etc.
+        pass
+    
+    async def port_scan(self):
+        # Run naabu, nmap
+        pass
+    
+    async def content_discovery(self):
+        # Run ffuf, dirsearch
+        pass
+    
+    async def js_analysis(self):
+        # Download and analyze JS
+        pass
+    
+    async def param_discovery(self):
+        # Run arjun, x8
+        pass
+
+if __name__ == "__main__":
+    import sys
+    target = sys.argv[1]
+    recon = EliteRecon(target)
+    asyncio.run(recon.run_all())
+```
+
+### CRITICAL SUCCESS FACTORS
+
+1. **Always run multiple tools** - Each tool has different coverage
+2. **Check historical data** - Wayback/GAU often reveal deleted sensitive files
+3. **Analyze JavaScript** - Modern apps leak tons of info in JS
+4. **Test every discovered endpoint** - Even 403s can be bypassed
+5. **Document everything** - Build complete attack surface map
+6. **Be patient** - Elite recon takes time but pays off massively
+
+</advanced_recon_module>

