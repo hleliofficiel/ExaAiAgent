@@ -44,7 +44,8 @@ def get_package_version() -> str:
     try:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
-        return "dev"
+        # Fallback version if package not installed
+        return "2.0.4"
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -71,16 +72,32 @@ class ChatTextArea(TextArea):  # type: ignore[misc]
 
 
 class SplashScreen(Static):  # type: ignore[misc]
-    PRIMARY_CYAN = "#00d4ff"
-    PRIMARY_PURPLE = "#a855f7"
-    ACCENT_GREEN = "#10b981"
+    # Modern color palette
+    NEON_CYAN = "#00f5ff"
+    NEON_PURPLE = "#bf00ff"
+    NEON_PINK = "#ff00aa"
+    NEON_GREEN = "#00ff88"
+    NEON_ORANGE = "#ff8800"
+    SOFT_WHITE = "#e0e0e0"
+    
+    # Responsive ASCII Logo - works on all screen sizes
     BANNER = r"""
- ______  _  _   ____    ____   _____ 
-|  ____|| || | / __ \  / __ \ |_   _|
-| |__   | || || |  | || |  | |  | |  
-|  __|  |__   || |  | || |  | |  | |  
-| |____    | || |__| || |__| | _| |_ 
-|______|   |_| \____/  \____/ |_____|
+    ███████╗██╗  ██╗ █████╗      █████╗ ██╗
+    ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
+    █████╗   ╚███╔╝ ███████║    ███████║██║
+    ██╔══╝   ██╔██╗ ██╔══██║    ██╔══██║██║
+    ███████╗██╔╝ ██╗██║  ██║    ██║  ██║██║
+    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
+    """
+    
+    # Compact version for smaller screens
+    BANNER_COMPACT = r"""
+   ▓█████ ▒██   ██▒ ▄▄▄           ▄▄▄       ██▓
+   ▓█   ▀ ▒▒ █ █ ▒░▒████▄        ▒████▄    ▓██▒
+   ▒███   ░░  █   ░▒██  ▀█▄      ▒██  ▀█▄  ▒██▒
+   ▒▓█  ▄  ░ █ █ ▒ ░██▄▄▄▄██     ░██▄▄▄▄██ ░██░
+   ░▒████▒▒██▒ ▒██▒ ▓█   ▓██▒     ▓█   ▓██▒░██░
+   ░░ ▒░ ░▒▒ ░ ░▓ ░ ▒▒   ▓▒█░     ▒▒   ▓▒█░░▓  
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -88,7 +105,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._animation_step = 0
         self._animation_timer: Timer | None = None
         self._panel_static: Static | None = None
-        self._version = "dev"
+        self._version = "2.0.4"
 
     def compose(self) -> ComposeResult:
         self._version = get_package_version()
@@ -118,41 +135,77 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._panel_static.update(panel)
 
     def _build_panel(self, start_line: Text) -> Panel:
+        # Build colorful banner
+        banner_text = self._build_colorful_banner()
+        
         content = Group(
-            Align.center(Text(self.BANNER, style=self.PRIMARY_CYAN, justify="center")),
+            Align.center(banner_text),
             Align.center(Text(" ")),
             Align.center(self._build_welcome_text()),
             Align.center(self._build_version_text()),
             Align.center(self._build_tagline_text()),
+            Align.center(self._build_features_text()),
             Align.center(Text(" ")),
             Align.center(start_line.copy()),
         )
 
-        return Panel.fit(content, border_style=self.PRIMARY_PURPLE, padding=(1, 6))
+        return Panel.fit(content, border_style=self.NEON_PURPLE, padding=(1, 4))
+
+    def _build_colorful_banner(self) -> Text:
+        """Build a multi-colored gradient banner."""
+        lines = self.BANNER.strip().split('\n')
+        text = Text()
+        
+        # Color gradient from cyan to purple
+        colors = [self.NEON_CYAN, self.NEON_GREEN, self.NEON_CYAN, self.NEON_PURPLE, self.NEON_PINK, self.NEON_PURPLE]
+        
+        for i, line in enumerate(lines):
+            color = colors[i % len(colors)]
+            text.append(line + "\n", style=Style(color=color, bold=True))
+        
+        return text
 
     def _build_welcome_text(self) -> Text:
-        text = Text("Welcome to ", style=Style(color="white", bold=True))
-        text.append("ExaAi", style=Style(color=self.PRIMARY_CYAN, bold=True))
-        text.append("Agent", style=Style(color=self.PRIMARY_PURPLE, bold=True))
-        text.append("!", style=Style(color="white", bold=True))
+        text = Text("⚡ Welcome to ", style=Style(color=self.SOFT_WHITE, bold=True))
+        text.append("Exa", style=Style(color=self.NEON_CYAN, bold=True))
+        text.append("Ai", style=Style(color=self.NEON_GREEN, bold=True))
+        text.append("Agent", style=Style(color=self.NEON_PURPLE, bold=True))
+        text.append(" ⚡", style=Style(color=self.SOFT_WHITE, bold=True))
         return text
 
     def _build_version_text(self) -> Text:
-        return Text(f"v{self._version}", style=Style(color=self.PRIMARY_CYAN, dim=True))
+        text = Text("v", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append(f"{self._version}", style=Style(color=self.NEON_GREEN, bold=True))
+        return text
 
     def _build_tagline_text(self) -> Text:
-        return Text("Advanced AI-Powered Cybersecurity Agent", style=Style(color="white", dim=True))
+        text = Text("🔒 ", style=Style(color=self.NEON_ORANGE))
+        text.append("Advanced AI-Powered Cybersecurity Agent", style=Style(color=self.SOFT_WHITE, italic=True))
+        text.append(" 🔒", style=Style(color=self.NEON_ORANGE))
+        return text
+
+    def _build_features_text(self) -> Text:
+        text = Text("[ ", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append("Pentesting", style=Style(color=self.NEON_CYAN))
+        text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append("Bug Bounty", style=Style(color=self.NEON_GREEN))
+        text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append("Security", style=Style(color=self.NEON_PURPLE))
+        text.append(" ]", style=Style(color=self.SOFT_WHITE, dim=True))
+        return text
 
     def _build_start_line_text(self, phase: int) -> Text:
         emphasize = phase % 2 == 1
-        base_style = Style(color="white", dim=not emphasize, bold=emphasize)
-        exaai_style = Style(color=self.PRIMARY_CYAN, bold=bool(emphasize))
-        agent_style = Style(color=self.PRIMARY_PURPLE, bold=bool(emphasize))
-
-        text = Text("Starting ", style=base_style)
-        text.append("ExaAi", style=exaai_style)
-        text.append("Agent", style=agent_style)
-        text.append(" Cybersecurity Agent", style=base_style)
+        base_style = Style(color=self.SOFT_WHITE, dim=not emphasize, bold=emphasize)
+        
+        # Animated dots
+        dots = "." * ((phase % 3) + 1)
+        
+        text = Text("🚀 Starting ", style=base_style)
+        text.append("Exa", style=Style(color=self.NEON_CYAN, bold=bool(emphasize)))
+        text.append("Ai", style=Style(color=self.NEON_GREEN, bold=bool(emphasize)))
+        text.append("Agent", style=Style(color=self.NEON_PURPLE, bold=bool(emphasize)))
+        text.append(f" {dots}", style=base_style)
 
         return text
 
