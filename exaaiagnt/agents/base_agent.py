@@ -19,6 +19,7 @@ from exaaiagnt.llm.utils import clean_content
 from exaaiagnt.tools import process_tool_invocations
 
 from .state import AgentState
+from .agent_supervisor import get_supervisor, AgentStatus
 
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,18 @@ class BaseAgent(metaclass=AgentMeta):
                 tracer.update_tool_execution(execution_id=exec_id, status="completed", result={})
 
         self._add_to_agents_graph()
+        
+        # Register with supervisor for monitoring
+        try:
+            supervisor = get_supervisor()
+            supervisor.register_agent(
+                agent_id=self.state.agent_id,
+                agent_name=self.agent_name,
+                agent_instance=self,
+                parent_id=self.state.parent_id
+            )
+        except Exception as e:
+            logger.debug(f"Could not register with supervisor: {e}")
 
     def _add_to_agents_graph(self) -> None:
         from exaaiagnt.tools.agents_graph import agents_graph_actions
@@ -156,8 +169,17 @@ class BaseAgent(metaclass=AgentMeta):
         from exaaiagnt.telemetry.tracer import get_global_tracer
 
         tracer = get_global_tracer()
+        
+        # Get supervisor for heartbeat
+        supervisor = get_supervisor()
 
         while True:
+            # Send heartbeat to supervisor
+            try:
+                supervisor.heartbeat(self.state.agent_id)
+            except Exception:
+                pass
+            
             self._check_agent_messages(self.state)
 
             if self.state.is_waiting_for_input():
