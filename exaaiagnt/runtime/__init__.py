@@ -1,6 +1,14 @@
 import os
 
 from .runtime import AbstractRuntime
+from .tool_manager import (
+    get_tool_manager,
+    ToolManager,
+    ToolExecution,
+    ToolStatus,
+    run_tool,
+    kill_tool,
+)
 
 
 def get_runtime() -> AbstractRuntime:
@@ -16,4 +24,14 @@ def get_runtime() -> AbstractRuntime:
     )
 
 
-__all__ = ["AbstractRuntime", "get_runtime"]
+__all__ = [
+    "AbstractRuntime",
+    "get_runtime",
+    # Tool Manager
+    "get_tool_manager",
+    "ToolManager",
+    "ToolExecution",
+    "ToolStatus",
+    "run_tool",
+    "kill_tool",
+]
