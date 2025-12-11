@@ -22,88 +22,17 @@
 
 ---
 
-## 🔥 What's New in v2.0.4
+## 🔥 What's New
 
-### 🛡️ Agent Supervisor - Self-Healing Architecture
-
-ExaAiAgent now **monitors itself** and automatically recovers from failures:
-
-- **Heartbeat Monitoring** - Detects stuck agents in real-time
-- **Auto-Recovery** - 3 automatic recovery attempts before failure
-- **Priority Levels** - HIGH/MEDIUM/LOW agent prioritization
-- **Token Budget** - Per-agent token limits with enforcement
-
-### 🎭 Scan Modes - Choose Your Intensity
-
-| Mode | Speed | Use Case |
-|------|-------|----------|
-| 🥷 `STEALTH` | 10 req/min | Production-safe, minimal footprint |
-| ⚖️ `STANDARD` | 60 req/min | Bug bounty, balanced testing |
-| 🔥 `AGGRESSIVE` | 300 req/min | Full exploitation, CTFs |
-
-### 🧠 Shared Memory Bus
-
-Agents now **share discoveries** to prevent duplicate work:
-
-- Automatic URL deduplication
-- Shared endpoints, parameters, vulnerabilities
-- Cross-agent coordination
-
-### 🛡️ WAF Detection & Bypass
-
-Automatically detect and bypass Web Application Firewalls:
-
-- **Detection**: Cloudflare, Akamai, Imperva, AWS WAF, ModSecurity
-- **Bypass**: Unicode normalization, JSON smuggling, header padding, encoding tricks
-
-### ⚡ 80% Token Reduction
-
-Smart output processing slashes LLM costs:
-
-- URL prioritization (interesting endpoints first)
-- Automatic summarization of tool outputs
-- Deduplication of redundant data
-
-### 🎨 Fresh Logo & Branding
-
-- New **Block-style** ASCII logo
-- **Gradient colors**: Cyan → Green → Purple → Pink
-- Animated startup with ⚡ 🔒 🚀 icons
-
----
-
-## 🔥 What's New in v2.0.0
-
-### ✨ Smart Auto-Module Loading
-
-ExaAiAgent now **automatically detects** the target type and loads relevant security modules:
-
-- GraphQL endpoints → `graphql_security` auto-loaded
-- WebSocket URLs → `websocket_security` auto-loaded
-- OAuth/Auth endpoints → `oauth_oidc` auto-loaded
-- And more!
-
-### ⚡ Token Optimization
-
-- **Lightweight Mode** for reduced LLM consumption
-- **Task Complexity Scaling** - Simple tasks use 2-3 calls, comprehensive scans use full power
-- **Smart max_tokens** limiting
-
-### 🛡️ 5 New Security Modules
-
-| Module | Focus |
-|--------|-------|
-| `graphql_security` | Introspection, Batching, DoS, Injection |
-| `websocket_security` | CSWSH, Injection, Race Conditions |
-| `oauth_oidc` | Redirect URI, Token Attacks, PKCE |
-| `waf_bypass` | Encoding, Headers, Request Smuggling |
-| `subdomain_takeover` | AWS, Azure, GitHub, Heroku takeover |
-
-### 🎨 New UI & Branding
-
-- Fresh **ExaAi** ASCII logo with Cyan/Purple theme
-- Enhanced TUI experience
-- Improved visual feedback
+| Feature | Description |
+|---------|-------------|
+| 🛡️ **Agent Supervisor** | Self-healing with heartbeat, auto-recovery, priority levels |
+| 🧠 **Shared Memory** | Inter-agent coordination, URL deduplication |
+| 🎭 **Scan Modes** | 🥷 Stealth (10/min) • ⚖️ Standard (60/min) • 🔥 Aggressive (300/min) |
+| 🔓 **WAF Bypass** | Cloudflare, Akamai, Imperva detection & bypass |
+| ⚡ **80% Less Tokens** | Smart output processing, URL prioritization |
+| ✨ **Auto-Module Loading** | GraphQL, WebSocket, OAuth auto-detected |
+| 🎨 **Fresh Logo** | Block-style ASCII with gradient colors |
 
 ---
 
