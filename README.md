@@ -18,21 +18,41 @@
 <br>
 
 > [!TIP]
-> **v2.0.4 Released!** Agent Supervisor with Self-Healing, WAF Detection & Bypass, Scan Modes (Stealth/Aggressive), Shared Memory Bus, and 80% Token Reduction!
+> **v2.0.4 Released!** Agent Supervisor, WAF Bypass, Scan Modes, Shared Memory, 80% Token Reduction!
 
 ---
 
-## 🔥 What's New
+## 🔥 What's New in v2.0.4
 
 | Feature | Description |
 |---------|-------------|
-| 🛡️ **Agent Supervisor** | Self-healing with heartbeat, auto-recovery, priority levels |
+| 🛡️ **Agent Supervisor** | Self-healing, heartbeat, auto-recovery, priority levels |
 | 🧠 **Shared Memory** | Inter-agent coordination, URL deduplication |
-| 🎭 **Scan Modes** | 🥷 Stealth (10/min) • ⚖️ Standard (60/min) • 🔥 Aggressive (300/min) |
+| 🎭 **Scan Modes** | Stealth (10/min) • Standard (60/min) • Aggressive (300/min) |
 | 🔓 **WAF Bypass** | Cloudflare, Akamai, Imperva detection & bypass |
-| ⚡ **80% Less Tokens** | Smart output processing, URL prioritization |
-| ✨ **Auto-Module Loading** | GraphQL, WebSocket, OAuth auto-detected |
-| 🎨 **Fresh Logo** | Block-style ASCII with gradient colors |
+| ⚡ **80% Less Tokens** | Smart output processing, summarization |
+
+---
+
+## 🔥 What's New in v2.0.0
+
+### ✨ Smart Auto-Module Loading
+
+ExaAiAgent now **automatically detects** the target type and loads relevant security modules:
+
+- GraphQL endpoints → `graphql_security` auto-loaded
+- WebSocket URLs → `websocket_security` auto-loaded
+- OAuth/Auth endpoints → `oauth_oidc` auto-loaded
+
+### 🛡️ 5 New Security Modules
+
+| Module | Focus |
+|--------|-------|
+| `graphql_security` | Introspection, Batching, DoS, Injection |
+| `websocket_security` | CSWSH, Injection, Race Conditions |
+| `oauth_oidc` | Redirect URI, Token Attacks, PKCE |
+| `waf_bypass` | Encoding, Headers, Request Smuggling |
+| `subdomain_takeover` | AWS, Azure, GitHub, Heroku takeover |
 
 ---
 
@@ -274,14 +294,11 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ### v2.0.4 (Latest)
 
-- 🛡️ **Agent Supervisor** - Self-healing with heartbeat, timeout detection, auto-recovery
-- 🧠 **Shared Memory Bus** - Inter-agent communication, URL deduplication
-- 🎭 **Scan Modes** - Stealth (10 req/min), Standard (60), Aggressive (300)
-- 🔓 **WAF Bypass** - Cloudflare, Akamai, Imperva detection & bypass techniques
-- ⚡ **80% Token Reduction** - Smart output processing, URL prioritization
-- 🎯 **Priority Levels** - HIGH/MEDIUM/LOW agent scheduling
-- 💰 **Token Budget** - Per-agent limits with enforcement
-- 🎨 **Fresh Logo** - Block-style ASCII with gradient colors
+- 🛡️ **Agent Supervisor** - Self-healing with heartbeat & auto-recovery
+- 🧠 **Shared Memory** - Inter-agent coordination, URL deduplication
+- 🎭 **Scan Modes** - Stealth / Standard / Aggressive
+- 🔓 **WAF Bypass** - Cloudflare, Akamai, Imperva detection & bypass
+- ⚡ **80% Token Reduction** - Smart output processing
 
 ### v2.0.0
 
@@ -289,7 +306,6 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 - ⚡ **Token Optimization** - Lightweight mode & task scaling
 - 🛡️ **5 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain
 - 🎨 **New UI/Branding** - Fresh ExaAi logo with Cyan/Purple theme
-- 📊 **Improved Performance** - Reduced unnecessary LLM calls
 
 ### v1.0.0
 
@@ -303,80 +319,17 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🤝 Contributing
 
-We love contributions! Here's how you can help:
-
-<table>
-<tr>
-<td>🐛 <b>Report Bugs</b></td>
-<td>Found a bug? <a href="https://github.com/exaai/exaai-agent/issues/new?template=bug_report.md">Open an issue</a></td>
-</tr>
-<tr>
-<td>💡 <b>Feature Requests</b></td>
-<td>Have an idea? <a href="https://github.com/exaai/exaai-agent/issues/new?template=feature_request.md">Suggest a feature</a></td>
-</tr>
-<tr>
-<td>🔧 <b>Pull Requests</b></td>
-<td>Want to contribute code? Check our <a href="CONTRIBUTING.md">Contributing Guide</a></td>
-</tr>
-<tr>
-<td>📖 <b>Documentation</b></td>
-<td>Help improve our docs and examples</td>
-</tr>
-</table>
-
----
+We welcome contributions! Check out our [Contributing Guide](CONTRIBUTING.md).
 
 ## 🌟 Support the Project
 
-<p align="center">
-  <b>Love ExaAiAgent?</b> Show your support!
-</p>
-
-<p align="center">
-  <a href="https://github.com/exaai/exaai-agent">⭐ Star on GitHub</a> •
-  <a href="https://twitter.com/exaaiagent">🐦 Follow on Twitter</a> •
-  <a href="https://discord.gg/exaai">💬 Join Discord</a>
-</p>
-
----
-
-## 📜 License
-
-This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
-
----
+**Love ExaAiAgent?** Give us a ⭐ on GitHub!
 
 ## 🙏 Acknowledgements
 
-ExaAiAgent is built on the shoulders of giants:
-
-| Project | Usage |
-|---------|-------|
-| [LiteLLM](https://github.com/BerriAI/litellm) | Multi-LLM Support |
-| [Playwright](https://github.com/microsoft/playwright) | Browser Automation |
-| [ProjectDiscovery](https://github.com/projectdiscovery) | Security Tools |
-| [Textual](https://github.com/Textualize/textual) | TUI Framework |
-| [Rich](https://github.com/Textualize/rich) | Terminal Output |
-
----
-
-## ⚠️ Disclaimer
+ExaAiAgent builds on incredible open-source projects like [LiteLLM](https://github.com/BerriAI/litellm), [Caido](https://github.com/caido/caido), [ProjectDiscovery](https://github.com/projectdiscovery), [Playwright](https://github.com/microsoft/playwright), and [Textual](https://github.com/Textualize/textual).
 
 > [!WARNING]
-> **Legal Notice**: Only use ExaAiAgent on systems you own or have explicit written permission to test. Unauthorized access to computer systems is illegal. You are solely responsible for your actions.
-
----
-
-<p align="center">
-  <b>Built with ❤️ by the ExaAi Team</b>
-  <br>
-  <sub>Making cybersecurity accessible to everyone</sub>
-</p>
-
-<p align="center">
-  <a href="https://exaai.io">🌐 Website</a> •
-  <a href="https://docs.exaai.io">📚 Docs</a> •
-  <a href="https://github.com/exaai/exaai-agent">💻 GitHub</a>
-</p>
+> Only test apps you own or have permission to test. You are responsible for using ExaAiAgent ethically and legally.
 
 </div>
