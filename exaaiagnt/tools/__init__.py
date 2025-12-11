@@ -18,6 +18,14 @@ from .registry import (
     register_tool,
     tools,
 )
+from .waf_bypass import (
+    get_waf_bypass,
+    WAFBypass,
+    WAFDetector,
+    WAFType,
+    detect_waf,
+    generate_bypasses,
+)
 
 
 SANDBOX_MODE = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
@@ -61,4 +69,11 @@ __all__ = [
     "remove_screenshot_from_result",
     "tools",
     "validate_tool_availability",
+    # WAF Bypass
+    "get_waf_bypass",
+    "WAFBypass",
+    "WAFDetector",
+    "WAFType",
+    "detect_waf",
+    "generate_bypasses",
 ]

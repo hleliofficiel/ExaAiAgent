@@ -183,11 +183,17 @@ def _format_tool_result(tool_name: str, result: Any) -> tuple[str, list[dict[str
     if result_str is None:
         final_result_str = f"Tool {tool_name} executed successfully"
     else:
-        final_result_str = str(result_str)
-        if len(final_result_str) > 10000:
-            start_part = final_result_str[:4000]
-            end_part = final_result_str[-4000:]
-            final_result_str = start_part + "\n\n... [middle content truncated] ...\n\n" + end_part
+        # Use output processor to reduce token consumption
+        try:
+            from exaaiagnt.llm.output_processor import process_tool_output
+            final_result_str = process_tool_output(tool_name, result_str)
+        except ImportError:
+            # Fallback to basic truncation
+            final_result_str = str(result_str)
+            if len(final_result_str) > 10000:
+                start_part = final_result_str[:4000]
+                end_part = final_result_str[-4000:]
+                final_result_str = start_part + "\n\n... [middle content truncated] ...\n\n" + end_part
 
     observation_xml = (
         f"<tool_result>\n<tool_name>{tool_name}</tool_name>\n"
