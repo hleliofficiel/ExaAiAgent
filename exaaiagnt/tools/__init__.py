@@ -26,6 +26,37 @@ from .waf_bypass import (
     detect_waf,
     generate_bypasses,
 )
+from .smart_fuzzer import (
+    get_smart_fuzzer,
+    SmartFuzzer,
+    ParamType,
+    VulnCategory,
+    FuzzPayload,
+    fuzz_parameter,
+)
+from .response_analyzer import (
+    get_response_analyzer,
+    ResponseAnalyzer,
+    DetectionType,
+    Detection,
+    analyze_response,
+)
+from .vuln_validator import (
+    get_vuln_validator,
+    VulnValidator,
+    VulnStatus,
+    Severity,
+    VulnerabilityReport,
+    create_vuln_report,
+)
+from .tool_prompts import (
+    get_fuzzer_prompt,
+    get_analyzer_prompt,
+    get_validator_prompt,
+    get_waf_bypass_prompt,
+    get_security_testing_prompt,
+    get_all_tool_prompts,
+)
 
 
 SANDBOX_MODE = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
@@ -76,4 +107,31 @@ __all__ = [
     "WAFType",
     "detect_waf",
     "generate_bypasses",
+    # Smart Fuzzer
+    "get_smart_fuzzer",
+    "SmartFuzzer",
+    "ParamType",
+    "VulnCategory",
+    "FuzzPayload",
+    "fuzz_parameter",
+    # Response Analyzer
+    "get_response_analyzer",
+    "ResponseAnalyzer",
+    "DetectionType",
+    "Detection",
+    "analyze_response",
+    # Vulnerability Validator
+    "get_vuln_validator",
+    "VulnValidator",
+    "VulnStatus",
+    "Severity",
+    "VulnerabilityReport",
+    "create_vuln_report",
+    # Tool Prompts
+    "get_fuzzer_prompt",
+    "get_analyzer_prompt",
+    "get_validator_prompt",
+    "get_waf_bypass_prompt",
+    "get_security_testing_prompt",
+    "get_all_tool_prompts",
 ]
