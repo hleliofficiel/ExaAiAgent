@@ -80,7 +80,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
     
-    # Responsive ASCII Logo - works on all screen sizes
+    # Enhanced ASCII Logo - ExaAi v2.0.4
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
@@ -97,7 +97,6 @@ class SplashScreen(Static):  # type: ignore[misc]
    ▒███   ░░  █   ░▒██  ▀█▄      ▒██  ▀█▄  ▒██▒
    ▒▓█  ▄  ░ █ █ ▒ ░██▄▄▄▄██     ░██▄▄▄▄██ ░██░
    ░▒████▒▒██▒ ▒██▒ ▓█   ▓██▒     ▓█   ▓██▒░██░
-   ░░ ▒░ ░▒▒ ░ ░▓ ░ ▒▒   ▓▒█░     ▒▒   ▓▒█░░▓  
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -145,6 +144,7 @@ class SplashScreen(Static):  # type: ignore[misc]
             Align.center(self._build_version_text()),
             Align.center(self._build_tagline_text()),
             Align.center(self._build_features_text()),
+            Align.center(self._build_new_features_text()),
             Align.center(Text(" ")),
             Align.center(start_line.copy()),
         )
@@ -176,7 +176,21 @@ class SplashScreen(Static):  # type: ignore[misc]
     def _build_version_text(self) -> Text:
         text = Text("v", style=Style(color=self.SOFT_WHITE, dim=True))
         text.append(f"{self._version}", style=Style(color=self.NEON_GREEN, bold=True))
+        text.append(" ", style=Style(color=self.SOFT_WHITE))
+        text.append("• Adaptive LLM • Smart Fuzzing • WAF Bypass", style=Style(color=self.SOFT_WHITE, dim=True))
         return text
+
+    def _build_new_features_text(self) -> Text:
+        """Build new features highlight for v2.0.4."""
+        text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
+        text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
+        text.append("React2Shell", style=Style(color=self.NEON_PINK))
+        text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append("Cloud Security", style=Style(color=self.NEON_CYAN))
+        text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append("Auto-Discovery", style=Style(color=self.NEON_GREEN))
+        return text
+
 
     def _build_tagline_text(self) -> Text:
         text = Text("🔒 ", style=Style(color=self.NEON_ORANGE))
