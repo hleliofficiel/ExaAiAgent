@@ -1,0 +1,235 @@
+<aws_cloud_security_guide>
+<title>AWS & CLOUD INFRASTRUCTURE SECURITY</title>
+
+<critical>Cloud misconfigurations are the #1 cause of data breaches. Focus on IAM, S3, EC2 metadata, Lambda, and inter-service trust relationships. These often provide paths to full infrastructure compromise.</critical>
+
+<scope>
+- AWS (EC2, S3, Lambda, IAM, RDS, etc.)
+- Azure (VMs, Blob Storage, Functions, AD)
+- GCP (Compute, Cloud Storage, Cloud Functions)
+- Multi-cloud environments
+- Kubernetes/EKS/AKS/GKE
+</scope>
+
+<!-- AWS SPECIFIC -->
+<aws>
+<title>AWS Security Testing</title>
+
+<metadata_service>
+EC2 Instance Metadata (IMDS):
+- IMDSv1: http://169.254.169.254/latest/meta-data/
+- IMDSv2: Requires token via PUT request
+- Critical paths:
+  - /latest/meta-data/iam/security-credentials/
+  - /latest/meta-data/iam/security-credentials/[ROLE_NAME]
+  - /latest/user-data
+  - /latest/dynamic/instance-identity/document
+
+SSRF to Metadata Exploitation:
+1. Identify SSRF vulnerability
+2. Request: http://169.254.169.254/latest/meta-data/iam/security-credentials/
+3. Get role name from response
+4. Request: http://169.254.169.254/latest/meta-data/iam/security-credentials/[ROLE_NAME]
+5. Extract AccessKeyId, SecretAccessKey, Token
+6. Use credentials for AWS API access
+</metadata_service>
+
+<s3_attacks>
+S3 Bucket Attacks:
+- Public bucket enumeration
+- Bucket policy misconfiguration
+- ACL misconfigurations
+- Pre-signed URL abuse
+- Object versioning data recovery
+
+Testing Commands:
+- aws s3 ls s3://bucket-name --no-sign-request
+- aws s3 cp s3://bucket/file . --no-sign-request
+- Check bucket policies via GET ?policy
+- Test WRITE access: aws s3 cp test.txt s3://bucket/
+</s3_attacks>
+
+<iam_attacks>
+IAM Privilege Escalation:
+- CreatePolicyVersion escalation
+- SetDefaultPolicyVersion abuse
+- PassRole with service abuse
+- sts:AssumeRole chaining
+- Lambda execution role abuse
+- EC2 instance profile abuse
+
+Enumeration:
+- List attached policies
+- Check inline policies
+- Enumerate role trust policies
+- Map cross-account access
+</iam_attacks>
+
+<lambda_attacks>
+Lambda Security:
+- Environment variable secrets
+- IAM role permissions
+- Event injection
+- Code injection via dependencies
+- Layer poisoning
+- Alias/version manipulation
+
+Testing:
+- Extract env vars if code access
+- Test event source injection
+- Check for overprivileged roles
+- Review dependencies for vulns
+</lambda_attacks>
+</aws>
+
+<!-- AZURE SPECIFIC -->
+<azure>
+<title>Azure Security Testing</title>
+
+<metadata_service>
+Azure Instance Metadata Service:
+- Endpoint: http://169.254.169.254/metadata/
+- Requires: Metadata: true header
+- Identity endpoint: /metadata/identity/oauth2/token
+
+Get Access Token:
+GET http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/
+Header: Metadata: true
+</metadata_service>
+
+<storage_attacks>
+Azure Blob Storage:
+- Anonymous access containers
+- Shared Access Signature (SAS) token abuse
+- Storage account key exposure
+- Blob snapshot access
+
+Testing:
+- Check container ACL for public access
+- Test expired SAS tokens
+- Enumerate storage accounts by name
+</storage_attacks>
+
+<ad_attacks>
+Azure AD Attacks:
+- Application secret exposure
+- Service principal abuse
+- Managed identity exploitation
+- Conditional access bypass
+- PRT (Primary Refresh Token) theft
+</ad_attacks>
+</azure>
+
+<!-- GCP SPECIFIC -->
+<gcp>
+<title>GCP Security Testing</title>
+
+<metadata_service>
+GCP Metadata Service:
+- Endpoint: http://metadata.google.internal/
+- Requires: Metadata-Flavor: Google header
+
+Key Paths:
+- /computeMetadata/v1/project/project-id
+- /computeMetadata/v1/instance/service-accounts/
+- /computeMetadata/v1/instance/service-accounts/default/token
+- /computeMetadata/v1/instance/attributes/
+
+Get Service Account Token:
+GET http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+Header: Metadata-Flavor: Google
+</metadata_service>
+
+<storage_attacks>
+Cloud Storage Attacks:
+- Bucket ACL misconfiguration
+- Signed URL abuse
+- Object versioning access
+- Bucket policy overwrite
+</storage_attacks>
+</gcp>
+
+<!-- KUBERNETES SPECIFIC -->
+<kubernetes>
+<title>Kubernetes Security</title>
+
+Attack Surfaces:
+- API server exposure
+- RBAC misconfigurations
+- Service account token abuse
+- Secrets in environment variables
+- Privileged containers
+- Host path mounts
+- Network policy gaps
+
+Testing from Pod:
+- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+- Check RBAC: kubectl auth can-i --list
+- Enumerate secrets: kubectl get secrets
+- Check for privileged access
+- Test host network access
+
+Lateral Movement:
+- Access other pods via service accounts
+- Escape to node via privileged container
+- Access cloud metadata from pod
+- Pivot to control plane
+</kubernetes>
+
+<methodology>
+1. RECONNAISSANCE
+   - Identify cloud provider (AWS/Azure/GCP)
+   - Enumerate public resources (S3, blobs)
+   - Fingerprint services and regions
+   - Find exposed credentials in code
+
+2. INITIAL ACCESS
+   - Exploit SSRF to metadata service
+   - Use exposed credentials
+   - Abuse public storage
+   - Exploit misconfigured services
+
+3. CREDENTIAL ACCESS
+   - Extract IAM credentials
+   - Steal service account tokens
+   - Dump secrets from services
+
+4. PRIVILEGE ESCALATION
+   - IAM policy abuse
+   - Role chaining
+   - Service exploitation
+
+5. LATERAL MOVEMENT
+   - Cross-account access
+   - Service-to-service trust
+   - Kubernetes pod hopping
+
+6. DATA EXFILTRATION
+   - S3/Blob data access
+   - Database extraction
+   - Secret retrieval
+</methodology>
+
+<validation>
+1. Show credential extraction with exact endpoints
+2. Demonstrate API access with stolen credentials
+3. Document privilege escalation path
+4. Provide remediation per service
+5. Test with minimal impact
+</validation>
+
+<pro_tips>
+1. Always check for SSRF to metadata - it's often the entry point
+2. IMDSv2 isn't foolproof - check for header injection
+3. Temporary credentials expire - act fast
+4. S3 bucket names are globally unique - enumerate aggressively
+5. Check for cross-account roles and trust policies
+6. Lambda environment variables often contain secrets
+7. Kubernetes RBAC is commonly over-permissioned
+8. Storage public access settings change frequently
+9. Look for hardcoded AWS keys in GitHub/public repos
+10. Cloud CLI tools often cache credentials insecurely
+</pro_tips>
+
+<remember>Cloud security failures cascade. One misconfigured IAM role or S3 bucket can lead to complete infrastructure compromise. Enumerate all trust relationships and test each privilege boundary.</remember>
+</aws_cloud_security_guide>
