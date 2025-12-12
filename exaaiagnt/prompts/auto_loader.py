@@ -172,12 +172,54 @@ MODULE_PATTERNS = {
         "keywords": ["recon", "reconnaissance", "enumerate", "discover", "fingerprint", "osint"],
         "domain_only": True,
     },
+    
+    # React2Shell - RSC Deserialization RCE (CVE-2025-55182)
+    "react2shell": {
+        "url_patterns": [
+            r"/_next/",
+            r"/_next/static",
+            r"/_actions",
+            r"/api/",
+        ],
+        "keywords": ["react", "next.js", "nextjs", "vercel", "rsc", "server components", "app router"],
+        "header_patterns": ["x-nextjs", "x-vercel", "x-powered-by.*next"],
+    },
+    
+    # Modern JS Frameworks Security
+    "modern_js_frameworks": {
+        "url_patterns": [
+            r"/_next/",
+            r"/_nuxt/",
+            r"/_svelte",
+            r"/__remix",
+            r"/_astro/",
+        ],
+        "keywords": ["next.js", "nuxt", "sveltekit", "remix", "astro", "react", "vue", "svelte"],
+    },
+    
+    # AWS/Cloud Security
+    "aws_cloud_security": {
+        "url_patterns": [
+            r"\.amazonaws\.com",
+            r"\.s3\.",
+            r"\.azure\.",
+            r"\.blob\.core",
+            r"\.cloudfront\.",
+            r"\.appspot\.com",
+            r"\.storage\.googleapis",
+        ],
+        "keywords": ["aws", "s3", "ec2", "lambda", "azure", "gcp", "cloud", "bucket", "metadata"],
+    },
 }
 
 
 def detect_modules_from_target(target: str, instruction: str = "") -> List[str]:
     """
     Automatically detect which prompt modules should be loaded based on target URL and instruction.
+    
+    This function:
+    1. Checks defined patterns in MODULE_PATTERNS
+    2. Auto-discovers ALL .jinja files and matches by filename keywords
     
     Args:
         target: The target URL or domain
@@ -197,6 +239,7 @@ def detect_modules_from_target(target: str, instruction: str = "") -> List[str]:
     parsed = urlparse(target if "://" in target else f"https://{target}")
     url_path = parsed.path.lower()
     
+    # 1. Check defined patterns (MODULE_PATTERNS)
     for module_name, patterns in MODULE_PATTERNS.items():
         should_load = False
         
@@ -220,11 +263,72 @@ def detect_modules_from_target(target: str, instruction: str = "") -> List[str]:
         if should_load:
             detected_modules.add(module_name)
     
+    # 2. AUTO-DISCOVER: Scan all .jinja files and match by filename
+    detected_modules.update(_auto_discover_modules(combined_text))
+    
     # Always include base modules for comprehensive scans
     if any(kw in instruction_lower for kw in ["full", "comprehensive", "thorough", "complete"]):
         detected_modules.update(["sql_injection", "xss", "authentication_jwt"])
     
     return list(detected_modules)
+
+
+def _auto_discover_modules(search_text: str) -> Set[str]:
+    """
+    Auto-discover modules by scanning all .jinja files and matching by filename.
+    
+    Any new .jinja file will be automatically discovered and used if its name
+    or keywords from name appear in the target/instruction.
+    
+    Example: 'react2shell.jinja' will be loaded if 'react' or 'shell' appears in target.
+    """
+    from pathlib import Path
+    
+    discovered = set()
+    prompts_dir = Path(__file__).parent
+    
+    # Get all available modules
+    for category_dir in prompts_dir.iterdir():
+        if not category_dir.is_dir() or category_dir.name.startswith("__"):
+            continue
+        
+        for jinja_file in category_dir.glob("*.jinja"):
+            module_name = jinja_file.stem  # e.g., "react2shell"
+            
+            # Skip if already in MODULE_PATTERNS (already handled)
+            if module_name in MODULE_PATTERNS:
+                continue
+            
+            # Generate keywords from filename
+            # "react2shell" -> ["react", "shell", "react2shell"]
+            # "sql_injection" -> ["sql", "injection"]
+            # "modern_js_frameworks" -> ["modern", "js", "frameworks"]
+            keywords = _extract_keywords_from_name(module_name)
+            
+            # Check if any keyword matches
+            for keyword in keywords:
+                if len(keyword) >= 3 and keyword in search_text:  # Min 3 chars to avoid false positives
+                    discovered.add(module_name)
+                    break
+    
+    return discovered
+
+
+def _extract_keywords_from_name(name: str) -> List[str]:
+    """Extract searchable keywords from a module name."""
+    keywords = [name]  # Full name
+    
+    # Split by underscore
+    parts = name.split("_")
+    keywords.extend(parts)
+    
+    # Split by numbers (react2shell -> react, shell)
+    import re
+    alpha_parts = re.split(r'\d+', name)
+    keywords.extend([p for p in alpha_parts if p])
+    
+    # Lowercase all
+    return [k.lower() for k in keywords if len(k) >= 3]
 
 
 def get_recommended_modules(target: str, instruction: str = "") -> dict:
