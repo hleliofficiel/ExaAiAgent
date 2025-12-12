@@ -14,6 +14,13 @@ from .output_processor import (
     OutputConfig,
     process_tool_output,
 )
+from .llm_traffic_controller import (
+    get_traffic_controller,
+    AdaptiveLLMController,
+    RequestPriority,
+    reset_traffic_controller,
+    with_traffic_control,
+)
 
 
 __all__ = [
@@ -29,6 +36,12 @@ __all__ = [
     "OutputProcessor",
     "OutputConfig",
     "process_tool_output",
+    # Traffic Controller
+    "get_traffic_controller",
+    "AdaptiveLLMController",
+    "RequestPriority",
+    "reset_traffic_controller",
+    "with_traffic_control",
 ]
 
 litellm._logging._disable_debugging()

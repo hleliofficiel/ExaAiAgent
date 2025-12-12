@@ -17,7 +17,7 @@ from litellm.utils import supports_prompt_caching
 
 from exaaiagnt.llm.config import LLMConfig
 from exaaiagnt.llm.memory_compressor import MemoryCompressor
-from exaaiagnt.llm.request_queue import get_global_queue
+from exaaiagnt.llm.llm_traffic_controller import get_traffic_controller, RequestPriority
 from exaaiagnt.llm.utils import _truncate_to_first_function, parse_tool_invocations
 from exaaiagnt.prompts import load_prompt_modules
 from exaaiagnt.tools import get_tools_prompt
@@ -423,8 +423,19 @@ class LLM:
             else:
                 completion_args["reasoning_effort"] = "high"
 
-        queue = get_global_queue()
-        response = await queue.make_request(completion_args)
+        # Use Adaptive Traffic Controller for intelligent rate limiting
+        controller = get_traffic_controller()
+        agent_id = self.agent_id or "unknown_agent"
+        
+        async def do_request():
+            from litellm import completion
+            return completion(**completion_args, stream=False)
+        
+        response = await controller.queue_request(
+            do_request,
+            agent_id=agent_id,
+            priority=RequestPriority.NORMAL
+        )
 
         self._total_stats.requests += 1
         self._last_request_stats = RequestStats(requests=1)
