@@ -1,0 +1,194 @@
+<modern_frameworks_guide>
+<title>MODERN JAVASCRIPT FRAMEWORK SECURITY</title>
+
+<critical>Modern JS frameworks introduce new attack surfaces through server-side rendering, hydration, server components, and edge functions. Each framework has unique security boundaries that differ from traditional web applications.</critical>
+
+<scope>
+- Next.js (React SSR/RSC)
+- Nuxt.js (Vue SSR)
+- SvelteKit
+- Remix
+- Astro
+- Fresh (Deno)
+- Qwik
+- SolidStart
+</scope>
+
+<!-- NEXT.JS SECURITY -->
+<nextjs>
+<title>Next.js Security Testing</title>
+
+Attack Surfaces:
+- Server Components (_actions, RSC payloads)
+- API Routes (/api/*, edge functions)
+- Middleware (authentication bypass)
+- Static file paths (/_next/static, source maps)
+- Image optimization (/next/image)
+- Dynamic routes ([param] paths)
+
+Known Vulnerability Patterns:
+1. React2Shell (CVE-2025-55182) - RSC deserialization RCE
+2. Server Actions injection
+3. Middleware authentication bypass
+4. SSRF via image optimization
+5. Path traversal in static assets
+6. Environment variable leakage
+7. Source code exposure via source maps
+
+Testing Methodology:
+- Identify App Router vs Pages Router
+- Enumerate all API routes
+- Test server actions for injection
+- Check middleware logic for bypasses
+- Review getServerSideProps/getStaticProps for SSRF
+- Test image optimization URL parameter
+- Look for exposed .next/server files
+</nextjs>
+
+<!-- NUXT.JS SECURITY -->
+<nuxt>
+<title>Nuxt.js Security Testing</title>
+
+Attack Surfaces:
+- Server routes (/api/*, /server/)
+- Nitro engine handlers
+- Middleware execution order
+- Static file generation
+- Plugin execution order
+- Payload extraction
+
+Vulnerability Patterns:
+1. Server route injection
+2. Nitro preset-specific issues
+3. useAsyncData/useFetch SSRF
+4. Middleware bypass via route ordering
+5. Auto-import security issues
+6. Payload prototype pollution
+
+Testing Focus:
+- Enumerate server routes
+- Test useAsyncData with controlled URLs
+- Check for exposed __nuxt.config
+- Review middleware chain for gaps
+- Test content-type switching attacks
+</nuxt>
+
+<!-- SVELTEKIT SECURITY -->
+<sveltekit>
+<title>SvelteKit Security Testing</title>
+
+Attack Surfaces:
+- Form actions (+page.server.js/ts)
+- Load functions (server-side)
+- Hooks (handle, handleError)
+- Endpoints (+server.js/ts)
+- Prerender paths
+
+Vulnerability Patterns:
+1. Form action injection
+2. Load function SSRF
+3. Hook authentication bypass
+4. Endpoint parameter injection
+5. Adapter-specific issues (node, vercel, etc.)
+
+Testing Focus:
+- Map all +page.server and +server files
+- Test form action parameters
+- Check load function URL handling
+- Review hooks for auth logic flaws
+- Test adapter-specific behaviors
+</sveltekit>
+
+<!-- REMIX SECURITY -->
+<remix>
+<title>Remix Security Testing</title>
+
+Attack Surfaces:
+- Loader functions
+- Action functions
+- Route parameters
+- Form handling
+- Session management
+- Error boundaries
+
+Vulnerability Patterns:
+1. Loader SSRF
+2. Action function injection
+3. Session cookie manipulation
+4. Route parameter injection
+5. Cross-route data leakage
+
+Testing Focus:
+- Enumerate all route modules
+- Test loader URL parameters for SSRF
+- Check action form handling
+- Review session implementation
+- Test error boundary information exposure
+</remix>
+
+<common_patterns>
+Universal Vulnerabilities Across Frameworks:
+1. HYDRATION ATTACKS
+   - Inject scripts that execute client-side post-hydration
+   - Prototype pollution via serialized state
+   - XSS via initial server state
+
+2. SSR INJECTION
+   - Template injection in server-rendered content
+   - SSTI through framework-specific syntax
+   - HTML injection before hydration
+
+3. ROUTE MANIPULATION
+   - Parameter pollution across route boundaries
+   - Dynamic route injection
+   - Catch-all route abuse
+
+4. API ROUTE BYPASS
+   - Direct API access without middleware
+   - CORS misconfiguration
+   - Authentication middleware ordering issues
+
+5. BUILD/DEPLOY EXPOSURE
+   - Source maps in production
+   - Environment variables in client bundle
+   - Debug endpoints enabled
+</common_patterns>
+
+<detection>
+Framework Fingerprinting:
+- Next.js: /_next/static, x-nextjs-* headers
+- Nuxt.js: /_nuxt/, __NUXT__ variable
+- SvelteKit: _svelte_kit/, .svelte-kit paths
+- Remix: __remix-assets, _remix headers
+- Astro: /_astro/, astro islands
+
+Version Detection:
+- Check /_next/static/chunks/webpack-*.js for Next.js version
+- Review meta generator tags
+- Analyze bundle structure and naming
+- Check error page formatting
+</detection>
+
+<validation>
+1. Confirm framework and exact version
+2. Map all server-side entry points
+3. Test each pattern systematically
+4. Provide framework-specific PoCs
+5. Document remediation per framework
+</validation>
+
+<pro_tips>
+1. Each framework has different server/client boundaries - understand them
+2. Edge functions have different capabilities than Node.js functions
+3. Development mode often exposes more than production
+4. Check build configuration for security misconfigurations
+5. Framework version upgrades often introduce new attack surfaces
+6. ISR/SSG pages may cache sensitive data inappropriately
+7. Authentication should happen in middleware, not individual routes
+8. Always test both direct API access and through UI
+9. Check for framework-specific debugging endpoints
+10. Serialization boundaries are common injection points
+</pro_tips>
+
+<remember>Modern frameworks abstract complexity but don't eliminate security concerns. Each layer (SSR, hydration, API, edge) introduces potential vulnerabilities. Test the boundaries between server and client thoroughly.</remember>
+</modern_frameworks_guide>
