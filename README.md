@@ -11,48 +11,58 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.4-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-2.1.0-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **v2.0.4 Released!** Agent Supervisor, WAF Bypass, Scan Modes, Shared Memory, 80% Token Reduction!
+> **🚀 v2.1.0 Released!** React2Shell Detection (CVE-2025-55182), Cloud Security Testing, Smart Fuzzing, and CLI improvements with `exaai` command!
 
 ---
 
-## 🔥 What's New in v2.0.4
+## 🔥 What's New in v2.1.0
 
-| Feature | Description |
-|---------|-------------|
-| 🛡️ **Agent Supervisor** | Self-healing, heartbeat, auto-recovery, priority levels |
-| 🧠 **Shared Memory** | Inter-agent coordination, URL deduplication |
-| 🎭 **Scan Modes** | Stealth (10/min) • Standard (60/min) • Aggressive (300/min) |
-| 🔓 **WAF Bypass** | Cloudflare, Akamai, Imperva detection & bypass |
-| ⚡ **80% Less Tokens** | Smart output processing, summarization |
+### 🚨 React2Shell Detection (CVE-2025-55182)
 
----
+New critical vulnerability scanner for **React Server Components**:
 
-## 🔥 What's New in v2.0.0
+- **CVSS 10.0** - Unauthenticated RCE via RSC Flight protocol
+- Auto-detects Next.js 15.x/16.x, React 19.x applications
+- Complete exploitation methodology and PoC generation
+- WAF bypass techniques included
 
-### ✨ Smart Auto-Module Loading
+### ☁️ AWS & Cloud Security
 
-ExaAiAgent now **automatically detects** the target type and loads relevant security modules:
+Comprehensive cloud infrastructure testing:
 
-- GraphQL endpoints → `graphql_security` auto-loaded
-- WebSocket URLs → `websocket_security` auto-loaded
-- OAuth/Auth endpoints → `oauth_oidc` auto-loaded
+- **AWS**: EC2 Metadata SSRF, S3 buckets, IAM escalation, Lambda
+- **Azure**: Blob storage, Managed Identity, Azure AD
+- **GCP**: Cloud Storage, Service Account abuse
+- **Kubernetes**: RBAC, Secrets, Pod escape
 
-### 🛡️ 5 New Security Modules
+### � Smart Security Tools
 
-| Module | Focus |
-|--------|-------|
-| `graphql_security` | Introspection, Batching, DoS, Injection |
-| `websocket_security` | CSWSH, Injection, Race Conditions |
-| `oauth_oidc` | Redirect URI, Token Attacks, PKCE |
-| `waf_bypass` | Encoding, Headers, Request Smuggling |
-| `subdomain_takeover` | AWS, Azure, GitHub, Heroku takeover |
+| Tool | Capability |
+|------|------------|
+| **Smart Fuzzer** | Context-aware payloads, parameter type detection |
+| **Response Analyzer** | SQL errors, stack traces, sensitive data detection |
+| **Vuln Validator** | PoC generation, CVSS scoring, remediation advice |
+| **WAF Bypass** | Multi-layer bypass techniques |
+
+### ⚡ CLI Improvements
+
+```bash
+# New command (shorter!)
+exaai --target https://example.com
+
+# Version check
+exaai --version
+
+# TUI mode
+exaai tui
+```
 
 ---
 
@@ -116,7 +126,7 @@ export EXAAI_LLM="ollama/llama3"
 export LLM_API_BASE="http://localhost:11434"
 
 # Run your first security assessment (auto-detects modules!)
-exaaiagnt --target https://your-app.com
+exaai --target https://your-app.com
 ```
 
 > [!NOTE]
@@ -170,46 +180,46 @@ Advanced multi-agent orchestration for comprehensive security testing:
 
 ```bash
 # Scan a local codebase
-exaaiagnt --target ./app-directory
+exaai --target ./app-directory
 
 # Security review of a GitHub repository
-exaaiagnt --target https://github.com/org/repo
+exaai --target https://github.com/org/repo
 
 # Black-box web application assessment
-exaaiagnt --target https://your-app.com
+exaai --target https://your-app.com
 ```
 
 ### Smart Auto-Loading (New in v2.0!)
 
 ```bash
 # GraphQL endpoint - auto-loads graphql_security
-exaaiagnt --target https://api.example.com/graphql
+exaai --target https://api.example.com/graphql
 
 # WebSocket - auto-loads websocket_security
-exaaiagnt --target wss://chat.example.com/socket
+exaai --target wss://chat.example.com/socket
 
 # OAuth endpoint - auto-loads oauth_oidc
-exaaiagnt --target https://auth.example.com/oauth/authorize
+exaai --target https://auth.example.com/oauth/authorize
 
 # Subdomain recon - auto-loads subdomain_takeover
-exaaiagnt --target example.com --instruction "enumerate subdomains"
+exaai --target example.com --instruction "enumerate subdomains"
 ```
 
 ### Advanced Testing Scenarios
 
 ```bash
 # Grey-box authenticated testing
-exaaiagnt --target https://your-app.com --instruction "Perform authenticated testing using credentials: user:pass"
+exaai --target https://your-app.com --instruction "Perform authenticated testing using credentials: user:pass"
 
 # Multi-target testing (source code + deployed app)
-exaaiagnt -t https://github.com/org/app -t https://your-app.com
+exaai -t https://github.com/org/app -t https://your-app.com
 
 # With specific modules (overrides auto-detection)
-exaaiagnt --target https://api.example.com --prompt-modules graphql_security waf_bypass
+exaai --target https://api.example.com --prompt-modules graphql_security waf_bypass
 
 # Lightweight mode (reduced token consumption)
 export EXAAI_LIGHTWEIGHT_MODE=true
-exaaiagnt --target https://example.com --instruction "quick security scan"
+exaai --target https://example.com --instruction "quick security scan"
 ```
 
 ### 🤖 Headless Mode
@@ -217,13 +227,13 @@ exaaiagnt --target https://example.com --instruction "quick security scan"
 Run ExaAiAgent programmatically without interactive UI:
 
 ```bash
-exaaiagnt -n --target https://your-app.com
+exaai -n --target https://your-app.com
 ```
 
 ### 🔄 CI/CD (GitHub Actions)
 
 ```yaml
-name: exaaiagnt-security-test
+name: exaai-security-test
 
 on:
   pull_request:
@@ -241,7 +251,7 @@ jobs:
         env:
           EXAAI_LLM: ${{ secrets.EXAAI_LLM }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-        run: exaaiagnt -n -t ./
+        run: exaai -n -t ./
 ```
 
 ### ⚙️ Configuration
@@ -292,20 +302,13 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🆕 Changelog
 
-### v2.0.4 (Latest)
-
-- 🛡️ **Agent Supervisor** - Self-healing with heartbeat & auto-recovery
-- 🧠 **Shared Memory** - Inter-agent coordination, URL deduplication
-- 🎭 **Scan Modes** - Stealth / Standard / Aggressive
-- 🔓 **WAF Bypass** - Cloudflare, Akamai, Imperva detection & bypass
-- ⚡ **80% Token Reduction** - Smart output processing
-
-### v2.0.0
+### v2.0.0 (Latest)
 
 - ✨ **Smart Auto-Module Loading** - Automatically detects target type
 - ⚡ **Token Optimization** - Lightweight mode & task scaling
 - 🛡️ **5 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain
 - 🎨 **New UI/Branding** - Fresh ExaAi logo with Cyan/Purple theme
+- 📊 **Improved Performance** - Reduced unnecessary LLM calls
 
 ### v1.0.0
 
