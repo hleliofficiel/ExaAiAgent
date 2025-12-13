@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "exaaiagent"
+name = "exaai-agent"
 version = "0.0.0"
 description = "ExaAi - Advanced AI Security Agent for Comprehensive Penetration Testing"
 authors = ["ExaAi Team <mahmedhleli@gmail.com>"]
