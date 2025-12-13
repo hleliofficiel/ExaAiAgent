@@ -240,69 +240,77 @@ async def warm_up_llm() -> None:
         sys.exit(1)
 
 
+def get_version() -> str:
+    """Get the current ExaAi version."""
+    return "2.1.0"
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="ExaaiAgnt - Advanced AI Cybersecurity Penetration Testing Tool",
+        description="ExaAi - Advanced AI Cybersecurity Penetration Testing Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Launch TUI interface
+  exaai tui
+
+  # Show version
+  exaai --version
+
   # Web application penetration test
-  exaaiagnt --target https://example.com
+  exaai --target https://example.com
+  exaai -t https://example.com
 
   # GitHub repository analysis
-  exaaiagnt --target https://github.com/user/repo
-  exaaiagnt --target git@github.com:user/repo.git
+  exaai --target https://github.com/user/repo
 
   # Local code analysis
-  exaaiagnt --target ./my-project
+  exaai --target ./my-project
 
   # Domain penetration test
-  exaaiagnt --target example.com
+  exaai --target example.com
 
-  # IP address penetration test
-  exaaiagnt --target 192.168.1.42
+  # Multiple targets
+  exaai -t https://github.com/user/repo -t https://example.com
 
-  # Multiple targets (e.g., white-box testing with source and deployed app)
-  exaaiagnt --target https://github.com/user/repo --target https://example.com
-  exaaiagnt --target ./my-project --target https://staging.example.com --target https://prod.example.com
-
-  # Custom instructions (inline)
-  exaaiagnt --target example.com --instruction "Focus on authentication vulnerabilities"
-
-  # Custom instructions (from file)
-  exaaiagnt --target example.com --instruction ./instructions.txt
-  exaaiagnt --target https://app.com --instruction /path/to/detailed_instructions.md
+  # Custom instructions
+  exaai -t example.com -i "Focus on authentication vulnerabilities"
+  exaai -t example.com --instruction ./instructions.txt
         """,
     )
 
+    # Add version flag
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"ExaAi v{get_version()}",
+    )
+
+    # Main arguments (same as before, just renamed command)
     parser.add_argument(
         "-t",
         "--target",
         type=str,
-        required=True,
         action="append",
         help="Target to test (URL, repository, local directory path, domain name, or IP address). "
         "Can be specified multiple times for multi-target scans.",
     )
     parser.add_argument(
+        "-i",
         "--instruction",
         type=str,
         help="Custom instructions for the penetration test. This can be "
         "specific vulnerability types to focus on (e.g., 'Focus on IDOR and XSS'), "
         "testing approaches (e.g., 'Perform thorough authentication testing'), "
-        "test credentials (e.g., 'Use the following credentials to access the app: "
-        "admin:password123'), "
-        "or areas of interest (e.g., 'Check login API endpoint for security issues'). "
-        "You can also provide a path to a file containing detailed instructions "
-        "(e.g., '--instruction ./instructions.txt').",
+        "or test credentials (e.g., 'Use the following credentials: admin:password123'). "
+        "You can also provide a path to a file containing detailed instructions.",
     )
-
     parser.add_argument(
         "--run-name",
         type=str,
         help="Custom name for this penetration test run",
     )
-
     parser.add_argument(
         "-n",
         "--non-interactive",
@@ -312,37 +320,56 @@ Examples:
             "Default is interactive mode with TUI."
         ),
     )
+    
+    # TUI subcommand (optional - for launching TUI without target)
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("tui", help="Launch the interactive TUI interface without a target")
 
     args = parser.parse_args()
 
-    if args.instruction:
-        instruction_path = Path(args.instruction)
-        if instruction_path.exists() and instruction_path.is_file():
+    # Handle TUI command - launch directly without target
+    if args.command == "tui":
+        args.target = None
+        args.targets_info = []
+        args.instruction = None
+        args.run_name = None
+        args.non_interactive = False
+        args.local_sources = []
+        return args
+
+    # Handle scan command or legacy direct target
+    if args.command == "scan" or args.target:
+        if not args.target:
+            parser.error("--target is required for scanning. Use 'exaai tui' to launch TUI without a target.")
+
+        if args.instruction:
+            instruction_path = Path(args.instruction)
+            if instruction_path.exists() and instruction_path.is_file():
+                try:
+                    with instruction_path.open(encoding="utf-8") as f:
+                        args.instruction = f.read().strip()
+                        if not args.instruction:
+                            parser.error(f"Instruction file '{instruction_path}' is empty")
+                except Exception as e:  # noqa: BLE001
+                    parser.error(f"Failed to read instruction file '{instruction_path}': {e}")
+
+        args.targets_info = []
+        for target in args.target:
             try:
-                with instruction_path.open(encoding="utf-8") as f:
-                    args.instruction = f.read().strip()
-                    if not args.instruction:
-                        parser.error(f"Instruction file '{instruction_path}' is empty")
-            except Exception as e:  # noqa: BLE001
-                parser.error(f"Failed to read instruction file '{instruction_path}': {e}")
+                target_type, target_dict = infer_target_type(target)
 
-    args.targets_info = []
-    for target in args.target:
-        try:
-            target_type, target_dict = infer_target_type(target)
+                if target_type == "local_code":
+                    display_target = target_dict.get("target_path", target)
+                else:
+                    display_target = target
 
-            if target_type == "local_code":
-                display_target = target_dict.get("target_path", target)
-            else:
-                display_target = target
+                args.targets_info.append(
+                    {"type": target_type, "details": target_dict, "original": display_target}
+                )
+            except ValueError:
+                parser.error(f"Invalid target '{target}'")
 
-            args.targets_info.append(
-                {"type": target_type, "details": target_dict, "original": display_target}
-            )
-        except ValueError:
-            parser.error(f"Invalid target '{target}'")
-
-    assign_workspace_subdirs(args.targets_info)
+        assign_workspace_subdirs(args.targets_info)
 
     return args
 
@@ -464,6 +491,21 @@ def main() -> None:
 
     args = parse_arguments()
 
+    # Handle TUI-only mode (no target needed)
+    if args.command == "tui" or (not args.target and not args.command):
+        check_docker_installed()
+        pull_docker_image()
+        validate_environment()
+        asyncio.run(warm_up_llm())
+        
+        # Launch TUI directly without scanning
+        args.run_name = "interactive_session"
+        args.targets_info = []
+        args.local_sources = []
+        asyncio.run(run_tui(args))
+        return
+
+    # Handle scan mode (target required)
     check_docker_installed()
     pull_docker_image()
 

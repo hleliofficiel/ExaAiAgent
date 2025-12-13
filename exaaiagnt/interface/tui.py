@@ -104,7 +104,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._animation_step = 0
         self._animation_timer: Timer | None = None
         self._panel_static: Static | None = None
-        self._version = "2.0.4"
+        self._version = "2.1.0"
 
     def compose(self) -> ComposeResult:
         self._version = get_package_version()
