@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "exaai-agent"
+name = "exaaiagent"
 version = "0.0.0"
-description = "ExaaiAgnt - Advanced AI Security Agent for Comprehensive Penetration Testing"
-authors = ["ExaaiAgnt Team <mahmedhleli@gmail.com>"]
+description = "ExaAi - Advanced AI Security Agent for Comprehensive Penetration Testing"
+authors = ["ExaAi Team <mahmedhleli@gmail.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 keywords = [
@@ -39,7 +39,9 @@ include = [
 ]
 
 [tool.poetry.scripts]
-exaaiagnt = "exaaiagnt.interface.main:main"
+exaai = "exaaiagnt.interface.main:main"
+exaaiagent = "exaaiagnt.interface.main:main"
+ExaAiAgent = "exaaiagnt.interface.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.12"
