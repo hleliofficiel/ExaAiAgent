@@ -65,8 +65,8 @@ class LLMRequestQueue:
     
     def __init__(
         self,
-        max_concurrent: int = 4,
-        delay_between_requests: float = 2.0,
+        max_concurrent: int = 2,
+        delay_between_requests: float = 4.0,
         request_timeout: int = 300,
     ):
         # Load configuration from environment
@@ -161,8 +161,8 @@ class LLMRequestQueue:
             self._semaphore.release()
 
     @retry(
-        stop=stop_after_attempt(10),  # Increased from 7 to 10
-        wait=wait_exponential(multiplier=2, min=5, max=120),  # Better backoff
+        stop=stop_after_attempt(15),  # Increased for rate limits
+        wait=wait_exponential(multiplier=3, min=10, max=180),  # Longer delays
         retry=retry_if_exception(should_retry_exception),
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,

@@ -73,8 +73,8 @@ class AdaptiveLLMController:
         # Rate limiting state
         self._last_request_time = 0.0
         self._consecutive_rate_limits = 0
-        self._base_delay = 2.0  # Base delay between requests
-        self._current_delay = 2.0
+        self._base_delay = 4.0  # Base delay between requests
+        self._current_delay = 4.0
         self._max_delay = 30.0
         
         # Statistics
@@ -88,8 +88,8 @@ class AdaptiveLLMController:
         self._tool_execution_lock = asyncio.Lock()
         
         # Configuration
-        self._max_retries = 3
-        self._rate_limit_wait = 6.0  # Wait time after rate limit
+        self._max_retries = 10  # Increased for Gemini
+        self._rate_limit_wait = 15.0  # Longer wait after rate limit
         self._enable_verbose_logging = False
         
         self._initialized = True

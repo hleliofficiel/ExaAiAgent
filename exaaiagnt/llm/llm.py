@@ -17,6 +17,7 @@ from litellm.utils import supports_prompt_caching
 
 from exaaiagnt.llm.config import LLMConfig
 from exaaiagnt.llm.memory_compressor import MemoryCompressor
+from exaaiagnt.llm.request_queue import get_global_queue
 from exaaiagnt.llm.llm_traffic_controller import get_traffic_controller, RequestPriority
 from exaaiagnt.llm.utils import _truncate_to_first_function, parse_tool_invocations
 from exaaiagnt.prompts import load_prompt_modules
