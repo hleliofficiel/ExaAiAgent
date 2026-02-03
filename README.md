@@ -323,6 +323,20 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ---
 
+## 🛠️ Troubleshooting
+
+### Problem: "LLM Connection Failed" or New Models (Gemini 3, etc.)
+If you encounter errors connecting to newer models (like `gemini/gemini-3-pro-preview`), you may need to update the `litellm` library.
+
+**Linux/Debian Users (Externally Managed Environment):**
+If you see an error about "externally-managed-environment", run this command to force the update in your user space:
+
+```bash
+pip install -U litellm --user --break-system-packages
+```
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Check out our [Contributing Guide](CONTRIBUTING.md).
