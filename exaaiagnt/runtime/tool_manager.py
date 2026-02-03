@@ -60,11 +60,13 @@ class ToolManager:
     HEALTH_CHECK_INTERVAL = 10
     
     _instance: Optional["ToolManager"] = None
+    _lock = __import__("threading").Lock()
     
     def __new__(cls) -> "ToolManager":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._initialized = False
         return cls._instance
     
     def __init__(self):
@@ -93,6 +95,13 @@ class ToolManager:
         
         self._initialized = True
         logger.info("ToolManager initialized")
+        
+    async def shutdown(self):
+        """Cleanup resources."""
+        await self.kill_all()
+        self._executor.shutdown(wait=False)
+        self._running = False
+        logger.info("ToolManager shutdown complete")
     
     async def execute(
         self,
