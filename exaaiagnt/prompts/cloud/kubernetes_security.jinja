@@ -1,0 +1,97 @@
+<kubernetes_security_guide>
+<title>KUBERNETES (K8S) SECURITY AUDIT</title>
+
+<critical>Kubernetes is the OS of the cloud. A compromised cluster often means full cloud account compromise via metadata service access or secret harvesting. Default configurations are notoriously insecure (open ports, excessive permissions, unrestricted network traffic).</critical>
+
+<scope>
+- Control Plane: API Server, etcd, Controller Manager, Scheduler
+- Nodes: Kubelet configurations, container runtime security
+- Workloads: Pod security contexts, RBAC bindings, Secrets management
+- Network: CNI plugins, NetworkPolicies, Ingress controls, Service Mesh
+- Supply Chain: Image scanning, admission controllers, signing (Cosign)
+</scope>
+
+<methodology>
+1. **Reconnaissance**: Enumerate namespaces, nodes, versions, and exposed services.
+2. **RBAC Audit**: Identify ServiceAccounts with cluster-admin or excessive verbs (*).
+3. **Pod Security**: Scan for privileged containers, hostPath mounts, and root users.
+4. **Network Audit**: Verify NetworkPolicies (default deny?) and CNI configuration.
+5. **Secret Audit**: Check for env var secret mounting and etcd encryption.
+6. **Escalation**: Attempt container escapes (nsenter, host mounts) and lateral movement.
+</methodology>
+
+<attack_vectors>
+- **Container Escape**: Privileged pods, hostPID/hostNetwork, writable hostPath mounts.
+- **RBAC Abuse**: ServiceAccount token theft -> kubectl access.
+- **Metadata SSRF**: Accessing cloud instance metadata (AWS IMDSv1) from pods.
+- **API Server Exposure**: Unauthenticated access to /metrics or /logs.
+- **Image Poisoning**: Deploying backdoored images from public registries.
+- **Helm/Chart Injection**: Malicious dependencies in charts.
+</attack_vectors>
+
+<critical_checks>
+<rbac>
+- Roles with `verbs: ["*"]` or `resources: ["*"]` or `["secrets"]`
+- Bindings to `system:masters` or `cluster-admin`
+- ServiceAccounts mounting tokens in every pod (automountServiceAccountToken: true)
+</rbac>
+
+<pod_security>
+- `securityContext.privileged: true`
+- `securityContext.runAsUser: 0` (Root)
+- `allowPrivilegeEscalation: true`
+- `hostNetwork: true` / `hostPID: true` / `hostIPC: true`
+- Capabilities: `SYS_ADMIN`, `NET_ADMIN`, `BPF`
+</pod_security>
+
+<network>
+- Missing `NetworkPolicy` (defaults to allow-all)
+- Unrestricted egress (allows C2 connection)
+- Exposed Dashboard or Kubelet API (10250)
+</network>
+
+<secrets>
+- Secrets stored in env vars (visible in logs/proc)
+- Secrets stored in Git (use SealedSecrets/ExternalSecrets)
+- ConfigMaps containing sensitive data
+</secrets>
+</critical_checks>
+
+<automation_script>
+```python
+from exaaiagnt.tools.k8s_scanner import scan_cluster, K8sScanner
+
+# Run full cluster scan
+print("Initiating Kubernetes Security Scan...")
+report = scan_cluster()
+
+print(f"Scan Complete. Findings: {report['total_findings']}")
+for finding in report['findings']:
+    print(f"[{finding['severity']}] {finding['title']}: {finding['resource']}")
+    print(f"  Remediation: {finding['remediation']}")
+```
+</automation_script>
+
+<kubectl_cheatsheet>
+# Check for privileged pods
+kubectl get pods -A -o jsonpath='{range .items[?(@.spec.containers[*].securityContext.privileged==true)]}{.metadata.name}{"\n"}{end}'
+
+# Check for cluster-admin bindings
+kubectl get clusterrolebindings -o json | jq '.items[] | select(.roleRef.name=="cluster-admin")'
+
+# Check for secrets in env vars
+kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .spec.containers[*].env[*]}{.name}{"="}{.value}{"\n"}{end}{"\n"}{end}'
+
+# Auth check
+kubectl auth can-i --list
+</kubectl_cheatsheet>
+
+<remediation_guide>
+1. **Enforce PSS**: Use Pod Security Standards (Restricted profile) via Admission Controllers.
+2. **Least Privilege RBAC**: Audit and scope down all ServiceAccount permissions.
+3. **Network Segmentation**: Apply default-deny NetworkPolicies for all namespaces.
+4. **Image Security**: Use distroless images, sign images, scan in CI/CD.
+5. **Runtime Security**: Deploy Falco or Tetragon for runtime anomaly detection.
+</remediation_guide>
+
+</kubernetes_security_guide>

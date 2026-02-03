@@ -56,6 +56,12 @@ from .prompt_injection import (
     analyze_llm_response,
     detect_jailbreak_success,
 )
+from .k8s_scanner import (
+    K8sScanner,
+    scan_cluster,
+    check_rbac,
+    check_pod_security,
+)
 from .tool_prompts import (
     get_fuzzer_prompt,
     get_analyzer_prompt,
@@ -140,6 +146,11 @@ __all__ = [
     "generate_injection_payloads",
     "analyze_llm_response",
     "detect_jailbreak_success",
+    # K8s Scanner
+    "K8sScanner",
+    "scan_cluster",
+    "check_rbac",
+    "check_pod_security",
     # Tool Prompts
     "get_fuzzer_prompt",
     "get_analyzer_prompt",

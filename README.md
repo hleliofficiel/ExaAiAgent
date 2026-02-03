@@ -297,7 +297,8 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 | `oauth_oidc` | OAuth2/OIDC flaws |
 | `waf_bypass` | WAF bypass techniques |
 | `subdomain_takeover` | Subdomain takeover |
-| `prompt_injection` | **NEW!** AI/LLM prompt injection attacks |
+| `prompt_injection` | AI/LLM prompt injection attacks |
+| `kubernetes_security` | **NEW!** K8s RBAC & Pod Security auditing |
 
 ---
 
@@ -306,6 +307,7 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 ### v2.1.0 (Latest)
 
 - 🤖 **AI Prompt Injection Scanner** - Detect LLM vulnerabilities with 50+ payloads
+- ⚓ **Kubernetes Security Scanner** - Audit RBAC, PSS, and Network Policies
 - ✨ **Smart Auto-Module Loading** - Automatically detects target type
 - ⚡ **Token Optimization** - Lightweight mode & task scaling
 - 🛡️ **6 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain, Prompt Injection
