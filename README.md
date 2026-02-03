@@ -325,13 +325,26 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🛠️ Troubleshooting
 
-### Problem: "LLM Connection Failed" or New Models (Gemini 3, etc.)
-If you encounter errors connecting to newer models (like `gemini/gemini-3-pro-preview`), you may need to update the `litellm` library.
+### 🔧 Troubleshooting
+
+#### Problem: "LLM Connection Failed" or Model Not Found
+Modern models (like `gemini-3-pro-preview`) require the latest version of `litellm` to be recognized correctly.
+
+**Solution: Update LiteLLM**
+```bash
+pip install -U litellm
+```
 
 **Linux/Debian Users (Externally Managed Environment):**
-If you see an error about "externally-managed-environment", run this command to force the update in your user space:
+If you encounter permission errors or "externally-managed-environment", you may need to use a virtual environment (`venv`) or force a user install:
 
 ```bash
+# Option 1: Virtual Environment (Recommended for Servers)
+python3 -m venv venv
+source venv/bin/activate
+pip install exaai-agent
+
+# Option 2: Force User Install
 pip install -U litellm --user --break-system-packages
 ```
 
