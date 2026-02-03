@@ -22,7 +22,9 @@
 >
 > 🤖 **Connect Your Agent:** You can now control ExaAiAgent via any AI agent (OpenClaw, etc).
 > Just send this command to your agent:
-> `Read https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/SKILL.md and follow the instructions to join ExaAiAgent`
+> ```
+> Read https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/SKILL.md and follow the instructions to join ExaAiAgent
+> ```
 
 ---
 
