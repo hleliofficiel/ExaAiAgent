@@ -45,7 +45,7 @@ def get_package_version() -> str:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
         # Fallback version if package not installed
-        return "2.0.4"
+        return "2.1.0"
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -181,14 +181,14 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v2.0.4."""
+        """Build new features highlight for v2.1.0."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
-        text.append("React2Shell", style=Style(color=self.NEON_PINK))
+        text.append("K8s Security", style=Style(color=self.NEON_PINK))
         text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
-        text.append("Cloud Security", style=Style(color=self.NEON_CYAN))
+        text.append("Prompt Injection", style=Style(color=self.NEON_CYAN))
         text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
-        text.append("Auto-Discovery", style=Style(color=self.NEON_GREEN))
+        text.append("Azure/GCP", style=Style(color=self.NEON_GREEN))
         return text
 
 

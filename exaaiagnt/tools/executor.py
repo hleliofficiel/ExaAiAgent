@@ -65,7 +65,7 @@ async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: A
     async with httpx.AsyncClient(trust_env=False) as client:
         try:
             response = await client.post(
-                request_url, json=request_data, headers=headers, timeout=None
+                request_url, json=request_data, headers=headers, timeout=600.0  # 10 min max
             )
             response.raise_for_status()
             response_data = response.json()
