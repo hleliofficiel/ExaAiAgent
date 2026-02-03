@@ -1,5 +1,5 @@
 ---
-name: exaai
+name: ExaAiAgent
 description: "AI-powered penetration testing framework. Run security scans on websites, APIs, repos, and cloud infrastructure. Use `exaai` CLI for vuln detection, pentesting automation, and PoC generation."
 homepage: https://github.com/hleliofficiel/ExaAiAgent
 metadata:
