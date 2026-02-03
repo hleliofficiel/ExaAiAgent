@@ -104,6 +104,9 @@ ExaAiAgent is an elite AI-powered cybersecurity agent that acts like a real pene
 
 ```bash
 # Install ExaAiAgent
+
+pip install exaai-agent
+## Or  The second thing 
 pipx install exaai-agent
 
 # Configure your AI provider (choose one)
