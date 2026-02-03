@@ -45,7 +45,7 @@ def get_package_version() -> str:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
         # Fallback version if package not installed
-        return "2.1.0"
+        return "2.1.2"
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -80,7 +80,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
     
-    # Enhanced ASCII Logo - ExaAi v2.0.4
+    # Enhanced ASCII Logo - ExaAi v2.1.2
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
@@ -104,7 +104,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._animation_step = 0
         self._animation_timer: Timer | None = None
         self._panel_static: Static | None = None
-        self._version = "2.1.0"
+        self._version = "2.1.2"
 
     def compose(self) -> ComposeResult:
         self._version = get_package_version()
@@ -391,7 +391,11 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         }
 
     def _build_agent_config(self, args: argparse.Namespace) -> dict[str, Any]:
-        llm_config = LLMConfig()
+        prompt_modules = None
+        if getattr(args, "prompt_modules", None):
+            prompt_modules = [m.strip() for m in args.prompt_modules.split(",")]
+
+        llm_config = LLMConfig(prompt_modules=prompt_modules)
 
         config = {
             "llm_config": llm_config,

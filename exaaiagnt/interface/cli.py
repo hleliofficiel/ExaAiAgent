@@ -41,7 +41,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console.print()
         console.print(BANNER, style="bold cyan", justify="center")
         console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
-        console.print("[dim]v2.1.0[/]", justify="center")
+        console.print("[dim]v2.1.2[/]", justify="center")
         console.print()
     else:
         # Simple text output for headless/pipe mode
@@ -87,7 +87,12 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         "run_name": args.run_name,
     }
 
-    llm_config = LLMConfig()
+    # Handle prompt modules
+    prompt_modules = None
+    if getattr(args, "prompt_modules", None):
+        prompt_modules = [m.strip() for m in args.prompt_modules.split(",")]
+
+    llm_config = LLMConfig(prompt_modules=prompt_modules)
     agent_config = {
         "llm_config": llm_config,
         "max_iterations": 300,

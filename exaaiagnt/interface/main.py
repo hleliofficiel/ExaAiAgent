@@ -242,7 +242,7 @@ async def warm_up_llm() -> None:
 
 def get_version() -> str:
     """Get the current ExaAi version."""
-    return "2.1.0"
+    return "2.1.2"
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -276,6 +276,10 @@ Examples:
   # Custom instructions
   exaai -t example.com -i "Focus on authentication vulnerabilities"
   exaai -t example.com --instruction ./instructions.txt
+
+  # Specific security modules
+  exaai -t example.com --prompt-modules kubernetes_security,cloud_security
+  exaai -t example.com --prompt-modules prompt_injection
         """,
     )
 
@@ -305,6 +309,12 @@ Examples:
         "testing approaches (e.g., 'Perform thorough authentication testing'), "
         "or test credentials (e.g., 'Use the following credentials: admin:password123'). "
         "You can also provide a path to a file containing detailed instructions.",
+    )
+    parser.add_argument(
+        "--prompt-modules",
+        type=str,
+        help="Comma-separated list of prompt modules to load (e.g., 'kubernetes_security,prompt_injection'). "
+        "Overrides auto-detection.",
     )
     parser.add_argument(
         "--run-name",
