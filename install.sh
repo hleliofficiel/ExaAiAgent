@@ -24,14 +24,16 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+REPO_URL="git+https://github.com/hleliofficiel/ExaAiAgent.git"
+
 # Install with pipx (recommended) or pip
 if command -v pipx &> /dev/null; then
     echo "📦 Installing via pipx..."
-    pipx install . --force
+    pipx install "$REPO_URL" --force
     INSTALL_METHOD="pipx"
 else
     echo "⚠️  pipx not found. Falling back to pip (user install)..."
-    pip install . --user --break-system-packages
+    pip install "$REPO_URL" --user --break-system-packages
     INSTALL_METHOD="pip"
 fi
 
