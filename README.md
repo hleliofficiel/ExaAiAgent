@@ -109,8 +109,7 @@ ExaAiAgent is an elite AI-powered cybersecurity agent that acts like a real pene
 # Install ExaAiAgent
 
 # Method 1: Automated Script (Recommended)
-curl -sSL https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/install.sh | bash
-
+pip install exaai-agent 
 # Method 2: pipx
 pipx install exaai-agent
 
