@@ -19,7 +19,10 @@ class PythonInstance:
 
         import os
 
-        os.chdir("/workspace")
+        # Use configurable workspace path with fallback
+        workspace = os.getenv("EXAAI_WORKSPACE", "/workspace")
+        if os.path.isdir(workspace):
+            os.chdir(workspace)
 
         self.shell = InteractiveShell()
         self.shell.init_completer()
@@ -45,6 +48,7 @@ class PythonInstance:
             proxy_dict = {name: getattr(proxy_actions, name) for name in proxy_functions}
             self.shell.user_ns.update(proxy_dict)
         except ImportError:
+            # Proxy functions are optional, only available in full runtime
             pass
 
     def _validate_session(self) -> dict[str, Any] | None:
