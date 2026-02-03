@@ -43,12 +43,14 @@ The modules are dynamically injected into the agent's system prompt, allowing it
 | `race_conditions` | Race condition and TOCTOU exploits |
 | `path_traversal` | Directory traversal attacks |
 
-### NEW: Advanced Modules
+### NEW: Advanced Modules (v2.1)
 
 | Module | Description |
 |--------|-------------|
 | `api_security` | REST, GraphQL, gRPC API security testing |
 | `cloud_security` | AWS, Azure, GCP security assessment |
+| `kubernetes_security` | **NEW!** K8s RBAC, Pod Security, Network Policy audit |
+| `prompt_injection` | **NEW!** AI/LLM prompt injection & jailbreaking |
 | `reconnaissance_osint` | Reconnaissance and OSINT techniques |
 | `privilege_escalation` | Linux/Windows privilege escalation |
 | `high_impact_bugs` | Bug bounty hunting for critical vulns |

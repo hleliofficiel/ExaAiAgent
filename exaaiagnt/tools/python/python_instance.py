@@ -1,4 +1,5 @@
 import io
+import re
 import signal
 import sys
 import threading
@@ -91,6 +92,11 @@ class PythonInstance:
     def _format_execution_result(
         self, execution_result: Any, stdout_content: str, stderr_content: str
     ) -> dict[str, Any]:
+        # Strip ANSI codes from output
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        stdout_content = ansi_escape.sub('', stdout_content)
+        stderr_content = ansi_escape.sub('', stderr_content)
+
         stdout = self._truncate_output(
             stdout_content, MAX_STDOUT_LENGTH, "... [stdout truncated at 10k chars]"
         )
