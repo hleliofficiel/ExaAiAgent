@@ -11,57 +11,58 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1.0-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-2.1.2-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v2.1.0 Released!** React2Shell Detection (CVE-2025-55182), Cloud Security Testing, Smart Fuzzing, and CLI improvements with `exaai` command!
+> **🚀 v2.1.2 Released!** Now supports **AI Agent Integration (OpenClaw)**, Kubernetes Security, Azure/GCP modules, and Prompt Injection detection.
+>
+> 🤖 **Connect Your Agent:** You can now control ExaAiAgent via any AI agent (OpenClaw, etc).
+> Just send this command to your agent:
+> `Read https://github.com/hleliofficiel/ExaAiAgent/blob/main/SKILL.md and follow the instructions to join ExaAiAgent`
 
 ---
 
-## 🔥 What's New in v2.1.0
+## 🔥 What's New in v2.1.2
 
-### 🚨 React2Shell Detection (CVE-2025-55182)
+### 🤖 AI Agent Integration (OpenClaw)
 
-New critical vulnerability scanner for **React Server Components**:
+Seamlessly integrate ExaAiAgent with your AI workforce:
 
-- **CVSS 10.0** - Unauthenticated RCE via RSC Flight protocol
-- Auto-detects Next.js 15.x/16.x, React 19.x applications
-- Complete exploitation methodology and PoC generation
-- WAF bypass techniques included
+- **Agent Control**: Control scans via OpenClaw or any agent framework
+- **Auto-Discovery**: Agents can read `SKILL.md` to self-onboard
+- **Output Optimization**: Tools now output cleaner data (no ANSI codes) for LLM consumption
 
-### ☁️ AWS & Cloud Security
+### ⚓ Kubernetes & Cloud Security (Updated)
 
-Comprehensive cloud infrastructure testing:
+Expanded coverage for cloud-native infrastructure:
 
-- **AWS**: EC2 Metadata SSRF, S3 buckets, IAM escalation, Lambda
-- **Azure**: Blob storage, Managed Identity, Azure AD
-- **GCP**: Cloud Storage, Service Account abuse
-- **Kubernetes**: RBAC, Secrets, Pod escape
+- **Kubernetes**: Deep RBAC auditing, Pod Security Standards (PSS), Network Policy checks
+- **Azure**: Blob Storage, Entra ID (Azure AD), Key Vault auditing
+- **GCP**: Cloud Storage, IAM, Service Account key leaks
+- **Prompt Injection**: Dedicated scanner for AI/LLM applications
 
-### � Smart Security Tools
+### 🛡️ Smart Security Tools
 
 | Tool | Capability |
 |------|------------|
-| **Smart Fuzzer** | Context-aware payloads, parameter type detection |
+| **Smart Fuzzer** | Thread-safe, context-aware fuzzing with rate limiting |
 | **Response Analyzer** | SQL errors, stack traces, sensitive data detection |
-| **Vuln Validator** | PoC generation, CVSS scoring, remediation advice |
-| **WAF Bypass** | Multi-layer bypass techniques |
+| **Vuln Validator** | PoC generation with false positive reduction |
+| **WAF Bypass** | Multi-layer bypass for Cloudflare, Akamai, AWS WAF |
 
-### ⚡ CLI Improvements
+### ⚡ CLI & Stability
+
+- **Thread-Safety**: Fixed race conditions in async scans
+- **Resource Management**: Auto-shutdown and cleanup of background processes
+- **Installation**: Robust `install.sh` for Linux/macOS (bash/zsh/fish)
 
 ```bash
-# New command (shorter!)
-exaai --target https://example.com
-
-# Version check
-exaai --version
-
-# TUI mode
-exaai tui
+# New install script
+curl -sSL https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/install.sh | bash
 ```
 
 ---
@@ -105,8 +106,10 @@ ExaAiAgent is an elite AI-powered cybersecurity agent that acts like a real pene
 ```bash
 # Install ExaAiAgent
 
-pip install exaai-agent
-## Or  The second thing 
+# Method 1: Automated Script (Recommended)
+curl -sSL https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/install.sh | bash
+
+# Method 2: pipx
 pipx install exaai-agent
 
 # Configure your AI provider (choose one)
@@ -248,7 +251,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install ExaAiAgent
-        run: pipx install exaai-agent
+        run: curl -sSL https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/install.sh | bash
 
       - name: Run ExaAiAgent
         env:
@@ -307,23 +310,15 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🆕 Changelog
 
-### v2.1.0 (Latest)
+### v2.1.2 (Latest)
+- **AI Agent Integration**: OpenClaw/Agent compatibility
+- **Stability Fixes**: ToolManager thread-safety, Resource cleanup
+- **DevEx**: New `install.sh` script, improved logging
 
-- 🤖 **AI Prompt Injection Scanner** - Detect LLM vulnerabilities with 50+ payloads
-- ⚓ **Kubernetes Security Scanner** - Audit RBAC, PSS, and Network Policies
-- ✨ **Smart Auto-Module Loading** - Automatically detects target type
-- ⚡ **Token Optimization** - Lightweight mode & task scaling
-- 🛡️ **6 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain, Prompt Injection
-- 🎨 **New UI/Branding** - Fresh ExaAi logo with Cyan/Purple theme
-- 📊 **Improved Performance** - Reduced unnecessary LLM calls
-
-### v1.0.0
-
-- Multi-LLM Load Balancing
-- Enhanced Context Management
-- Specialized Agents
-- Advanced Prompts
-- Improved Reporting
+### v2.1.0
+- **New Modules**: K8s, Azure, GCP, Prompt Injection
+- **React2Shell**: CVE-2025-55182 detection
+- **Auto-Discovery**: Improved target detection
 
 ---
 
