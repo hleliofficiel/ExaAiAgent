@@ -31,38 +31,54 @@ BANNER = r"""
 
 
 async def run_cli(args: Any) -> None:  # noqa: PLR0915
-    console = Console()
+    # Detect if running in a real terminal or headless (pipe/background)
+    is_tty = sys.stdout.isatty()
+    console = Console(force_terminal=is_tty, no_color=not is_tty)
     
-    # Clear screen and show banner
-    console.clear()
-    console.print()
-    console.print(BANNER, style="bold cyan", justify="center")
-    console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
-    console.print("[dim]v2.0.0[/]", justify="center")
-    console.print()
+    if is_tty:
+        # Clear screen and show banner only in interactive terminal
+        console.clear()
+        console.print()
+        console.print(BANNER, style="bold cyan", justify="center")
+        console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
+        console.print("[dim]v2.0.0[/]", justify="center")
+        console.print()
+    else:
+        # Simple text output for headless/pipe mode
+        print("=" * 50)
+        print("ExaAiAgent - AI-Powered Security Scanner")
+        print("=" * 50)
 
-    # Target info table
-    target_table = Table(show_header=True, header_style="bold cyan", border_style="cyan")
-    target_table.add_column("Type", style="dim")
-    target_table.add_column("Target", style="white")
-    
-    for target_info in args.targets_info:
-        target_type = target_info.get("type", "URL")
-        target_table.add_row(target_type, target_info["original"])
-    
-    console.print(Panel(target_table, title="[bold cyan]🎯 Targets", border_style="cyan"))
-    console.print()
+    if is_tty:
+        # Target info table (rich formatting)
+        target_table = Table(show_header=True, header_style="bold cyan", border_style="cyan")
+        target_table.add_column("Type", style="dim")
+        target_table.add_column("Target", style="white")
+        
+        for target_info in args.targets_info:
+            target_type = target_info.get("type", "URL")
+            target_table.add_row(target_type, target_info["original"])
+        
+        console.print(Panel(target_table, title="[bold cyan]🎯 Targets", border_style="cyan"))
+        console.print()
 
-    # Config info
-    config_text = Text()
-    config_text.append("📁 Results: ", style="dim")
-    config_text.append(f"exaai_runs/{args.run_name}\n", style="white")
-    if args.instruction:
-        config_text.append("📝 Instruction: ", style="dim")
-        config_text.append(f"{args.instruction[:100]}{'...' if len(args.instruction) > 100 else ''}", style="white")
-    
-    console.print(Panel(config_text, title="[bold green]⚙️ Configuration", border_style="green"))
-    console.print()
+        # Config info
+        config_text = Text()
+        config_text.append("📁 Results: ", style="dim")
+        config_text.append(f"exaai_runs/{args.run_name}\n", style="white")
+        if args.instruction:
+            config_text.append("📝 Instruction: ", style="dim")
+            config_text.append(f"{args.instruction[:100]}{'...' if len(args.instruction) > 100 else ''}", style="white")
+        
+        console.print(Panel(config_text, title="[bold green]⚙️ Configuration", border_style="green"))
+        console.print()
+    else:
+        # Simple text output for headless mode
+        print(f"Targets: {[t['original'] for t in args.targets_info]}")
+        print(f"Results: exaai_runs/{args.run_name}")
+        if args.instruction:
+            print(f"Instruction: {args.instruction[:100]}")
+        print("-" * 50)
 
     scan_config = {
         "scan_id": args.run_name,
