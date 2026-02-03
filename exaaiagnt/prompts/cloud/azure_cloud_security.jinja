@@ -1,0 +1,126 @@
+<azure_security_guide>
+<title>AZURE CLOUD SECURITY AUDIT</title>
+
+<critical>Azure is the enterprise cloud. Misconfigurations in Azure AD, Blob Storage, and Managed Identities are primary attack vectors. Default settings often expose resources publicly. Entra ID (formerly Azure AD) is the crown jewel - compromise it, own everything.</critical>
+
+<scope>
+- Identity: Azure AD (Entra ID), Service Principals, Managed Identities
+- Storage: Blob Storage, Azure Files, Data Lake
+- Compute: VMs, App Service, Functions, AKS
+- Network: NSGs, Azure Firewall, Private Link, VNet
+- Secrets: Key Vault, App Configuration
+</scope>
+
+<methodology>
+1. **Reconnaissance**: Enumerate subscriptions, resource groups, and public assets.
+2. **Identity Audit**: Check Azure AD roles, conditional access policies, MFA enforcement.
+3. **Storage Audit**: Scan for public blobs, SAS token misuse, anonymous access.
+4. **Compute Audit**: Check VM extensions, managed identity permissions, IMDS exposure.
+5. **Network Audit**: Verify NSG rules, private endpoints, exposed services.
+6. **Secrets Audit**: Key Vault access policies, secret rotation, RBAC vs Access Policies.
+</methodology>
+
+<attack_vectors>
+- **Public Blob Storage**: Anonymous read access to containers.
+- **SAS Token Abuse**: Overly permissive or leaked SAS tokens.
+- **IMDS v1**: Instance metadata service for credential theft (169.254.169.254).
+- **Service Principal Secrets**: Exposed or non-rotating SP credentials.
+- **Managed Identity Abuse**: Over-privileged managed identities on VMs/Functions.
+- **Azure AD Misconfig**: Guest users with elevated roles, no conditional access.
+- **Key Vault RBAC**: Users with Key Vault Contributor can read secrets.
+- **ARM Template Secrets**: Secrets hardcoded in deployments.
+</attack_vectors>
+
+<critical_checks>
+<storage>
+# Check for public blob containers
+az storage container list --account-name <storage> --query "[?properties.publicAccess!=null]"
+
+# Check for anonymous access
+az storage blob list --container-name <container> --account-name <storage> --auth-mode key
+</storage>
+
+<identity>
+# List Service Principals with secrets
+az ad sp list --all --query "[?passwordCredentials]"
+
+# Check for high-privilege role assignments
+az role assignment list --all --query "[?roleDefinitionName=='Owner' || roleDefinitionName=='Contributor']"
+
+# Managed Identity check
+az vm identity show --name <vm> --resource-group <rg>
+</identity>
+
+<network>
+# Check for open NSG rules (any source)
+az network nsg rule list --nsg-name <nsg> --resource-group <rg> --query "[?sourceAddressPrefix=='*' && access=='Allow']"
+
+# Find public IPs
+az network public-ip list --query "[?ipAddress!=null]"
+</network>
+
+<keyvault>
+# Check Key Vault access policies
+az keyvault show --name <vault> --query "properties.accessPolicies"
+
+# Check for RBAC mode (preferred)
+az keyvault show --name <vault> --query "properties.enableRbacAuthorization"
+</keyvault>
+</critical_checks>
+
+<automation_script>
+```python
+import subprocess
+import json
+
+def run_az(cmd: list) -> dict:
+    """Run Azure CLI command and return JSON."""
+    result = subprocess.run(["az"] + cmd + ["-o", "json"], capture_output=True, text=True)
+    return json.loads(result.stdout) if result.returncode == 0 else {}
+
+def audit_azure():
+    findings = []
+    
+    # Check public storage containers
+    accounts = run_az(["storage", "account", "list"])
+    for acc in accounts:
+        containers = run_az(["storage", "container", "list", "--account-name", acc["name"], "--auth-mode", "login"])
+        for container in containers:
+            if container.get("properties", {}).get("publicAccess"):
+                findings.append({
+                    "severity": "CRITICAL",
+                    "title": "Public Blob Container",
+                    "resource": f"{acc['name']}/{container['name']}",
+                    "remediation": "Set publicAccess to None"
+                })
+    
+    # Check privileged role assignments
+    assignments = run_az(["role", "assignment", "list", "--all"])
+    for assignment in assignments:
+        if assignment.get("roleDefinitionName") in ["Owner", "User Access Administrator"]:
+            findings.append({
+                "severity": "HIGH",
+                "title": f"Privileged Role: {assignment['roleDefinitionName']}",
+                "resource": assignment.get("principalName"),
+                "remediation": "Review and apply least privilege"
+            })
+    
+    return findings
+
+if __name__ == "__main__":
+    for f in audit_azure():
+        print(f"[{f['severity']}] {f['title']}: {f['resource']}")
+```
+</automation_script>
+
+<remediation_guide>
+1. **Disable Public Blob Access**: Set `allowBlobPublicAccess: false` at storage account level.
+2. **Use Managed Identities**: Avoid Service Principal secrets where possible.
+3. **Enable MFA**: Enforce MFA for all users via Conditional Access.
+4. **Use RBAC for Key Vault**: Switch from Access Policies to Azure RBAC.
+5. **Private Endpoints**: Use Private Link for storage, databases, and Key Vault.
+6. **Enable Defender for Cloud**: Turn on security recommendations and alerts.
+7. **Rotate Secrets**: Automate rotation for Service Principal secrets and keys.
+</remediation_guide>
+
+</azure_security_guide>

@@ -210,6 +210,37 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["aws", "s3", "ec2", "lambda", "azure", "gcp", "cloud", "bucket", "metadata"],
     },
+    
+    # Kubernetes Security (NEW v2.1)
+    "kubernetes_security": {
+        "url_patterns": [
+            r"/api/v1/",
+            r"/apis/",
+            r":6443",
+            r":10250",
+            r":8443",
+        ],
+        "keywords": ["kubernetes", "k8s", "kubectl", "pod", "deployment", "service", 
+                    "ingress", "helm", "kubelet", "etcd", "rbac", "namespace"],
+    },
+    
+    # AI/LLM Prompt Injection (NEW v2.1)
+    "prompt_injection": {
+        "url_patterns": [
+            r"/chat",
+            r"/completions",
+            r"/generate",
+            r"/ask",
+            r"/ai",
+            r"/llm",
+            r"/v1/chat",
+            r"/v1/completions",
+            r"/assistant",
+        ],
+        "keywords": ["openai", "anthropic", "llm", "gpt", "claude", "chatbot", 
+                    "ai assistant", "langchain", "llama", "gemini", "copilot",
+                    "rag", "embedding", "vector", "prompt"],
+    },
 }
 
 

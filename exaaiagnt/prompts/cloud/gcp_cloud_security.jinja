@@ -1,0 +1,158 @@
+<gcp_security_guide>
+<title>GOOGLE CLOUD PLATFORM (GCP) SECURITY AUDIT</title>
+
+<critical>GCP's IAM model is powerful but complex. Over-permissive service accounts, public Cloud Storage buckets, and metadata service abuse are the top attack vectors. Workload Identity Federation and VPC Service Controls are critical but often misconfigured.</critical>
+
+<scope>
+- Identity: IAM policies, Service Accounts, Workload Identity
+- Storage: Cloud Storage (GCS), BigQuery, Firestore
+- Compute: Compute Engine, Cloud Functions, Cloud Run, GKE
+- Network: VPC, Firewall Rules, Private Google Access
+- Secrets: Secret Manager, KMS
+</scope>
+
+<methodology>
+1. **Reconnaissance**: Enumerate projects, service accounts, and public assets.
+2. **IAM Audit**: Check for overly permissive roles (Editor, Owner) on service accounts.
+3. **Storage Audit**: Scan for public buckets, allUsers/allAuthenticatedUsers ACLs.
+4. **Compute Audit**: Check metadata server access, service account scopes, public IPs.
+5. **Network Audit**: Verify firewall rules, VPC Service Controls, Private Google Access.
+6. **Secrets Audit**: Secret Manager access, KMS key permissions.
+</methodology>
+
+<attack_vectors>
+- **Public GCS Buckets**: `allUsers` read access on sensitive buckets.
+- **Metadata Server Abuse**: `http://metadata.google.internal/computeMetadata/v1/` for token theft.
+- **Service Account Key Leakage**: JSON keys committed to repos or logs.
+- **Default Service Account**: Compute Engine default SA with Editor role.
+- **Over-privileged IAM**: Service accounts with `roles/editor` or `roles/owner`.
+- **Workload Identity Misconfiguration**: Allowing external identities to impersonate SAs.
+- **Public Cloud Functions**: Functions with `allUsers` invoker permission.
+- **BigQuery Public Datasets**: Datasets readable by `allAuthenticatedUsers`.
+</attack_vectors>
+
+<critical_checks>
+<storage>
+# Check for public buckets
+gsutil iam get gs://<bucket> | grep -E "allUsers|allAuthenticatedUsers"
+
+# List all buckets
+gsutil ls
+
+# Check bucket ACLs
+gsutil acl get gs://<bucket>
+</storage>
+
+<iam>
+# List all service accounts
+gcloud iam service-accounts list
+
+# Check service account keys (should be minimal)
+gcloud iam service-accounts keys list --iam-account=<sa-email>
+
+# Find over-privileged bindings
+gcloud projects get-iam-policy <project> --format=json | jq '.bindings[] | select(.role | contains("owner") or contains("editor"))'
+
+# Check for external members
+gcloud projects get-iam-policy <project> --format=json | jq '.bindings[].members[] | select(contains("user:") | not)'
+</iam>
+
+<compute>
+# Check default service account usage
+gcloud compute instances list --format="table(name,serviceAccounts.email)"
+
+# Metadata server access test (from compromised instance)
+curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+
+# Check for public IPs
+gcloud compute instances list --format="table(name,networkInterfaces[].accessConfigs[].natIP)"
+</compute>
+
+<functions>
+# Check for public invocation
+gcloud functions describe <function> --format="value(invokerMembers)"
+# If contains "allUsers" = PUBLIC
+</functions>
+
+<firewall>
+# List all firewall rules allowing 0.0.0.0/0
+gcloud compute firewall-rules list --filter="sourceRanges=0.0.0.0/0" --format="table(name,allowed,direction)"
+</firewall>
+</critical_checks>
+
+<automation_script>
+```python
+import subprocess
+import json
+
+def run_gcloud(cmd: list) -> dict:
+    """Run gcloud command and return JSON."""
+    result = subprocess.run(["gcloud"] + cmd + ["--format=json"], capture_output=True, text=True)
+    return json.loads(result.stdout) if result.returncode == 0 else []
+
+def audit_gcp(project: str):
+    findings = []
+    
+    # Check for service account keys (should be 0 or 1)
+    sas = run_gcloud(["iam", "service-accounts", "list", f"--project={project}"])
+    for sa in sas:
+        keys = run_gcloud(["iam", "service-accounts", "keys", "list", 
+                          f"--iam-account={sa['email']}", f"--project={project}"])
+        user_keys = [k for k in keys if k.get("keyType") == "USER_MANAGED"]
+        if len(user_keys) > 0:
+            findings.append({
+                "severity": "HIGH",
+                "title": "User-Managed SA Keys Exist",
+                "resource": sa["email"],
+                "details": f"{len(user_keys)} user-managed keys found",
+                "remediation": "Use Workload Identity or VM Service Accounts instead of keys"
+            })
+    
+    # Check IAM for overly permissive roles
+    policy = run_gcloud(["projects", "get-iam-policy", project])
+    for binding in policy.get("bindings", []):
+        if any(role in binding.get("role", "") for role in ["owner", "editor"]):
+            for member in binding.get("members", []):
+                if member.startswith("serviceAccount:"):
+                    findings.append({
+                        "severity": "CRITICAL",
+                        "title": f"Service Account with {binding['role']}",
+                        "resource": member,
+                        "remediation": "Replace with fine-grained roles"
+                    })
+    
+    # Check for public firewall rules
+    rules = run_gcloud(["compute", "firewall-rules", "list", f"--project={project}"])
+    for rule in rules:
+        if "0.0.0.0/0" in rule.get("sourceRanges", []):
+            if rule.get("allowed"):
+                findings.append({
+                    "severity": "MEDIUM",
+                    "title": "Firewall Rule Allows 0.0.0.0/0",
+                    "resource": rule["name"],
+                    "details": f"Allows: {rule['allowed']}",
+                    "remediation": "Restrict source ranges to known IPs"
+                })
+    
+    return findings
+
+if __name__ == "__main__":
+    import sys
+    project = sys.argv[1] if len(sys.argv) > 1 else "your-project"
+    for f in audit_gcp(project):
+        print(f"[{f['severity']}] {f['title']}: {f['resource']}")
+```
+</automation_script>
+
+<remediation_guide>
+1. **Remove SA Keys**: Delete all user-managed service account keys. Use Workload Identity.
+2. **Least Privilege IAM**: Replace Editor/Owner with specific roles.
+3. **Private Buckets**: Remove allUsers/allAuthenticatedUsers from bucket IAM.
+4. **VPC Service Controls**: Enable for sensitive projects.
+5. **OS Login**: Use OS Login instead of SSH keys for VM access.
+6. **Private Google Access**: Enable for subnets to access Google APIs privately.
+7. **Security Command Center**: Enable for vulnerability and threat detection.
+8. **Organization Policies**: Enforce constraints (no public IPs, no external sharing).
+</remediation_guide>
+
+</gcp_security_guide>

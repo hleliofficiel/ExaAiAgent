@@ -96,6 +96,10 @@ class K8sScanner:
         
         logger.info(f"Scanning namespaces: {target_ns}")
         
+        # Cluster-wide checks (run once)
+        self._check_cluster_rbac()
+        
+        # Namespace-scoped checks
         for ns in target_ns:
             self._check_rbac(ns)
             self._check_pod_security(ns)
@@ -103,6 +107,43 @@ class K8sScanner:
             self._check_secrets(ns)
             
         return self.findings
+    
+    def _check_cluster_rbac(self):
+        """Check cluster-wide RBAC configurations."""
+        # Check ClusterRoleBindings for cluster-admin
+        bindings = self._run_kubectl(["get", "clusterrolebindings"])
+        for binding in bindings.get("items", []):
+            role_name = binding.get("roleRef", {}).get("name", "")
+            binding_name = binding["metadata"]["name"]
+            
+            # Skip system bindings
+            if binding_name.startswith("system:"):
+                continue
+                
+            if role_name == "cluster-admin":
+                for subject in binding.get("subjects", []):
+                    if subject.get("kind") == "ServiceAccount":
+                        self.findings.append(SecurityFinding(
+                            check_id="RBAC-002",
+                            title="ServiceAccount with cluster-admin",
+                            description=f"ServiceAccount '{subject.get('name')}' in namespace '{subject.get('namespace', 'default')}' has cluster-admin binding via '{binding_name}'.",
+                            severity=Severity.CRITICAL,
+                            resource_kind="ClusterRoleBinding",
+                            resource_name=binding_name,
+                            namespace=subject.get("namespace", "cluster-wide"),
+                            remediation="Remove cluster-admin binding. Create a scoped Role with minimum required permissions."
+                        ))
+                    elif subject.get("kind") == "User" and not subject.get("name", "").startswith("system:"):
+                        self.findings.append(SecurityFinding(
+                            check_id="RBAC-003",
+                            title="User with cluster-admin",
+                            description=f"User '{subject.get('name')}' has cluster-admin binding via '{binding_name}'.",
+                            severity=Severity.HIGH,
+                            resource_kind="ClusterRoleBinding",
+                            resource_name=binding_name,
+                            namespace="cluster-wide",
+                            remediation="Review if user truly needs cluster-admin. Apply least privilege principle."
+                        ))
 
     def _get_all_namespaces(self) -> List[str]:
         """Get list of all namespaces."""
@@ -183,8 +224,54 @@ class K8sScanner:
 
     def _check_secrets(self, namespace: str):
         """Check for secrets issues."""
-        # This would check for unencrypted secrets or environment variable mounting
-        pass
+        pods = self._run_kubectl(["get", "pods", "-n", namespace])
+        for pod in pods.get("items", []):
+            name = pod["metadata"]["name"]
+            spec = pod.get("spec", {})
+            
+            for container in spec.get("containers", []):
+                container_name = container.get("name", "unknown")
+                
+                # Check for secrets in plain env vars (bad practice)
+                for env in container.get("env", []):
+                    env_name = env.get("name", "").lower()
+                    env_value = env.get("value", "")
+                    
+                    # Skip if using secretKeyRef (proper method)
+                    if env.get("valueFrom", {}).get("secretKeyRef"):
+                        continue
+                    
+                    # Check for suspicious env var names with plain values
+                    sensitive_keywords = ["password", "secret", "key", "token", 
+                                         "api_key", "apikey", "auth", "credential",
+                                         "private", "access_key", "secret_key"]
+                    
+                    if any(kw in env_name for kw in sensitive_keywords) and env_value:
+                        self.findings.append(SecurityFinding(
+                            check_id="SEC-001",
+                            title="Secret in Plain Environment Variable",
+                            description=f"Container '{container_name}' in pod '{name}' has sensitive data in plain env var '{env.get('name')}'.",
+                            severity=Severity.HIGH,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Use Kubernetes Secrets with secretKeyRef instead of plain values. Never commit secrets in manifests."
+                        ))
+                
+                # Check for automountServiceAccountToken
+                if spec.get("automountServiceAccountToken", True):
+                    # Only flag if not system namespace
+                    if namespace not in ["kube-system", "kube-public", "kube-node-lease"]:
+                        self.findings.append(SecurityFinding(
+                            check_id="SEC-002",
+                            title="ServiceAccount Token Auto-Mounted",
+                            description=f"Pod '{name}' has automountServiceAccountToken enabled (default).",
+                            severity=Severity.LOW,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Set automountServiceAccountToken: false unless the pod needs K8s API access."
+                        ))
 
     def export_report(self) -> Dict[str, Any]:
         """Export findings summary."""
