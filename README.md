@@ -297,16 +297,18 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 | `oauth_oidc` | OAuth2/OIDC flaws |
 | `waf_bypass` | WAF bypass techniques |
 | `subdomain_takeover` | Subdomain takeover |
+| `prompt_injection` | **NEW!** AI/LLM prompt injection attacks |
 
 ---
 
 ## 🆕 Changelog
 
-### v2.0.0 (Latest)
+### v2.1.0 (Latest)
 
+- 🤖 **AI Prompt Injection Scanner** - Detect LLM vulnerabilities with 50+ payloads
 - ✨ **Smart Auto-Module Loading** - Automatically detects target type
 - ⚡ **Token Optimization** - Lightweight mode & task scaling
-- 🛡️ **5 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain
+- 🛡️ **6 New Security Modules** - GraphQL, WebSocket, OAuth, WAF, Subdomain, Prompt Injection
 - 🎨 **New UI/Branding** - Fresh ExaAi logo with Cyan/Purple theme
 - 📊 **Improved Performance** - Reduced unnecessary LLM calls
 

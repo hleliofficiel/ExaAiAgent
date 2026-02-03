@@ -49,6 +49,13 @@ from .vuln_validator import (
     VulnerabilityReport,
     create_vuln_report,
 )
+from .prompt_injection import (
+    PromptInjectionScanner,
+    scan_for_prompt_injection,
+    generate_injection_payloads,
+    analyze_llm_response,
+    detect_jailbreak_success,
+)
 from .tool_prompts import (
     get_fuzzer_prompt,
     get_analyzer_prompt,
@@ -127,6 +134,12 @@ __all__ = [
     "Severity",
     "VulnerabilityReport",
     "create_vuln_report",
+    # Prompt Injection Scanner
+    "PromptInjectionScanner",
+    "scan_for_prompt_injection",
+    "generate_injection_payloads",
+    "analyze_llm_response",
+    "detect_jailbreak_success",
     # Tool Prompts
     "get_fuzzer_prompt",
     "get_analyzer_prompt",
