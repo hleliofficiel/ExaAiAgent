@@ -424,19 +424,54 @@ class LLM:
             else:
                 completion_args["reasoning_effort"] = "high"
 
-        # Use Adaptive Traffic Controller for intelligent rate limiting
+        # Use Adaptive Traffic Controller for intelligent rate limiting with retries
         controller = get_traffic_controller()
         agent_id = self.agent_id or "unknown_agent"
         
         async def do_request():
-            from litellm import completion
-            return completion(**completion_args, stream=False)
-        
-        response = await controller.queue_request(
-            do_request,
-            agent_id=agent_id,
-            priority=RequestPriority.NORMAL
+            try:
+                from litellm import completion
+                return await completion(**completion_args, stream=False)
+            except litellm.RateLimitError:
+                # Let tenacity (in controller) handle retry
+                raise 
+            except Exception as e:
+                # Log other transient errors for potential retry
+                logger.warning(f"Transient LLM error: {e}")
+                raise
+
+        # Wrap in retry logic
+        from tenacity import (
+            retry,
+            stop_after_attempt,
+            wait_exponential,
+            retry_if_exception_type,
         )
+        import litellm
+
+        @retry(
+            retry=retry_if_exception_type((
+                litellm.RateLimitError, 
+                litellm.ServiceUnavailableError, 
+                litellm.APIConnectionError, 
+                litellm.Timeout
+            )),
+            wait=wait_exponential(multiplier=1, min=4, max=60),
+            stop=stop_after_attempt(5),
+            reraise=True
+        )
+        async def execute_with_retries():
+            return await controller.queue_request(
+                do_request,
+                agent_id=agent_id,
+                priority=RequestPriority.NORMAL
+            )
+
+        try:
+            response = await execute_with_retries()
+        except Exception:
+            self._total_stats.failed_requests += 1
+            raise
 
         self._total_stats.requests += 1
         self._last_request_stats = RequestStats(requests=1)
