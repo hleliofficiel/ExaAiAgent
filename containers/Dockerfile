@@ -47,6 +47,8 @@ RUN apt-get update && \
     less man-db procps htop \
     # Network tools
     iproute2 iputils-ping netcat-traditional socat proxychains4 \
+    # Kubernetes tools
+    kubectl \
     # Node.js
     nodejs npm pipx \
     # System
