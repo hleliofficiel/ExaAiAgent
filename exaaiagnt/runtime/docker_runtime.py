@@ -104,6 +104,14 @@ class DockerRuntime(AbstractRuntime):
                 self._tool_server_port = tool_server_port
                 self._tool_server_token = tool_server_token
 
+                # Mount kubeconfig if available
+                volumes = {}
+                kube_config = os.path.expanduser("~/.kube")
+                if os.path.exists(kube_config):
+                    volumes[kube_config] = {'bind': '/root/.kube', 'mode': 'ro'}
+                    # Also mount for pentester user
+                    volumes[kube_config] = {'bind': '/home/pentester/.kube', 'mode': 'ro'}
+
                 container = self.client.containers.run(
                     EXAAI_IMAGE,
                     command="sleep infinity",
@@ -114,6 +122,7 @@ class DockerRuntime(AbstractRuntime):
                         f"{caido_port}/tcp": caido_port,
                         f"{tool_server_port}/tcp": tool_server_port,
                     },
+                    volumes=volumes,
                     cap_add=["NET_ADMIN", "NET_RAW"],
                     labels={"exaai-scan-id": scan_id},
                     environment={
