@@ -45,7 +45,7 @@ def get_package_version() -> str:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
         # Fallback version if package not installed
-        return "2.1.2"
+        return "2.2.1"
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -80,7 +80,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
     
-    # Enhanced ASCII Logo - ExaAi v2.1.2
+    # Enhanced ASCII Logo - ExaAi v2.2.1
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
