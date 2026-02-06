@@ -90,11 +90,23 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
     if needs_agent_state(tool_name):
         if agent_state is None:
             raise ValueError(f"Tool '{tool_name}' requires agent_state but none was provided.")
-        result = tool_func(agent_state=agent_state, **converted_kwargs)
+        # Check if the tool function is a coroutine (async)
+        if inspect.iscoroutinefunction(tool_func):
+            result = await tool_func(agent_state=agent_state, **converted_kwargs)
+        else:
+            # Run synchronous blocking tools in a separate thread
+            import asyncio
+            result = await asyncio.to_thread(tool_func, agent_state=agent_state, **converted_kwargs)
     else:
-        result = tool_func(**converted_kwargs)
+        # Check if the tool function is a coroutine (async)
+        if inspect.iscoroutinefunction(tool_func):
+            result = await tool_func(**converted_kwargs)
+        else:
+            # Run synchronous blocking tools in a separate thread
+            import asyncio
+            result = await asyncio.to_thread(tool_func, **converted_kwargs)
 
-    return await result if inspect.isawaitable(result) else result
+    return result
 
 
 def validate_tool_availability(tool_name: str | None) -> tuple[bool, str]:
