@@ -224,7 +224,17 @@ async def warm_up_llm() -> None:
         error_text.append("\n\n", style="white")
         error_text.append("Could not establish connection to the language model.\n", style="white")
         error_text.append("Please check your configuration and try again.\n", style="white")
-        error_text.append(f"\nError: {e}", style="dim white")
+        
+        # Enhanced error diagnosis
+        error_str = str(e)
+        if "AuthenticationError" in error_str:
+             error_text.append("🔍 Hint: Your API key seems invalid or expired.\n", style="bold yellow")
+        elif "NotFoundError" in error_str:
+             error_text.append(f"🔍 Hint: The model '{model_name}' was not found. Check if the model name is correct.\n", style="bold yellow")
+        elif "ConnectionError" in error_str:
+             error_text.append("🔍 Hint: Network connection failed. Check your internet or proxy settings.\n", style="bold yellow")
+             
+        error_text.append(f"\nError Details: {e}", style="dim white")
 
         panel = Panel(
             error_text,
