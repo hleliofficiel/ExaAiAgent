@@ -30,7 +30,18 @@ BANNER = r"""
 """
 
 
+from exaaiagnt.dashboard.server import start_dashboard
+
 async def run_cli(args: Any) -> None:  # noqa: PLR0915
+    # Start the live dashboard
+    try:
+        start_dashboard()
+        console_temp = Console()
+        console_temp.print("[bold green]🚀 Live Dashboard available at: http://localhost:8000[/]")
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to start dashboard: {e}")
+
     # Detect if running in a real terminal or headless (pipe/background)
     is_tty = sys.stdout.isatty()
     console = Console(force_terminal=is_tty, no_color=not is_tty)

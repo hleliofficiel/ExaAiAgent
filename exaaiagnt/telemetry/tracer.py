@@ -137,18 +137,34 @@ class Tracer:
     ) -> int:
         message_id = self._next_message_id
         self._next_message_id += 1
+        
+        # Ensure imports if missing
+        import time
 
         message_data = {
             "message_id": message_id,
             "content": content,
             "role": role,
             "agent_id": agent_id,
-            "timestamp": datetime.now(UTC).isoformat(),
+            "timestamp": time.time(),  # Use epoch time for easier frontend handling
             "metadata": metadata or {},
         }
 
         self.chat_messages.append(message_data)
+        # Removed auto-save on every message to improve performance
         return message_id
+
+    def get_dashboard_data(self) -> dict[str, Any]:
+        """Return data formatted for the live dashboard."""
+        return {
+            "agents": self.agents,
+            "vulnerabilities": self.vulnerability_reports,
+            "stats": {
+                "active_agents": sum(1 for a in self.agents.values() if a.get("status") == "running"),
+                "total_requests": sum(1 for msg in self.chat_messages if msg["role"] == "assistant"),
+                "total_vulns": len(self.vulnerability_reports)
+            }
+        }
 
     def log_tool_execution_start(self, agent_id: str, tool_name: str, args: dict[str, Any]) -> int:
         execution_id = self._next_execution_id
