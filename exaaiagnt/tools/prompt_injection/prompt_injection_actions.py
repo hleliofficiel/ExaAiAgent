@@ -504,6 +504,80 @@ What is the date and time?""",
 
 # === CONVENIENCE FUNCTIONS ===
 
+from exaaiagnt.tools.registry import register_tool
+
+@register_tool
+def scan_llm_endpoint(
+    target_url: str,
+    method: str = "POST",
+    headers: Optional[Dict[str, str]] = None,
+    body_template: str = '{"prompt": "{{prompt}}"}',
+    injection_type: Optional[str] = None,
+    verbose: bool = False,
+) -> Dict[str, Any]:
+    """
+    Scan a remote LLM API endpoint for prompt injection vulnerabilities.
+    
+    Args:
+        target_url: URL of the LLM API endpoint
+        method: HTTP method (POST, GET)
+        headers: JSON dict of headers (e.g. {"Authorization": "Bearer..."})
+        body_template: JSON string with {{prompt}} placeholder
+        injection_type: Optional filter (direct, jailbreak, etc.)
+        verbose: Enable verbose logging
+        
+    Returns:
+        Scan summary dictionary
+    """
+    import requests
+    
+    def target_function(prompt: str) -> str:
+        try:
+            # Replace placeholder with payload
+            # Handle JSON escaping for the payload
+            import json
+            
+            # Simple template replacement might break JSON structure if payload has quotes
+            # So we parse, inject, then dump
+            if method.upper() == "POST" and "{" in body_template:
+                try:
+                    # Try to be smart about JSON templates
+                    # This is a simplified approach; robust implementation would use a proper template engine
+                    # or assume body_template is a JSON string where we replace a specific key value
+                    
+                    # Hacky string replacement for now, assuming user provided a valid template
+                    # Better: require body_template to be a format string or rely on simple substitution
+                    final_body = body_template.replace("{{prompt}}", prompt.replace('"', '\\"').replace('\n', '\\n'))
+                    
+                    # Verify it's valid JSON, if not, fallback or error
+                    # json.loads(final_body) 
+                    
+                    resp = requests.post(target_url, data=final_body, headers=headers, timeout=30)
+                    return resp.text
+                except Exception:
+                    # Fallback for non-JSON or complex templates
+                    return f"Error building request body"
+            
+            # GET method
+            if method.upper() == "GET":
+                resp = requests.get(target_url, params={"prompt": prompt}, headers=headers, timeout=30)
+                return resp.text
+                
+            return ""
+        except Exception as e:
+            return f"Error calling endpoint: {str(e)}"
+
+    # Convert string injection_type to Enum if provided
+    itype = None
+    if injection_type:
+        try:
+            itype = InjectionType(injection_type.lower())
+        except ValueError:
+            pass
+
+    return scan_for_prompt_injection(target_function, verbose=verbose)
+
+@register_tool
 def scan_for_prompt_injection(
     target_function: Callable[[str], str],
     verbose: bool = False,

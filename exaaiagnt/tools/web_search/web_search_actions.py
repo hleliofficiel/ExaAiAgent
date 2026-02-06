@@ -32,7 +32,7 @@ security implications and details."""
 
 
 @register_tool(sandbox_execution=False)
-def web_search(query: str) -> dict[str, Any]:
+def web_search(query: str, model: str = "sonar") -> dict[str, Any]:
     try:
         api_key = os.getenv("PERPLEXITY_API_KEY")
         if not api_key:
@@ -45,8 +45,10 @@ def web_search(query: str) -> dict[str, Any]:
         url = "https://api.perplexity.ai/chat/completions"
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
+        # Use sonar by default (cheaper/faster) or sonar-reasoning if requested
+        # 'sonar' is the new name for the standard model, 'sonar-reasoning' for deep research
         payload = {
-            "model": "sonar-reasoning",
+            "model": model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": query},

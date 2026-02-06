@@ -1,0 +1,36 @@
+<tool name="scan_cluster">
+    <description>
+        Run a full security scan on the connected Kubernetes cluster.
+        Checks for RBAC misconfigurations, Pod Security Standards violations,
+        missing NetworkPolicies, and insecure secret management.
+    </description>
+    <parameters>
+        <parameter name="context" type="string" optional="true">
+            The kubeconfig context to use. Defaults to current context.
+        </parameter>
+    </parameters>
+</tool>
+
+<tool name="check_rbac">
+    <description>
+        Check for dangerous RBAC permissions in a specific namespace.
+        Detects wildcard permissions, cluster-admin abuse, and risky role bindings.
+    </description>
+    <parameters>
+        <parameter name="namespace" type="string" optional="true">
+            Target namespace. Defaults to "default".
+        </parameter>
+    </parameters>
+</tool>
+
+<tool name="check_pod_security">
+    <description>
+        Audit pods against Pod Security Standards (PSS).
+        Finds privileged containers, host namespace usage, and capability issues.
+    </description>
+    <parameters>
+        <parameter name="namespace" type="string" optional="true">
+            Target namespace. Defaults to "default".
+        </parameter>
+    </parameters>
+</tool>

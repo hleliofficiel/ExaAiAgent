@@ -55,6 +55,9 @@ class SecurityFinding:
     status: CheckStatus = CheckStatus.FAIL
 
 
+from exaaiagnt.tools.registry import register_tool
+
+@register_tool
 class K8sScanner:
     """
     Kubernetes Security Scanner.
@@ -292,6 +295,7 @@ class K8sScanner:
 
 # === Convenience Functions ===
 
+@register_tool
 def scan_cluster(context: Optional[str] = None) -> Dict[str, Any]:
     """Run a full cluster scan."""
     scanner = K8sScanner(context=context)
@@ -299,6 +303,7 @@ def scan_cluster(context: Optional[str] = None) -> Dict[str, Any]:
     return scanner.export_report()
 
 
+@register_tool
 def check_rbac(namespace: str = "default") -> List[Dict[str, Any]]:
     """Run RBAC checks only."""
     scanner = K8sScanner()
@@ -306,6 +311,7 @@ def check_rbac(namespace: str = "default") -> List[Dict[str, Any]]:
     return scanner.export_report()["findings"]
 
 
+@register_tool
 def check_pod_security(namespace: str = "default") -> List[Dict[str, Any]]:
     """Run Pod Security checks only."""
     scanner = K8sScanner()

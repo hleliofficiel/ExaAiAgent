@@ -24,6 +24,11 @@ class PythonInstance:
         workspace = os.getenv("EXAAI_WORKSPACE", "/workspace")
         if os.path.isdir(workspace):
             os.chdir(workspace)
+        
+        # Add current directory and workspace to sys.path to ensure local imports work
+        sys.path.insert(0, os.getcwd())
+        if workspace not in sys.path:
+            sys.path.insert(0, workspace)
 
         self.shell = InteractiveShell()
         self.shell.init_completer()

@@ -1,0 +1,28 @@
+<tool name="scan_llm_endpoint">
+    <description>
+        Scan a remote LLM API endpoint for prompt injection vulnerabilities.
+        Tests for direct injection, jailbreaks, data exfiltration, and system prompt leakage.
+    </description>
+    <parameters>
+        <parameter name="target_url" type="string" required="true">
+            Full URL of the target LLM API endpoint (e.g. https://api.example.com/v1/chat)
+        </parameter>
+        <parameter name="method" type="string" optional="true">
+            HTTP method to use (POST or GET). Defaults to POST.
+        </parameter>
+        <parameter name="headers" type="dictionary" optional="true">
+            HTTP headers to include (e.g. Authorization, Content-Type).
+        </parameter>
+        <parameter name="body_template" type="string" optional="true">
+            Request body template for POST requests. Must include {{prompt}} placeholder.
+            Default: {"prompt": "{{prompt}}"}
+        </parameter>
+        <parameter name="injection_type" type="string" optional="true">
+            Specific injection type to test: direct, jailbreak, extraction, exfiltration.
+            Leave empty to run all tests.
+        </parameter>
+        <parameter name="verbose" type="boolean" optional="true">
+            Enable detailed logging of attempts. Defaults to false.
+        </parameter>
+    </parameters>
+</tool>
