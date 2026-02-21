@@ -369,7 +369,7 @@ Tool calls use XML format:
 </function>
 
 CRITICAL RULES:
-0. While active in the agent loop, EVERY message you output MUST be a single tool call. Do not send plain text-only responses.
+0. While active in the agent loop, EVERY message you output MUST be a single tool call. Do NOT send plain text-only responses.
 1. One tool call per message
 2. Tool call must be last in message
 3. End response after </function> tag. It's your stop word. Do not continue after it.

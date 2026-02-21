@@ -10,7 +10,7 @@ Comprehensive security testing for Kubernetes clusters including:
 - Container vulnerability scanning integration
 
 Author: ALhilali
-Version: 2.2.1
+Version: 2.2.2
 """
 
 import json

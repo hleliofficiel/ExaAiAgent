@@ -2,7 +2,7 @@ FROM kalilinux/kali-rolling:latest
 
 LABEL maintainer="ExaaiAgnt Team"
 LABEL description="ExaaiAgnt - AI Agent Penetration Testing Environment with Comprehensive Security Tools"
-LABEL version="2.2.1"
+LABEL version="2.2.2"
 
 # Update and install base packages
 RUN apt-get update && \

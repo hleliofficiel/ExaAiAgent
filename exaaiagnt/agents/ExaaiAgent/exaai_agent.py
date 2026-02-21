@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, Optional
 
 from exaaiagnt.agents.base_agent import BaseAgent
+from exaaiagnt.agents.agent_supervisor import AgentRole, get_supervisor
 from exaaiagnt.llm.config import LLMConfig
 
 
@@ -8,15 +9,35 @@ class ExaaiAgent(BaseAgent):
     max_iterations = 300
 
     def __init__(self, config: dict[str, Any]):
+        self.role = config.get("role", AgentRole.RECON)
         default_modules = []
 
         state = config.get("state")
         if state is None or (hasattr(state, "parent_id") and state.parent_id is None):
             default_modules = ["root_agent"]
+            self.role = AgentRole.SUPERVISOR
+
+        # Set specific modules based on role
+        role_modules = {
+            AgentRole.RECON: ["subdomain_enumeration", "port_scanning", "technology_fingerprinting"],
+            AgentRole.ATTACK: ["sql_injection", "xss", "rce", "idor", "waf_bypass"],
+            AgentRole.AUDITOR: ["api_security", "kubernetes_security", "cloud_security"],
+        }
+        
+        if self.role in role_modules:
+            default_modules.extend(role_modules[self.role])
 
         self.default_llm_config = LLMConfig(prompt_modules=default_modules)
 
         super().__init__(config)
+        
+        # Update role in supervisor
+        try:
+            supervisor = get_supervisor()
+            if self.state.agent_id in supervisor._agents:
+                supervisor._agents[self.state.agent_id].role = self.role
+        except Exception:
+            pass
 
     async def execute_scan(self, scan_config: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0912
         user_instructions = scan_config.get("user_instructions", "")

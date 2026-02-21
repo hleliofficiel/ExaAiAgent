@@ -30,6 +30,14 @@ class AgentStatus(Enum):
     BUDGET_EXCEEDED = "budget_exceeded"
 
 
+class AgentRole(Enum):
+    """Agent roles in the swarm."""
+    SUPERVISOR = "supervisor"
+    RECON = "recon"
+    ATTACK = "attack"
+    AUDITOR = "auditor"
+
+
 class AgentPriority(Enum):
     """Agent priority levels."""
     HIGH = 3
@@ -43,6 +51,7 @@ class AgentHealth:
     agent_id: str
     agent_name: str
     status: AgentStatus = AgentStatus.INIT
+    role: AgentRole = AgentRole.RECON
     priority: AgentPriority = AgentPriority.MEDIUM
     last_heartbeat: float = field(default_factory=time.time)
     last_activity: float = field(default_factory=time.time)
@@ -70,6 +79,7 @@ class AgentSupervisor:
     - Self-healing mechanism
     - Priority-based scheduling
     - Token budget enforcement
+    - Swarm orchestration
     """
 
     # Configuration
@@ -113,15 +123,17 @@ class AgentSupervisor:
         parent_id: str | None = None,
         timeout: float | None = None,
         priority: AgentPriority = AgentPriority.MEDIUM,
-        token_budget: int = 200000
+        token_budget: int = 200000,
+        role: AgentRole = AgentRole.RECON
     ) -> None:
-        """Register an agent for monitoring with priority and token budget."""
+        """Register an agent for monitoring with priority, token budget and role."""
         health = AgentHealth(
             agent_id=agent_id,
             agent_name=agent_name,
             parent_id=parent_id,
             priority=priority,
             token_budget=token_budget,
+            role=role
         )
         self._agents[agent_id] = health
 
@@ -131,7 +143,7 @@ class AgentSupervisor:
         if timeout:
             self._timeout_handlers[agent_id] = timeout
 
-        logger.info(f"Registered agent: {agent_name} ({agent_id}) priority={priority.name}")
+        logger.info(f"Registered agent: {agent_name} ({agent_id}) role={role.value} priority={priority.name}")
         self._notify_status_change(agent_id, AgentStatus.INIT, AgentStatus.RUNNING)
 
     def set_priority(self, agent_id: str, priority: AgentPriority) -> None:

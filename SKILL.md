@@ -1,6 +1,6 @@
 ---
 name: ExaAiAgent
-description: "AI-powered penetration testing framework (v2.2.1). Features a new Reconnaissance Engine, advanced K8s/Cloud auditing, and professional PDF/MD reporting. Ideal for automated security scans and PoC generation."
+description: "AI-powered penetration testing framework (v2.2.2). Features Multi-Agent Swarm orchestration, autonomous 100% awareness, advanced K8s/Cloud auditing, and automated owner reporting."
 homepage: https://github.com/hleliofficiel/ExaAiAgent
 metadata:
   {
@@ -29,62 +29,64 @@ metadata:
   }
 ---
 
-# ExaAiAgent Skill (v2.2.1) 🛡️
+# ExaAiAgent Skill (v2.2.2) 🛡️
 
-ExaAiAgent is an elite AI-powered cybersecurity agent designed to function as an autonomous penetration tester. It discovers vulnerabilities, generates functional Proof-of-Concepts (PoCs), and provides actionable remediation advice.
-
----
-
-## 🚀 Key Features in v2.2.1
-- **Reconnaissance Engine**: Automated subdomain discovery, port scanning, and technology stack fingerprinting.
-- **Advanced Kubernetes Audit**: Deep scanning for RBAC issues and Pod Security Standard (PSS) compliance.
-- **REST & gRPC Support**: Dedicated modules for modern API architectures.
-- **Professional Reporting**: Now includes an **Executive Summary** with automated risk scoring.
+ExaAiAgent is an elite AI-powered cybersecurity agent designed to function as an autonomous penetration tester. Version 2.2.2 introduces the **Swarm Intelligence** engine, allowing multiple specialized agents to collaborate in real-time with 100% autonomy.
 
 ---
 
-## 📚 Self-Learning Protocol
+## 🚀 Key Features in v2.2.2
+- **Multi-Agent Swarm**: Intelligent orchestration of RECON, ATTACK, and AUDITOR agents.
+- **100% Autonomous Awareness**: Enhanced system prompts for zero-input operation and self-critique.
+- **Automated Owner Reporting**: Built-in protocol to broadcast findings directly to the system owner.
+- **Reconnaissance Engine**: Automated subdomain discovery and technology fingerprinting.
+- **Advanced Kubernetes Audit**: Deep scanning for RBAC issues and PSS compliance.
 
-When working with ExaAiAgent, **ALWAYS** follow this discovery sequence:
+---
 
-### 1. Explore the Codebase
+## 🐝 Swarm Roles & 100% Awareness Protocol
+
+### 1. Autonomous Decisions
+The agent operates with **100% awareness** of its environment. It will no longer ask for "how to proceed" or seek user confirmation. It analyzes tool outputs, selects the next logical step (e.g., pivot from recon to SQLi), and only notifies the user upon finding critical issues or finishing the task.
+
+### 2. Self-Critique Loop
+Before every report, the agent performs a validation check:
+- Is the evidence (HTTP requests/responses) attached?
+- Is the severity correctly assessed based on business impact?
+- Are the remediation steps actionable and technical?
+
+### 3. Swarm Roles
+- **RECON**: Focused on mapping attack surfaces and asset discovery.
+- **ATTACK**: Specialized in exploitation, fuzzing, and WAF bypass.
+- **AUDITOR**: Validates findings, performs config audits, and generates final reports.
+- **SUPERVISOR**: Manages the swarm, delegates tasks, and communicates with the owner.
+
+---
+
+## 📋 Reporting to Owner
+
+### Automatic Notification Protocol
+ExaAiAgent is configured to automatically send the current findings and progress report directly to the system owner. This is triggered:
+- When a **CRITICAL** or **HIGH** severity vulnerability is confirmed.
+- Upon completion of a specific task by any swarm member.
+- As a final summary after the `finish_scan` tool is called.
+
+The report includes:
+- **📊 Stats**: Vulnerability count and severity breakdown.
+- **🚨 Alerts**: Quick preview of the most dangerous findings.
+- **📝 Summary**: A high-level overview for the system owner.
+
+---
+
+## 🛠️ Commands & Usage
+
+### Launching an Autonomous Swarm Scan
 ```bash
-# List all prompts/modules including the new Recon and API modules
-find /path/to/ExaAiAgent -name "*.jinja" | grep -E "(reconnaissance|vulnerabilities)"
-
-# Explore the core logic
-ls -la /path/to/ExaAiAgent/exaaiagnt/tools/
+# Launch a full autonomous swarm-based scan (100% Awareness Mode)
+exaai -n --target https://api.example.com --instruction "Perform a full swarm audit and report findings"
 ```
 
-### 2. Understand the Structure
-```
-ExaAiAgent/
-├── exaaiagnt/
-│   ├── prompts/
-│   │   ├── reconnaissance/  # NEW: Subdomain, Port, Tech Fingerprinting
-│   │   └── vulnerabilities/  # REST, gRPC, SQLi, XSS, etc.
-│   ├── tools/
-│   │   ├── k8s_scanner/      # Enhanced: PSS & Secret Auditing
-│   │   └── ...
-```
-
----
-
-## 🔧 LLM Configuration
-
-ExaAiAgent v2.2.1 is optimized for **Google Gemini 3** and **Claude 3.5/4.6**.
-
-```bash
-# Example: Configuration for Google Gemini (Recommended)
-export EXAAI_LLM="gemini/gemini-2.0-flash"
-export LLM_API_KEY="your-api-key"
-```
-
----
-
-## 📋 Scan Commands
-
-### New Reconnaissance Commands (v2.2.1)
+### New Reconnaissance Commands
 ```bash
 # Automated Subdomain & Asset Discovery
 exaai -n --target example.com --prompt-modules subdomain_enumeration
@@ -93,52 +95,8 @@ exaai -n --target example.com --prompt-modules subdomain_enumeration
 exaai -n --target https://api.example.com --prompt-modules technology_fingerprinting,port_scanning
 ```
 
-### Advanced API Scanning
-```bash
-# Specialized REST API Audit
-exaai -n --target https://api.example.com/v2 --prompt-modules rest_api_security
-
-# gRPC Service Security Check
-exaai -n --target grpc.example.com:50051 --prompt-modules grpc_security
-```
-
-### Kubernetes & Cloud
-```bash
-# Enhanced K8s Audit (including Secret & PSS checks)
-exaai -n --target kubectl --prompt-modules kubernetes_security
-```
-
----
-
-## 🤖 Agent Workflow (Best Practices)
-
-### 1. Verification
-Before scanning, always verify the environment:
-```bash
-docker info && exaai --version
-```
-
-### 2. Reporting
-After a scan, always parse the new **Executive Summary**:
-```bash
-# Locate the latest report
-LATEST_REPORT=$(ls -td exaai_runs/*/ | head -1)
-# View the Summary table
-grep -A 10 "Executive Summary" "$LATEST_REPORT/penetration_test_report.md"
-```
-
----
-
-## 🛠️ Contributing
-
-To add a new module (e.g., Mobile Security):
-1. Create a `.jinja` file in `exaaiagnt/prompts/vulnerabilities/`.
-2. Map it in `exaaiagnt/prompts/auto_loader.py`.
-3. Test locally using the internal `Tracer` for report validation.
-
 ---
 
 ## 🔗 Resources
 - **GitHub:** https://github.com/hleliofficiel/ExaAiAgent
-- **PyPI:** https://pypi.org/project/exaai-agent/
-- **Changelog:** See `IMPROVEMENTS.md` for v2.2.1 details.
+- **Changelog:** See `IMPROVEMENTS.md` for v2.2.2 details.
