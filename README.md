@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1.2-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-2.2.1-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v2.1.2 Released!** Now supports **AI Agent Integration (OpenClaw)**, Kubernetes Security, Azure/GCP modules, and Prompt Injection detection.
+> **🚀 v2.2.1 Released!** Now supports **Reconnaissance Engine**, **AI Agent Integration (OpenClaw)**, Kubernetes Security, Azure/GCP modules, and Prompt Injection detection.
 >
 > 🤖 **Connect Your Agent:** You can now control ExaAiAgent via any AI agent (OpenClaw, etc).
 > Just send this command to your agent:
@@ -28,7 +28,15 @@
 
 ---
 
-## 🔥 What's New in v2.1.2
+## 🔥 What's New in v2.2.1
+
+### 🔍 Reconnaissance Engine
+
+A new suite of modules dedicated to automated reconnaissance and attack surface mapping:
+
+- **Subdomain Enumeration**: Discovery of hidden subdomains and asset mapping
+- **Port Scanning**: Context-aware port scanning and service identification
+- **Technology Fingerprinting**: Detection of frameworks, CMS, and server-side tech stacks
 
 ### 🤖 AI Agent Integration (OpenClaw)
 
@@ -306,15 +314,23 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 | `subdomain_takeover` | Subdomain takeover |
 | `prompt_injection` | AI/LLM prompt injection attacks |
 | `kubernetes_security` | **NEW!** K8s RBAC & Pod Security auditing |
+| `subdomain_enumeration` | **NEW!** OSINT-based subdomain discovery |
+| `port_scanning` | **NEW!** Service discovery & port auditing |
+| `technology_fingerprinting` | **NEW!** Web tech stack identification |
 
 ---
 
 ## 🆕 Changelog
 
-### v2.1.2 (Latest)
+### v2.2.1 (Latest)
+- **Reconnaissance Engine**: New modules for subdomain enumeration, port scanning, and tech fingerprinting
 - **AI Agent Integration**: OpenClaw/Agent compatibility
 - **Stability Fixes**: ToolManager thread-safety, Resource cleanup
 - **DevEx**: New `install.sh` script, improved logging
+
+### v2.1.2
+- **Bugfix**: Fixed k8s scanner import issue
+- **Banner**: Updated banner version string
 
 ### v2.1.0
 - **New Modules**: K8s, Azure, GCP, Prompt Injection
@@ -364,5 +380,3 @@ ExaAiAgent builds on incredible open-source projects like [LiteLLM](https://gith
 
 > [!WARNING]
 > Only test apps you own or have permission to test. You are responsible for using ExaAiAgent ethically and legally.
-
-</div>

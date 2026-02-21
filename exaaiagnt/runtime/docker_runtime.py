@@ -50,7 +50,7 @@ class DockerRuntime(AbstractRuntime):
         except AttributeError:
             logger.debug("Tracer missing scan_config, using fallback scan ID")
 
-        return f"scan-{agent_id.split('-')[0]}"
+        return f"scan-{agent_id.split('-', maxsplit=1)[0]}"
 
     def _verify_image_available(self, image_name: str, max_retries: int = 3) -> None:
         def _validate_image(image: docker.models.images.Image) -> None:
@@ -108,9 +108,9 @@ class DockerRuntime(AbstractRuntime):
                 volumes = {}
                 kube_config = os.path.expanduser("~/.kube")
                 if os.path.exists(kube_config):
-                    volumes[kube_config] = {'bind': '/root/.kube', 'mode': 'ro'}
+                    volumes[kube_config] = {"bind": "/root/.kube", "mode": "ro"}
                     # Also mount for pentester user
-                    volumes[kube_config] = {'bind': '/home/pentester/.kube', 'mode': 'ro'}
+                    volumes[kube_config] = {"bind": "/home/pentester/.kube", "mode": "ro"}
 
                 container = self.client.containers.run(
                     EXAAI_IMAGE,

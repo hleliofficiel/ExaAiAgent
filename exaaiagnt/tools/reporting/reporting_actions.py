@@ -1,7 +1,7 @@
-from typing import Any
 import json
 import os
 from datetime import datetime
+from typing import Any
 
 from exaaiagnt.tools.registry import register_tool
 
@@ -37,17 +37,17 @@ def create_vulnerability_report(
         "timestamp": datetime.now().isoformat(),
         "agent": os.getenv("EXAAI_AGENT_NAME", "unknown")
     }
-    
+
     # Save to local reports directory
     try:
         reports_dir = os.path.join(os.getcwd(), "reports")
         os.makedirs(reports_dir, exist_ok=True)
         filename = f"vuln_report_{int(datetime.now().timestamp())}_{severity}.json"
         filepath = os.path.join(reports_dir, filename)
-        
+
         with open(filepath, "w") as f:
             json.dump(report_data, f, indent=2)
-            
+
     except Exception as e:
         import logging
         logging.warning(f"Failed to save local report: {e}")

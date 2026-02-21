@@ -8,13 +8,13 @@ Features:
 - Timing analysis
 """
 
+import hashlib
 import logging
 import re
-import hashlib
 from dataclasses import dataclass, field
+from difflib import SequenceMatcher
 from enum import Enum
 from typing import Any, Optional
-from difflib import SequenceMatcher
 
 
 logger = logging.getLogger(__name__)
@@ -66,26 +66,26 @@ class ResponseAnalyzer:
     - Version information
     - Debug/config information
     """
-    
+
     _instance: Optional["ResponseAnalyzer"] = None
     _lock = __import__("threading").Lock()
-    
+
     def __new__(cls) -> "ResponseAnalyzer":
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-        
+
         self._patterns = self._load_patterns()
         self._baseline_responses: dict[str, str] = {}
         self._initialized = True
         logger.info("ResponseAnalyzer initialized")
-    
+
     def _load_patterns(self) -> dict[DetectionType, list[tuple[str, float]]]:
         """Load detection patterns with confidence scores."""
         return {
@@ -164,13 +164,13 @@ class ResponseAnalyzer:
                 (r"javascript:", 0.8),
             ],
         }
-    
+
     def analyze(
         self,
         response_body: str,
         status_code: int = 200,
         response_time_ms: float = 0.0,
-        headers: Optional[dict[str, str]] = None
+        headers: dict[str, str] | None = None
     ) -> AnalysisResult:
         """Analyze a response for vulnerabilities and information leakage."""
         result = AnalysisResult(
@@ -180,7 +180,7 @@ class ResponseAnalyzer:
             status_code=status_code,
             is_error=status_code >= 400
         )
-        
+
         # Check response body
         for detection_type, patterns in self._patterns.items():
             for pattern, confidence in patterns:
@@ -192,7 +192,7 @@ class ResponseAnalyzer:
                         evidence=matches[0] if isinstance(matches[0], str) else str(matches[0]),
                         severity=self._get_severity(detection_type)
                     ))
-        
+
         # Check headers
         if headers:
             header_str = "\n".join(f"{k}: {v}" for k, v in headers.items())
@@ -205,7 +205,7 @@ class ResponseAnalyzer:
                         evidence=matches[0],
                         location="headers"
                     ))
-        
+
         # Timing analysis
         if response_time_ms > 5000:  # 5 seconds
             result.detections.append(Detection(
@@ -214,9 +214,9 @@ class ResponseAnalyzer:
                 evidence=f"Response time: {response_time_ms}ms",
                 severity=6
             ))
-        
+
         return result
-    
+
     def compare_responses(
         self,
         response1: str,
@@ -230,25 +230,25 @@ class ResponseAnalyzer:
         """
         ratio = SequenceMatcher(None, response1, response2).ratio()
         return ratio >= threshold, ratio
-    
+
     def set_baseline(self, endpoint: str, response: str):
         """Set a baseline response for an endpoint."""
         self._baseline_responses[endpoint] = self._hash_response(response)
-    
+
     def is_different_from_baseline(self, endpoint: str, response: str) -> bool:
         """Check if response differs from baseline."""
         if endpoint not in self._baseline_responses:
             return False
-        
+
         current_hash = self._hash_response(response)
         return current_hash != self._baseline_responses[endpoint]
-    
+
     def _hash_response(self, response: str) -> str:
         """Create a hash of the response."""
         # Normalize whitespace
-        normalized = re.sub(r'\s+', ' ', response.strip())
-        return hashlib.md5(normalized.encode()).hexdigest()
-    
+        normalized = re.sub(r"\s+", " ", response.strip())
+        return hashlib.md5(normalized.encode()).hexdigest()  # nosec: B324
+
     def _get_severity(self, detection_type: DetectionType) -> int:
         """Get severity level for a detection type."""
         severity_map = {
@@ -263,7 +263,7 @@ class ResponseAnalyzer:
             DetectionType.TIMING_ANOMALY: 6,
         }
         return severity_map.get(detection_type, 5)
-    
+
     def get_stats(self) -> dict[str, Any]:
         """Get analyzer statistics."""
         return {
@@ -274,7 +274,7 @@ class ResponseAnalyzer:
 
 
 # Global instance
-_analyzer: Optional[ResponseAnalyzer] = None
+_analyzer: ResponseAnalyzer | None = None
 
 
 def get_response_analyzer() -> ResponseAnalyzer:
@@ -289,7 +289,7 @@ def analyze_response(
     response_body: str,
     status_code: int = 200,
     response_time_ms: float = 0.0,
-    headers: Optional[dict[str, str]] = None
+    headers: dict[str, str] | None = None
 ) -> AnalysisResult:
     """Convenience function to analyze a response."""
     analyzer = get_response_analyzer()

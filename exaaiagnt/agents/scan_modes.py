@@ -3,11 +3,12 @@ Scan Modes - Operational modes for different scanning intensities.
 Supports Stealth, Standard, and Aggressive modes.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Any, Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,34 +25,34 @@ class ModeConfig:
     """Configuration for a scan mode."""
     name: str
     description: str
-    
+
     # Request limits
     max_requests_per_minute: int
     max_concurrent_requests: int
     request_delay_ms: int
-    
+
     # Token limits
     max_tokens_per_agent: int
     max_total_tokens: int
-    
+
     # Behavior
     enable_fuzzing: bool
     enable_exploitation: bool
     enable_poc: bool
     max_payloads_per_param: int
-    
+
     # Safety
     respect_robots_txt: bool
     avoid_logout_endpoints: bool
     avoid_destructive_actions: bool
-    
+
     # Tools
     allowed_tools: list
     blocked_tools: list
 
 
 # Predefined mode configurations
-MODE_CONFIGS: Dict[ScanMode, ModeConfig] = {
+MODE_CONFIGS: dict[ScanMode, ModeConfig] = {
     ScanMode.STEALTH: ModeConfig(
         name="Stealth",
         description="Minimal requests, safe for production, low token usage",
@@ -70,7 +71,7 @@ MODE_CONFIGS: Dict[ScanMode, ModeConfig] = {
         allowed_tools=["browser_action", "terminal_execute", "web_search"],
         blocked_tools=["nuclei", "sqlmap", "ffuf"],
     ),
-    
+
     ScanMode.STANDARD: ModeConfig(
         name="Standard",
         description="Moderate fuzzing, safe for bug bounty programs",
@@ -89,7 +90,7 @@ MODE_CONFIGS: Dict[ScanMode, ModeConfig] = {
         allowed_tools=[],  # All allowed
         blocked_tools=[],
     ),
-    
+
     ScanMode.AGGRESSIVE: ModeConfig(
         name="Aggressive",
         description="Deep exploitation, full PoC development, maximum coverage",
@@ -115,60 +116,60 @@ class ScanModeManager:
     """
     Manages scan modes and enforces restrictions.
     """
-    
+
     _instance: Optional["ScanModeManager"] = None
-    
+
     def __new__(cls) -> "ScanModeManager":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-        
+
         # Default mode from environment or STANDARD
         mode_env = os.getenv("EXAAI_SCAN_MODE", "standard").lower()
         try:
             self._current_mode = ScanMode(mode_env)
         except ValueError:
             self._current_mode = ScanMode.STANDARD
-        
+
         self._config = MODE_CONFIGS[self._current_mode]
         self._request_count = 0
-        self._token_usage: Dict[str, int] = {}
+        self._token_usage: dict[str, int] = {}
         self._total_tokens = 0
-        
+
         self._initialized = True
         logger.info(f"ScanModeManager initialized in {self._current_mode.value} mode")
-    
+
     @property
     def mode(self) -> ScanMode:
         return self._current_mode
-    
+
     @property
     def config(self) -> ModeConfig:
         return self._config
-    
+
     def set_mode(self, mode: ScanMode) -> None:
         """Change the current scan mode."""
         self._current_mode = mode
         self._config = MODE_CONFIGS[mode]
         logger.info(f"Scan mode changed to {mode.value}")
-    
+
     def can_fuzz(self) -> bool:
         """Check if fuzzing is allowed."""
         return self._config.enable_fuzzing
-    
+
     def can_exploit(self) -> bool:
         """Check if exploitation is allowed."""
         return self._config.enable_exploitation
-    
+
     def can_poc(self) -> bool:
         """Check if PoC development is allowed."""
         return self._config.enable_poc
-    
+
     def is_tool_allowed(self, tool_name: str) -> bool:
         """Check if a tool is allowed in current mode."""
         if self._config.blocked_tools and tool_name in self._config.blocked_tools:
@@ -176,15 +177,15 @@ class ScanModeManager:
         if self._config.allowed_tools and tool_name not in self._config.allowed_tools:
             return False
         return True
-    
+
     def get_request_delay(self) -> float:
         """Get delay between requests in seconds."""
         return self._config.request_delay_ms / 1000.0
-    
+
     def get_max_payloads(self) -> int:
         """Get max payloads per parameter."""
         return self._config.max_payloads_per_param
-    
+
     def check_agent_token_budget(self, agent_id: str, tokens_to_use: int) -> bool:
         """Check if agent can use more tokens."""
         current = self._token_usage.get(agent_id, 0)
@@ -192,27 +193,27 @@ class ScanModeManager:
             logger.warning(f"Agent {agent_id} would exceed token budget")
             return False
         return True
-    
+
     def check_total_token_budget(self, tokens_to_use: int) -> bool:
         """Check if total token budget allows more usage."""
         if self._total_tokens + tokens_to_use > self._config.max_total_tokens:
             logger.warning("Total token budget would be exceeded")
             return False
         return True
-    
+
     def record_token_usage(self, agent_id: str, tokens: int) -> None:
         """Record token usage for an agent."""
         self._token_usage[agent_id] = self._token_usage.get(agent_id, 0) + tokens
         self._total_tokens += tokens
-    
+
     def get_agent_token_usage(self, agent_id: str) -> int:
         """Get token usage for an agent."""
         return self._token_usage.get(agent_id, 0)
-    
+
     def get_total_token_usage(self) -> int:
         """Get total token usage."""
         return self._total_tokens
-    
+
     def get_mode_prompt_context(self) -> str:
         """Get context string to add to prompts based on mode."""
         if self._current_mode == ScanMode.STEALTH:
@@ -224,7 +225,7 @@ STEALTH MODE ACTIVE:
 - Focus on passive reconnaissance
 - Report findings without verification
 """
-        elif self._current_mode == ScanMode.STANDARD:
+        if self._current_mode == ScanMode.STANDARD:
             return """
 STANDARD MODE ACTIVE:
 - Moderate fuzzing allowed
@@ -233,8 +234,8 @@ STANDARD MODE ACTIVE:
 - Avoid logout endpoints
 - Standard bug bounty rules apply
 """
-        else:  # AGGRESSIVE
-            return """
+        # AGGRESSIVE
+        return """
 AGGRESSIVE MODE ACTIVE:
 - Full fuzzing enabled
 - Exploitation allowed
@@ -242,8 +243,8 @@ AGGRESSIVE MODE ACTIVE:
 - Maximum coverage
 - Push boundaries aggressively
 """
-    
-    def get_stats(self) -> Dict[str, Any]:
+
+    def get_stats(self) -> dict[str, Any]:
         """Get mode statistics."""
         return {
             "mode": self._current_mode.value,

@@ -1,14 +1,14 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-import uvicorn
-import json
 import asyncio
 import logging
-from typing import List, Dict, Any
 import os
 
+import uvicorn
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
 from exaaiagnt.telemetry.tracer import get_global_tracer
+
 
 app = FastAPI(title="ExaAi Live Dashboard")
 
@@ -18,7 +18,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -39,7 +39,7 @@ manager = ConnectionManager()
 @app.get("/")
 async def get_dashboard():
     html_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
-    with open(html_path, "r") as f:
+    with open(html_path) as f:
         return HTMLResponse(content=f.read())
 
 @app.get("/api/stats")
@@ -47,7 +47,7 @@ async def get_stats():
     tracer = get_global_tracer()
     if not tracer:
         return {"status": "Waiting for agent..."}
-    
+
     return {
         "agents_count": len(tracer.agents),
         "vulnerabilities": len(tracer.vulnerability_reports),
@@ -85,7 +85,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"WebSocket error: {e}")
+        logging.exception(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
 def start_dashboard(host="0.0.0.0", port=8000):

@@ -24,7 +24,7 @@ class PythonInstance:
         workspace = os.getenv("EXAAI_WORKSPACE", "/workspace")
         if os.path.isdir(workspace):
             os.chdir(workspace)
-        
+
         # Add current directory and workspace to sys.path to ensure local imports work
         sys.path.insert(0, os.getcwd())
         if workspace not in sys.path:
@@ -98,9 +98,9 @@ class PythonInstance:
         self, execution_result: Any, stdout_content: str, stderr_content: str
     ) -> dict[str, Any]:
         # Strip ANSI codes from output
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        stdout_content = ansi_escape.sub('', stdout_content)
-        stderr_content = ansi_escape.sub('', stderr_content)
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        stdout_content = ansi_escape.sub("", stdout_content)
+        stderr_content = ansi_escape.sub("", stderr_content)
 
         stdout = self._truncate_output(
             stdout_content, MAX_STDOUT_LENGTH, "... [stdout truncated at 10k chars]"

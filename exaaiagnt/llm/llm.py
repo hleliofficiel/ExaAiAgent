@@ -16,9 +16,8 @@ from litellm import ModelResponse, completion_cost
 from litellm.utils import supports_prompt_caching
 
 from exaaiagnt.llm.config import LLMConfig
+from exaaiagnt.llm.llm_traffic_controller import RequestPriority, get_traffic_controller
 from exaaiagnt.llm.memory_compressor import MemoryCompressor
-from exaaiagnt.llm.request_queue import get_global_queue
-from exaaiagnt.llm.llm_traffic_controller import get_traffic_controller, RequestPriority
 from exaaiagnt.llm.utils import _truncate_to_first_function, parse_tool_invocations
 from exaaiagnt.prompts import load_prompt_modules
 from exaaiagnt.tools import get_tools_prompt
@@ -411,7 +410,7 @@ class LLM:
         }
 
         # Add max_tokens to limit output and reduce consumption
-        if hasattr(self.config, 'max_tokens_per_request') and self.config.max_tokens_per_request:
+        if hasattr(self.config, "max_tokens_per_request") and self.config.max_tokens_per_request:
             completion_args["max_tokens"] = self.config.max_tokens_per_request
 
         if self._should_include_stop_param():
@@ -419,7 +418,7 @@ class LLM:
 
         # Use medium reasoning effort in lightweight mode, high otherwise
         if self._should_include_reasoning_effort():
-            if hasattr(self.config, 'lightweight_mode') and self.config.lightweight_mode:
+            if hasattr(self.config, "lightweight_mode") and self.config.lightweight_mode:
                 completion_args["reasoning_effort"] = "medium"
             else:
                 completion_args["reasoning_effort"] = "high"
@@ -427,33 +426,33 @@ class LLM:
         # Use Adaptive Traffic Controller for intelligent rate limiting with retries
         controller = get_traffic_controller()
         agent_id = self.agent_id or "unknown_agent"
-        
+
         async def do_request():
             try:
                 from litellm import completion
                 return await completion(**completion_args, stream=False)
             except litellm.RateLimitError:
                 # Let tenacity (in controller) handle retry
-                raise 
+                raise
             except Exception as e:
                 # Log other transient errors for potential retry
                 logger.warning(f"Transient LLM error: {e}")
                 raise
 
         # Wrap in retry logic
+        import litellm
         from tenacity import (
             retry,
+            retry_if_exception_type,
             stop_after_attempt,
             wait_exponential,
-            retry_if_exception_type,
         )
-        import litellm
 
         @retry(
             retry=retry_if_exception_type((
-                litellm.RateLimitError, 
-                litellm.ServiceUnavailableError, 
-                litellm.APIConnectionError, 
+                litellm.RateLimitError,
+                litellm.ServiceUnavailableError,
+                litellm.APIConnectionError,
                 litellm.Timeout
             )),
             wait=wait_exponential(multiplier=1, min=4, max=60),

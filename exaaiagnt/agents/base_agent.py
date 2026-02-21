@@ -18,8 +18,8 @@ from exaaiagnt.llm import LLM, LLMConfig, LLMRequestFailedError
 from exaaiagnt.llm.utils import clean_content
 from exaaiagnt.tools import process_tool_invocations
 
+from .agent_supervisor import get_supervisor
 from .state import AgentState
-from .agent_supervisor import get_supervisor, AgentStatus
 
 
 logger = logging.getLogger(__name__)
@@ -113,7 +113,7 @@ class BaseAgent(metaclass=AgentMeta):
                 tracer.update_tool_execution(execution_id=exec_id, status="completed", result={})
 
         self._add_to_agents_graph()
-        
+
         # Register with supervisor for monitoring
         try:
             supervisor = get_supervisor()
@@ -169,7 +169,7 @@ class BaseAgent(metaclass=AgentMeta):
         from exaaiagnt.telemetry.tracer import get_global_tracer
 
         tracer = get_global_tracer()
-        
+
         # Get supervisor for heartbeat
         supervisor = get_supervisor()
 
@@ -179,7 +179,7 @@ class BaseAgent(metaclass=AgentMeta):
                 supervisor.heartbeat(self.state.agent_id)
             except Exception:
                 pass
-            
+
             self._check_agent_messages(self.state)
 
             if self.state.is_waiting_for_input():
@@ -456,7 +456,10 @@ class BaseAgent(metaclass=AgentMeta):
 
     def _check_agent_messages(self, state: AgentState) -> None:  # noqa: PLR0912
         try:
-            from exaaiagnt.tools.agents_graph.agents_graph_actions import _agent_graph, _agent_messages
+            from exaaiagnt.tools.agents_graph.agents_graph_actions import (
+                _agent_graph,
+                _agent_messages,
+            )
 
             agent_id = state.agent_id
             if not agent_id or agent_id not in _agent_messages:

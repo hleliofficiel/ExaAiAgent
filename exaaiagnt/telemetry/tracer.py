@@ -137,7 +137,7 @@ class Tracer:
     ) -> int:
         message_id = self._next_message_id
         self._next_message_id += 1
-        
+
         # Ensure imports if missing
         import time
 
@@ -231,6 +231,27 @@ class Tracer:
                     f.write(
                         f"**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
                     )
+
+                    # === Executive Summary ===
+                    f.write("## 📊 Executive Summary\n\n")
+                    f.write("| Metric | Value |\n")
+                    f.write("| :--- | :--- |\n")
+                    f.write(f"| **Overall Result** | {'✅ SECURE' if not self.vulnerability_reports else '⚠️ VULNERABLE'} |\n")
+                    f.write(f"| **Total Vulnerabilities** | {len(self.vulnerability_reports)} |\n")
+                    
+                    sev_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+                    for v in self.vulnerability_reports:
+                        s = v["severity"].lower()
+                        if s in sev_counts:
+                            sev_counts[s] += 1
+                    
+                    f.write(f"| **Critical / High** | {sev_counts['critical']} / {sev_counts['high']} |\n")
+                    f.write(f"| **Medium / Low** | {sev_counts['medium']} / {sev_counts['low']} |\n")
+                    f.write(f"| **Total Agents** | {len(self.agents)} |\n")
+                    f.write(f"| **Tool Invocations** | {self.get_real_tool_count()} |\n")
+                    f.write(f"| **Scan Duration** | {self._calculate_duration():.1f}s |\n\n")
+
+                    f.write("## 📝 Detailed Findings\n\n")
                     f.write(f"{self.final_scan_result}\n")
                 logger.info(
                     f"Saved final penetration test report to: {penetration_test_report_file}"

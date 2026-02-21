@@ -13,12 +13,13 @@ Author: ALhilali
 Version: 2.2.1
 """
 
-import logging
 import json
+import logging
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class SecurityFinding:
 
 from exaaiagnt.tools.registry import register_tool
 
+
 @register_tool
 class K8sScanner:
     """
@@ -64,27 +66,27 @@ class K8sScanner:
     Uses kubectl and specialized logic to audit cluster security.
     """
 
-    def __init__(self, context: Optional[str] = None, verbose: bool = False):
+    def __init__(self, context: str | None = None, verbose: bool = False):
         self.context = context
         self.verbose = verbose
-        self.findings: List[SecurityFinding] = []
+        self.findings: list[SecurityFinding] = []
         self._check_kubectl_availability()
 
     def _check_kubectl_availability(self):
         """Ensure kubectl is installed and accessible."""
         try:
-            subprocess.run(["kubectl", "version", "--client"], capture_output=True, check=True)
+            subprocess.run(["kubectl", "version", "--client"], capture_output=True, check=True)  # nosec: B603 B607
         except (subprocess.CalledProcessError, FileNotFoundError):
             logger.warning("kubectl not found. Some checks may fail.")
 
-    def _run_kubectl(self, args: List[str]) -> Dict[str, Any]:
+    def _run_kubectl(self, args: list[str]) -> dict[str, Any]:
         """Run a kubectl command and return JSON output."""
         cmd = ["kubectl"] + args + ["-o", "json"]
         if self.context:
             cmd.extend(["--context", self.context])
-        
+
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec: B603
             return json.loads(result.stdout)
         except subprocess.CalledProcessError as e:
             logger.error(f"kubectl command failed: {e.stderr}")
@@ -93,24 +95,24 @@ class K8sScanner:
             logger.error("Failed to decode kubectl output")
             return {}
 
-    def scan(self, namespaces: Optional[List[str]] = None) -> List[SecurityFinding]:
+    def scan(self, namespaces: list[str] | None = None) -> list[SecurityFinding]:
         """Run all enabled security checks."""
         target_ns = namespaces or self._get_all_namespaces()
-        
+
         logger.info(f"Scanning namespaces: {target_ns}")
-        
+
         # Cluster-wide checks (run once)
         self._check_cluster_rbac()
-        
+
         # Namespace-scoped checks
         for ns in target_ns:
             self._check_rbac(ns)
             self._check_pod_security(ns)
             self._check_network_policies(ns)
             self._check_secrets(ns)
-            
+
         return self.findings
-    
+
     def _check_cluster_rbac(self):
         """Check cluster-wide RBAC configurations."""
         # Check ClusterRoleBindings for cluster-admin
@@ -118,11 +120,11 @@ class K8sScanner:
         for binding in bindings.get("items", []):
             role_name = binding.get("roleRef", {}).get("name", "")
             binding_name = binding["metadata"]["name"]
-            
+
             # Skip system bindings
             if binding_name.startswith("system:"):
                 continue
-                
+
             if role_name == "cluster-admin":
                 for subject in binding.get("subjects", []):
                     if subject.get("kind") == "ServiceAccount":
@@ -148,7 +150,7 @@ class K8sScanner:
                             remediation="Review if user truly needs cluster-admin. Apply least privilege principle."
                         ))
 
-    def _get_all_namespaces(self) -> List[str]:
+    def _get_all_namespaces(self) -> list[str]:
         """Get list of all namespaces."""
         data = self._run_kubectl(["get", "namespaces"])
         return [item["metadata"]["name"] for item in data.get("items", [])]
@@ -181,20 +183,64 @@ class K8sScanner:
         for pod in pods.get("items", []):
             name = pod["metadata"]["name"]
             spec = pod.get("spec", {})
-            
-            # Check 1: Privileged containers
+
+            # Check 1: Security Context and Capabilities
             for container in spec.get("containers", []):
+                container_name = container.get("name", "unknown")
                 security_context = container.get("securityContext", {})
+
+                # Privileged containers
                 if security_context.get("privileged", False):
                     self.findings.append(SecurityFinding(
                         check_id="PSS-001",
                         title="Privileged Container",
-                        description=f"Container '{container['name']}' in pod '{name}' runs as privileged.",
+                        description=f"Container '{container_name}' in pod '{name}' runs as privileged.",
                         severity=Severity.HIGH,
                         resource_kind="Pod",
                         resource_name=name,
                         namespace=namespace,
-                        remediation="Remove 'privileged: true' from securityContext unless absolutely necessary."
+                        remediation="Remove 'privileged: true' from securityContext."
+                    ))
+
+                # Allow Privilege Escalation
+                if security_context.get("allowPrivilegeEscalation", True):
+                    self.findings.append(SecurityFinding(
+                        check_id="PSS-003",
+                        title="Privilege Escalation Allowed",
+                        description=f"Container '{container_name}' in pod '{name}' allows privilege escalation.",
+                        severity=Severity.MEDIUM,
+                        resource_kind="Pod",
+                        resource_name=name,
+                        namespace=namespace,
+                        remediation="Set 'allowPrivilegeEscalation: false' in securityContext."
+                    ))
+
+                # Read Only Root Filesystem
+                if not security_context.get("readOnlyRootFilesystem", False):
+                    self.findings.append(SecurityFinding(
+                        check_id="PSS-004",
+                        title="Writable Root Filesystem",
+                        description=f"Container '{container_name}' in pod '{name}' has a writable root filesystem.",
+                        severity=Severity.LOW,
+                        resource_kind="Pod",
+                        resource_name=name,
+                        namespace=namespace,
+                        remediation="Set 'readOnlyRootFilesystem: true' in securityContext."
+                    ))
+
+                # Capabilities
+                capabilities = security_context.get("capabilities", {})
+                add_caps = capabilities.get("add", [])
+                if add_caps:
+                    self.findings.append(SecurityFinding(
+                        check_id="PSS-005",
+                        title="Dangerous Capabilities Added",
+                        description=f"Container '{container_name}' in pod '{name}' adds capabilities: {add_caps}.",
+                        severity=Severity.MEDIUM,
+                        resource_kind="Pod",
+                        resource_name=name,
+                        namespace=namespace,
+                        remediation="Review and remove unnecessary capabilities. Drop 'ALL' and add only required ones."
                     ))
 
             # Check 2: Host PID/Network/IPC
@@ -231,24 +277,24 @@ class K8sScanner:
         for pod in pods.get("items", []):
             name = pod["metadata"]["name"]
             spec = pod.get("spec", {})
-            
+
             for container in spec.get("containers", []):
                 container_name = container.get("name", "unknown")
-                
+
                 # Check for secrets in plain env vars (bad practice)
                 for env in container.get("env", []):
                     env_name = env.get("name", "").lower()
                     env_value = env.get("value", "")
-                    
+
                     # Skip if using secretKeyRef (proper method)
                     if env.get("valueFrom", {}).get("secretKeyRef"):
                         continue
-                    
+
                     # Check for suspicious env var names with plain values
-                    sensitive_keywords = ["password", "secret", "key", "token", 
+                    sensitive_keywords = ["password", "secret", "key", "token",
                                          "api_key", "apikey", "auth", "credential",
                                          "private", "access_key", "secret_key"]
-                    
+
                     if any(kw in env_name for kw in sensitive_keywords) and env_value:
                         self.findings.append(SecurityFinding(
                             check_id="SEC-001",
@@ -260,7 +306,7 @@ class K8sScanner:
                             namespace=namespace,
                             remediation="Use Kubernetes Secrets with secretKeyRef instead of plain values. Never commit secrets in manifests."
                         ))
-                
+
                 # Check for automountServiceAccountToken
                 if spec.get("automountServiceAccountToken", True):
                     # Only flag if not system namespace
@@ -276,7 +322,7 @@ class K8sScanner:
                             remediation="Set automountServiceAccountToken: false unless the pod needs K8s API access."
                         ))
 
-    def export_report(self) -> Dict[str, Any]:
+    def export_report(self) -> dict[str, Any]:
         """Export findings summary."""
         return {
             "total_findings": len(self.findings),
@@ -296,7 +342,7 @@ class K8sScanner:
 # === Convenience Functions ===
 
 @register_tool
-def scan_cluster(context: Optional[str] = None) -> Dict[str, Any]:
+def scan_cluster(context: str | None = None) -> dict[str, Any]:
     """Run a full cluster scan."""
     scanner = K8sScanner(context=context)
     scanner.scan()
@@ -304,7 +350,7 @@ def scan_cluster(context: Optional[str] = None) -> Dict[str, Any]:
 
 
 @register_tool
-def check_rbac(namespace: str = "default") -> List[Dict[str, Any]]:
+def check_rbac(namespace: str = "default") -> list[dict[str, Any]]:
     """Run RBAC checks only."""
     scanner = K8sScanner()
     scanner._check_rbac(namespace)
@@ -312,7 +358,7 @@ def check_rbac(namespace: str = "default") -> List[Dict[str, Any]]:
 
 
 @register_tool
-def check_pod_security(namespace: str = "default") -> List[Dict[str, Any]]:
+def check_pod_security(namespace: str = "default") -> list[dict[str, Any]]:
     """Run Pod Security checks only."""
     scanner = K8sScanner()
     scanner._check_pod_security(namespace)

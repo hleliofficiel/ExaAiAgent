@@ -60,16 +60,16 @@ def get_smart_modules(target: str, instruction: str = "", user_modules: list[str
         Combined list of modules (user + auto-detected, max 5)
     """
     final_modules = set(user_modules or [])
-    
+
     # Auto-detect if user didn't specify modules
     if not user_modules:
         auto_modules = auto_detect_modules(target, instruction)
         final_modules.update(auto_modules)
-    
+
     # Validate and limit to 5
     available = get_all_module_names()
     valid_modules = [m for m in final_modules if m in available]
-    
+
     return valid_modules[:5]
 
 

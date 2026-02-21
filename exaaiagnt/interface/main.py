@@ -224,7 +224,7 @@ async def warm_up_llm() -> None:
         error_text.append("\n\n", style="white")
         error_text.append("Could not establish connection to the language model.\n", style="white")
         error_text.append("Please check your configuration and try again.\n", style="white")
-        
+
         # Enhanced error diagnosis
         error_str = str(e)
         if "AuthenticationError" in error_str:
@@ -233,7 +233,7 @@ async def warm_up_llm() -> None:
              error_text.append(f"🔍 Hint: The model '{model_name}' was not found. Check if the model name is correct.\n", style="bold yellow")
         elif "ConnectionError" in error_str:
              error_text.append("🔍 Hint: Network connection failed. Check your internet or proxy settings.\n", style="bold yellow")
-             
+
         error_text.append(f"\nError Details: {e}", style="dim white")
 
         panel = Panel(
@@ -340,7 +340,7 @@ Examples:
             "Default is interactive mode with TUI."
         ),
     )
-    
+
     # TUI subcommand (optional - for launching TUI without target)
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("tui", help="Launch the interactive TUI interface without a target")
@@ -517,7 +517,7 @@ def main() -> None:
         pull_docker_image()
         validate_environment()
         asyncio.run(warm_up_llm())
-        
+
         # Launch TUI directly without scanning
         args.run_name = "interactive_session"
         args.targets_info = []

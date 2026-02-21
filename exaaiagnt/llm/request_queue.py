@@ -13,11 +13,11 @@ from typing import Any
 import litellm
 from litellm import ModelResponse, completion
 from tenacity import (
+    before_sleep_log,
     retry,
     retry_if_exception,
     stop_after_attempt,
     wait_exponential,
-    before_sleep_log,
 )
 
 
@@ -37,12 +37,12 @@ def should_retry_exception(exception: Exception) -> bool:
     if isinstance(exception, litellm.RateLimitError):
         logger.warning("Rate limit hit, will retry with backoff...")
         return True
-    
+
     # Retry on timeout
     if isinstance(exception, (litellm.Timeout, asyncio.TimeoutError)):
         logger.warning("Request timeout, will retry...")
         return True
-    
+
     # Retry on server errors
     if isinstance(exception, (litellm.ServiceUnavailableError, litellm.InternalServerError)):
         logger.warning("Server error, will retry...")
@@ -50,7 +50,7 @@ def should_retry_exception(exception: Exception) -> bool:
 
     if status_code is not None:
         return bool(litellm._should_retry(status_code))
-    
+
     return True
 
 
@@ -62,7 +62,7 @@ class LLMRequestQueue:
     - Fallback model support
     - Request timeout handling
     """
-    
+
     def __init__(
         self,
         max_concurrent: int = 2,
@@ -77,7 +77,7 @@ class LLMRequestQueue:
         rate_limit_concurrent = os.getenv("LLM_RATE_LIMIT_CONCURRENT")
         if rate_limit_concurrent:
             max_concurrent = int(rate_limit_concurrent)
-        
+
         timeout_env = os.getenv("LLM_REQUEST_TIMEOUT")
         if timeout_env:
             request_timeout = int(timeout_env)
@@ -90,10 +90,10 @@ class LLMRequestQueue:
         self._lock = threading.Lock()
         self._consecutive_failures = 0
         self._max_consecutive_failures = 5
-        
+
         # Fallback models configuration
         self._fallback_models = self._load_fallback_models()
-        
+
         logger.info(
             f"LLM Queue initialized: concurrent={max_concurrent}, "
             f"delay={delay_between_requests}s, timeout={request_timeout}s"
@@ -125,13 +125,13 @@ class LLMRequestQueue:
             with self._lock:
                 now = time.time()
                 time_since_last = now - self._last_request_time
-                
+
                 # Increase delay if we've had failures
                 adaptive_delay = self.delay_between_requests
                 if self._consecutive_failures > 0:
                     adaptive_delay *= (1.5 ** self._consecutive_failures)
                     adaptive_delay = min(adaptive_delay, 30.0)  # Cap at 30s
-                
+
                 sleep_needed = max(0, adaptive_delay - time_since_last)
                 sleep_needed = self._add_jitter(sleep_needed)
                 self._last_request_time = now + sleep_needed
@@ -150,13 +150,13 @@ class LLMRequestQueue:
                 with self._lock:
                     self._consecutive_failures = 0
                 return response
-                
-            except asyncio.TimeoutError:
+
+            except TimeoutError:
                 logger.error(f"Request timed out after {self.request_timeout}s")
                 with self._lock:
                     self._consecutive_failures += 1
                 raise litellm.Timeout(f"Request timed out after {self.request_timeout}s")
-                
+
         finally:
             self._semaphore.release()
 
@@ -175,19 +175,19 @@ class LLMRequestQueue:
                 return response
             self._raise_unexpected_response()
             raise RuntimeError("Unreachable code")
-            
-        except litellm.RateLimitError as e:
+
+        except litellm.RateLimitError:
             # Track consecutive failures
             with self._lock:
                 self._consecutive_failures += 1
-            
+
             # Try fallback model if available and we've failed multiple times
             if self._consecutive_failures >= 3 and self._fallback_models:
                 fallback_response = await self._try_fallback_models(completion_args)
                 if fallback_response:
                     return fallback_response
             raise
-        
+
         except (litellm.ServiceUnavailableError, litellm.InternalServerError):
             with self._lock:
                 self._consecutive_failures += 1
@@ -198,25 +198,25 @@ class LLMRequestQueue:
     ) -> ModelResponse | None:
         """Try fallback models when primary fails."""
         original_model = completion_args.get("model", "")
-        
+
         for fallback_model in self._fallback_models:
             if fallback_model == original_model:
                 continue
-                
+
             logger.warning(f"Trying fallback model: {fallback_model}")
             try:
                 fallback_args = completion_args.copy()
                 fallback_args["model"] = fallback_model
-                
+
                 response = completion(**fallback_args, stream=False)
                 if isinstance(response, ModelResponse):
                     logger.info(f"Fallback model {fallback_model} succeeded")
                     return response
-                    
+
             except Exception as e:
                 logger.warning(f"Fallback model {fallback_model} failed: {e}")
                 continue
-        
+
         return None
 
     def _raise_unexpected_response(self) -> None:

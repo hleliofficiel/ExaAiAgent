@@ -97,14 +97,13 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
             # Run synchronous blocking tools in a separate thread
             import asyncio
             result = await asyncio.to_thread(tool_func, agent_state=agent_state, **converted_kwargs)
+    # Check if the tool function is a coroutine (async)
+    elif inspect.iscoroutinefunction(tool_func):
+        result = await tool_func(**converted_kwargs)
     else:
-        # Check if the tool function is a coroutine (async)
-        if inspect.iscoroutinefunction(tool_func):
-            result = await tool_func(**converted_kwargs)
-        else:
-            # Run synchronous blocking tools in a separate thread
-            import asyncio
-            result = await asyncio.to_thread(tool_func, **converted_kwargs)
+        # Run synchronous blocking tools in a separate thread
+        import asyncio
+        result = await asyncio.to_thread(tool_func, **converted_kwargs)
 
     return result
 

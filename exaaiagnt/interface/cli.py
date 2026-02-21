@@ -8,9 +8,8 @@ from typing import Any
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
-from rich.text import Text
 from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 
 from exaaiagnt.agents.ExaaiAgent import ExaaiAgent
 from exaaiagnt.llm.config import LLMConfig
@@ -32,6 +31,7 @@ BANNER = r"""
 
 from exaaiagnt.dashboard.server import start_dashboard
 
+
 async def run_cli(args: Any) -> None:  # noqa: PLR0915
     # Start the live dashboard
     try:
@@ -40,19 +40,19 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console_temp.print("[bold green]🚀 Live Dashboard available at: http://localhost:8000[/]")
     except Exception as e:
         import logging
-        logging.error(f"Failed to start dashboard: {e}")
+        logging.exception(f"Failed to start dashboard: {e}")
 
     # Detect if running in a real terminal or headless (pipe/background)
     is_tty = sys.stdout.isatty()
     console = Console(force_terminal=is_tty, no_color=not is_tty)
-    
+
     if is_tty:
         # Clear screen and show banner only in interactive terminal
         console.clear()
         console.print()
         console.print(BANNER, style="bold cyan", justify="center")
         console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
-        console.print("[dim]v2.1.2[/]", justify="center")
+        console.print("[dim]v2.2.1[/]", justify="center")
         console.print()
     else:
         # Simple text output for headless/pipe mode
@@ -65,11 +65,11 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         target_table = Table(show_header=True, header_style="bold cyan", border_style="cyan")
         target_table.add_column("Type", style="dim")
         target_table.add_column("Target", style="white")
-        
+
         for target_info in args.targets_info:
             target_type = target_info.get("type", "URL")
             target_table.add_row(target_type, target_info["original"])
-        
+
         console.print(Panel(target_table, title="[bold cyan]🎯 Targets", border_style="cyan"))
         console.print()
 
@@ -80,7 +80,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         if args.instruction:
             config_text.append("📝 Instruction: ", style="dim")
             config_text.append(f"{args.instruction[:100]}{'...' if len(args.instruction) > 100 else ''}", style="white")
-        
+
         console.print(Panel(config_text, title="[bold green]⚙️ Configuration", border_style="green"))
         console.print()
     else:
@@ -168,7 +168,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         stats_text = build_live_stats_text(tracer, agent_config)
         if stats_text:
             status_text.append(stats_text)
-        
+
         # Vulnerability summary
         total_vulns = sum(vuln_count.values())
         if total_vulns > 0:
@@ -232,13 +232,13 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
     summary_table = Table(show_header=True, header_style="bold white", border_style="cyan")
     summary_table.add_column("Severity", style="bold")
     summary_table.add_column("Count", justify="center")
-    
+
     summary_table.add_row("[red]Critical[/]", str(vuln_count.get("critical", 0)))
     summary_table.add_row("[orange1]High[/]", str(vuln_count.get("high", 0)))
     summary_table.add_row("[yellow]Medium[/]", str(vuln_count.get("medium", 0)))
     summary_table.add_row("[green]Low[/]", str(vuln_count.get("low", 0)))
     summary_table.add_row("[blue]Info[/]", str(vuln_count.get("info", 0)))
-    
+
     total = sum(vuln_count.values())
     summary_table.add_row("[bold white]TOTAL[/]", f"[bold white]{total}[/]")
 

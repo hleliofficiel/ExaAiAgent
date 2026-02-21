@@ -79,7 +79,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_GREEN = "#00ff88"
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
-    
+
     # Enhanced ASCII Logo - ExaAi v2.2.1
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
@@ -89,7 +89,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     ███████╗██╔╝ ██╗██║  ██║    ██║  ██║██║
     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
     """
-    
+
     # Compact version for smaller screens
     BANNER_COMPACT = r"""
    ▓█████ ▒██   ██▒ ▄▄▄           ▄▄▄       ██▓
@@ -136,7 +136,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     def _build_panel(self, start_line: Text) -> Panel:
         # Build colorful banner
         banner_text = self._build_colorful_banner()
-        
+
         content = Group(
             Align.center(banner_text),
             Align.center(Text(" ")),
@@ -153,16 +153,16 @@ class SplashScreen(Static):  # type: ignore[misc]
 
     def _build_colorful_banner(self) -> Text:
         """Build a multi-colored gradient banner."""
-        lines = self.BANNER.strip().split('\n')
+        lines = self.BANNER.strip().split("\n")
         text = Text()
-        
+
         # Color gradient from cyan to purple
         colors = [self.NEON_CYAN, self.NEON_GREEN, self.NEON_CYAN, self.NEON_PURPLE, self.NEON_PINK, self.NEON_PURPLE]
-        
+
         for i, line in enumerate(lines):
             color = colors[i % len(colors)]
             text.append(line + "\n", style=Style(color=color, bold=True))
-        
+
         return text
 
     def _build_welcome_text(self) -> Text:
@@ -181,14 +181,14 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v2.1.0."""
+        """Build new features highlight for v2.2.1."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
-        text.append("K8s Security", style=Style(color=self.NEON_PINK))
+        text.append("Recon Engine", style=Style(color=self.NEON_PINK))
         text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
-        text.append("Prompt Injection", style=Style(color=self.NEON_CYAN))
+        text.append("K8s/Cloud Audit", style=Style(color=self.NEON_CYAN))
         text.append(" • ", style=Style(color=self.SOFT_WHITE, dim=True))
-        text.append("Azure/GCP", style=Style(color=self.NEON_GREEN))
+        text.append("OpenClaw Support", style=Style(color=self.NEON_GREEN))
         return text
 
 
@@ -211,10 +211,10 @@ class SplashScreen(Static):  # type: ignore[misc]
     def _build_start_line_text(self, phase: int) -> Text:
         emphasize = phase % 2 == 1
         base_style = Style(color=self.SOFT_WHITE, dim=not emphasize, bold=emphasize)
-        
+
         # Animated dots
         dots = "." * ((phase % 3) + 1)
-        
+
         text = Text("🚀 Starting ", style=base_style)
         text.append("Exa", style=Style(color=self.NEON_CYAN, bold=bool(emphasize)))
         text.append("Ai", style=Style(color=self.NEON_GREEN, bold=bool(emphasize)))
@@ -1069,7 +1069,9 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
             return ""
 
         if role == "user":
-            from exaaiagnt.interface.tool_components.user_message_renderer import UserMessageRenderer
+            from exaaiagnt.interface.tool_components.user_message_renderer import (
+                UserMessageRenderer,
+            )
 
             return UserMessageRenderer.render_simple(content)
         return content
