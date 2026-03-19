@@ -72,8 +72,9 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
     root_logger.handlers = [null_handler]
     root_logger.setLevel(logging.CRITICAL)
 
+    import exaaiagnt.tools  # noqa: F401  # Force tool registration in sandbox workers
     from exaaiagnt.tools.argument_parser import ArgumentConversionError, convert_arguments
-    from exaaiagnt.tools.registry import get_tool_by_name
+    from exaaiagnt.tools.registry import get_tool_by_name, get_tool_names
 
     while True:
         try:

@@ -218,7 +218,17 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
                 update_thread.join(timeout=1)
 
     except Exception as e:
-        console.print(f"[bold red]❌ Error: {e}[/]")
+        tracer_error = ""
+        if tracer and getattr(tracer, "agents", None):
+            root_errors = [
+                agent.get("error_message")
+                for agent in tracer.agents.values()
+                if agent.get("error_message")
+            ]
+            if root_errors:
+                tracer_error = f"\n[dim]Agent error: {root_errors[-1]}[/]"
+
+        console.print(f"[bold red]❌ Error: {e}[/]{tracer_error}")
         raise
 
     # Final Summary

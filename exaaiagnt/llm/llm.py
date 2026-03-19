@@ -18,7 +18,7 @@ from litellm.utils import supports_prompt_caching
 from exaaiagnt.llm.config import LLMConfig
 from exaaiagnt.llm.llm_traffic_controller import RequestPriority, get_traffic_controller
 from exaaiagnt.llm.memory_compressor import MemoryCompressor
-from exaaiagnt.llm.utils import _truncate_to_first_function, parse_tool_invocations
+from exaaiagnt.llm.utils import parse_tool_invocations
 from exaaiagnt.prompts import load_prompt_modules
 from exaaiagnt.tools import get_tools_prompt
 
@@ -312,12 +312,6 @@ class LLM:
                 and response.choices[0].message
             ):
                 content = getattr(response.choices[0].message, "content", "") or ""
-
-            content = _truncate_to_first_function(content)
-
-            if "</function>" in content:
-                function_end_index = content.find("</function>") + len("</function>")
-                content = content[:function_end_index]
 
             tool_invocations = parse_tool_invocations(content)
 

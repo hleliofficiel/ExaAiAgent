@@ -27,7 +27,31 @@ class ExaaiAgent(BaseAgent):
         if self.role in role_modules:
             default_modules.extend(role_modules[self.role])
 
-        self.default_llm_config = LLMConfig(prompt_modules=default_modules)
+        incoming_llm_config = config.get("llm_config")
+        merged_modules = list(default_modules)
+        if incoming_llm_config and getattr(incoming_llm_config, "prompt_modules", None):
+            for module_name in incoming_llm_config.prompt_modules:
+                if module_name not in merged_modules:
+                    merged_modules.append(module_name)
+
+        if incoming_llm_config:
+            config["llm_config"] = LLMConfig(
+                model_name=incoming_llm_config.model_name,
+                enable_prompt_caching=incoming_llm_config.enable_prompt_caching,
+                prompt_modules=merged_modules,
+                timeout=incoming_llm_config.timeout,
+                max_tokens_per_request=incoming_llm_config.max_tokens_per_request,
+                optimize_prompts=incoming_llm_config.optimize_prompts,
+                lightweight_mode=incoming_llm_config.lightweight_mode,
+                min_reasoning_depth=incoming_llm_config.min_reasoning_depth,
+                max_reasoning_depth=incoming_llm_config.max_reasoning_depth,
+                rate_limit_delay=incoming_llm_config.rate_limit_delay,
+                max_concurrent_requests=incoming_llm_config.max_concurrent_requests,
+            )
+        else:
+            config["llm_config"] = LLMConfig(prompt_modules=merged_modules)
+
+        self.default_llm_config = config["llm_config"]
 
         super().__init__(config)
         

@@ -391,9 +391,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         }
 
     def _build_agent_config(self, args: argparse.Namespace) -> dict[str, Any]:
-        prompt_modules = None
-        if getattr(args, "prompt_modules", None):
-            prompt_modules = [m.strip() for m in args.prompt_modules.split(",")]
+        prompt_modules = getattr(args, "resolved_prompt_modules", None)
 
         llm_config = LLMConfig(prompt_modules=prompt_modules)
 
@@ -577,7 +575,9 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
                 "running": "🟢",
                 "waiting": "⏸️",
                 "completed": "✅",
+                "finished": "✅",
                 "failed": "❌",
+                "error": "❌",
                 "stopped": "⏹️",
                 "stopping": "⏸️",
                 "llm_failed": "🔴",
@@ -701,11 +701,11 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
                 self._safe_widget_operation(status_text.update, "Agent stopped")
                 self._safe_widget_operation(keymap_indicator.update, "")
                 self._safe_widget_operation(status_display.remove_class, "hidden")
-            elif status == "completed":
+            elif status in {"completed", "finished"}:
                 self._safe_widget_operation(status_text.update, "Agent completed")
                 self._safe_widget_operation(keymap_indicator.update, "")
                 self._safe_widget_operation(status_display.remove_class, "hidden")
-            elif status == "llm_failed":
+            elif status in {"llm_failed", "failed", "error"}:
                 error_msg = agent_data.get("error_message", "")
                 display_msg = (
                     f"[red]{escape_markup(error_msg)}[/red]"
@@ -755,6 +755,11 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         stats_text = build_live_stats_text(self.tracer, self.agent_config)
         if stats_text:
             stats_content.append(stats_text)
+
+        if self._last_runtime_error:
+            stats_content.append("\n")
+            stats_content.append("Runtime: ", style="bold red")
+            stats_content.append(self._last_runtime_error, style="red")
 
         from rich.panel import Panel
 
@@ -888,6 +893,54 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         self.call_later(self._update_chat_view)
         self._update_agent_status_display()
 
+    def _record_runtime_error(self, message: str) -> None:
+        self._last_runtime_error = message
+        logging.error(message)
+
+    def _start_scan_if_ready(self) -> None:
+        if not self.scan_config.get("targets"):
+            self._record_runtime_error("No active target. Enter a target URL/domain/path to start scanning.")
+            return
+
+        if self._scan_thread and self._scan_thread.is_alive():
+            return
+
+        self._scan_stop_event.clear()
+        self._scan_completed.clear()
+        self._last_runtime_error = None
+        self._start_scan_thread()
+
+    def _submit_new_target(self, raw_text: str) -> bool:
+        target_text = raw_text.strip()
+        if not target_text:
+            self._record_runtime_error("Target cannot be empty.")
+            return False
+
+        try:
+            target_type, target_dict = infer_target_type(target_text)
+        except ValueError as e:
+            self._record_runtime_error(f"Invalid target: {e}")
+            return False
+
+        target_info = {"type": target_type, "details": target_dict, "original": target_text}
+        targets_info = [target_info]
+        assign_workspace_subdirs(targets_info)
+
+        if target_type == "repository":
+            repo_url = target_dict["target_repo"]
+            dest_name = target_dict.get("workspace_subdir")
+            cloned_path = clone_repository(repo_url, self.scan_config["run_name"], dest_name)
+            target_info["details"]["cloned_repo_path"] = cloned_path
+
+        self.scan_config["targets"] = targets_info
+        self.scan_config["user_instructions"] = ""
+        self.agent_config["local_sources"] = collect_local_sources(targets_info)
+        self.tracer.set_scan_config(self.scan_config)
+        self._displayed_events.clear()
+        self._record_runtime_error(f"Target queued: {target_text}")
+        self._start_scan_if_ready()
+        return True
+
     def _start_scan_thread(self) -> None:
         def scan_target() -> None:
             try:
@@ -898,21 +951,29 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
                     agent = ExaaiAgent(self.agent_config)
 
                     if not self._scan_stop_event.is_set():
-                        loop.run_until_complete(agent.execute_scan(self.scan_config))
+                        result = loop.run_until_complete(agent.execute_scan(self.scan_config))
+                        if isinstance(result, dict) and not result.get("success", True):
+                            self._record_runtime_error(
+                                f"Scan failed: {result.get('error', 'Unknown scan failure')}"
+                            )
 
                 except (KeyboardInterrupt, asyncio.CancelledError):
                     logging.info("Scan interrupted by user")
-                except (ConnectionError, TimeoutError):
+                except (ConnectionError, TimeoutError) as e:
+                    self._record_runtime_error(f"Network error during scan: {e}")
                     logging.exception("Network error during scan")
-                except RuntimeError:
+                except RuntimeError as e:
+                    self._record_runtime_error(f"Runtime error during scan: {e}")
                     logging.exception("Runtime error during scan")
-                except Exception:
+                except Exception as e:
+                    self._record_runtime_error(f"Unexpected error during scan: {e}")
                     logging.exception("Unexpected error during scan")
                 finally:
                     loop.close()
                     self._scan_completed.set()
 
-            except Exception:
+            except Exception as e:
+                self._record_runtime_error(f"Error setting up scan thread: {e}")
                 logging.exception("Error setting up scan thread")
                 self._scan_completed.set()
 
@@ -941,9 +1002,12 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
             "running": "🟢",
             "waiting": "🟡",
             "completed": "✅",
+            "finished": "✅",
             "failed": "❌",
+            "error": "❌",
             "stopped": "⏹️",
             "stopping": "⏸️",
+            "llm_failed": "🔴",
         }
 
         status_icon = status_indicators.get(status, "🔵")
@@ -1168,6 +1232,8 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
     def _send_user_message(self, message: str) -> None:
         if not self.selected_agent_id:
+            if self._submit_new_target(message):
+                self.call_after_refresh(self._focus_chat_input)
             return
 
         if self.tracer:
@@ -1182,15 +1248,20 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
             result = send_user_message_to_agent(self.selected_agent_id, message)
             if not result.get("success", False):
+                error_message = result.get("error", "unknown error")
+                self._record_runtime_error(
+                    f"Failed to send message to agent {self.selected_agent_id}: {error_message}"
+                )
                 logging.warning(
                     "Failed to send message to agent %s: %s",
                     self.selected_agent_id,
-                    result.get("error", "unknown error"),
+                    error_message,
                 )
 
         except (ImportError, AttributeError) as e:
-            import logging
-
+            self._record_runtime_error(
+                f"Failed to send message to agent {self.selected_agent_id}: {e}"
+            )
             logging.warning(f"Failed to send message to agent {self.selected_agent_id}: {e}")
 
         self._displayed_events.clear()

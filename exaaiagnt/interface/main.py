@@ -31,6 +31,7 @@ from exaaiagnt.interface.utils import (
     process_pull_line,
     validate_llm_response,
 )
+from exaaiagnt.prompts import get_smart_modules
 from exaaiagnt.runtime.docker_runtime import EXAAI_IMAGE
 from exaaiagnt.telemetry.tracer import get_global_tracer
 
@@ -253,6 +254,18 @@ async def warm_up_llm() -> None:
 def get_version() -> str:
     """Get the current ExaAi version."""
     return "2.2.2"
+
+
+def resolve_prompt_modules(args: argparse.Namespace) -> list[str] | None:
+    if getattr(args, "prompt_modules", None):
+        return [m.strip() for m in args.prompt_modules.split(",") if m.strip()]
+
+    if getattr(args, "targets_info", None):
+        primary_target = args.targets_info[0]["original"]
+        smart_modules = get_smart_modules(primary_target, args.instruction or "")
+        return smart_modules or None
+
+    return None
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -522,6 +535,7 @@ def main() -> None:
         args.run_name = "interactive_session"
         args.targets_info = []
         args.local_sources = []
+        args.resolved_prompt_modules = resolve_prompt_modules(args)
         asyncio.run(run_tui(args))
         return
 
