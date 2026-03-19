@@ -34,4 +34,10 @@ def test_detect_recon_new_modules():
     modules = detect_modules_from_target(target, instruction)
     assert "port_scanning" in modules
     assert "subdomain_enumeration" in modules
+
+
+def test_detect_technology_fingerprinting():
+    target = "target.com"
+    instruction = "perform technology fingerprinting on the target"
+    modules = detect_modules_from_target(target, instruction)
     assert "technology_fingerprinting" in modules

@@ -1,1 +1,1 @@
-"""Tests for strix.runtime module."""
+"""Tests for exaaiagnt.runtime module."""

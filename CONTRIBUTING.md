@@ -40,7 +40,7 @@ Thank you for your interest in contributing to ExaAiAgent! This guide will help 
 4. **Run ExaAiAgent in development mode**
 
    ```bash
-   poetry run exaaiagnt --target https://example.com
+   poetry run exaai --target https://example.com
    ```
 
 ## 📚 Contributing Prompt Modules

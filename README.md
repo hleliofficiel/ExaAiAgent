@@ -230,7 +230,7 @@ exaai --target https://your-app.com --instruction "Perform authenticated testing
 exaai -t https://github.com/org/app -t https://your-app.com
 
 # With specific modules (overrides auto-detection)
-exaai --target https://api.example.com --prompt-modules graphql_security waf_bypass
+exaai --target https://api.example.com --prompt-modules graphql_security,waf_bypass
 
 # Lightweight mode (reduced token consumption)
 export EXAAI_LIGHTWEIGHT_MODE=true

@@ -1,1 +1,1 @@
-"""Tests for strix.llm module."""
+"""Tests for exaaiagnt.llm module."""

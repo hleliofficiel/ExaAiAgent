@@ -1,1 +1,1 @@
-"""Tests for strix.agents module."""
+"""Tests for exaaiagnt.agents module."""

@@ -1,1 +1,1 @@
-# Strix Test Suite
+# ExaAiAgent Test Suite

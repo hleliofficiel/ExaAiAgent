@@ -63,7 +63,7 @@ xmltodict = "^0.13.0"
 pyte = "^0.8.1"
 requests = "^2.32.0"
 libtmux = "^0.46.2"
-websockets = "^12.0"
+websockets = ">=13.1,<14.0.0"
 
 [tool.poetry.group.dev.dependencies]
 # Type checking and static analysis
@@ -231,7 +231,7 @@ ignore = [
     "ARG001", # Unused function argument
     "PLR2004", # Magic value used in comparison
 ]
-"strix/tools/**/*.py" = [
+"exaaiagnt/tools/**/*.py" = [
     "ARG001", # Unused function argument (tools may have unused args for interface consistency)
 ]
 

@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --with=dev
+
+      - name: Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: Ruff lint
+        run: poetry run ruff check .
+
+      - name: Pylint
+        run: poetry run pylint exaaiagnt/ --score=no --reports=no
+
+      - name: Bandit
+        run: poetry run bandit -r exaaiagnt/ -c pyproject.toml
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --with=dev
+
+      - name: MyPy
+        run: poetry run mypy exaaiagnt/
+
+      - name: Pyright
+        run: poetry run pyright exaaiagnt/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --with=dev
+
+      - name: Unit tests
+        run: poetry run pytest -v
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --with=dev
+
+      - name: CLI version smoke test
+        run: poetry run exaai --version
+
+      - name: CLI parser smoke test
+        run: poetry run python -c "from exaaiagnt.interface.main import parse_arguments; import sys; sys.argv=['exaai','--target','https://example.com','--prompt-modules','graphql_security,waf_bypass']; args=parse_arguments(); assert args.target == ['https://example.com']; assert args.prompt_modules == 'graphql_security,waf_bypass'"

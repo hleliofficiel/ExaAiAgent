@@ -1,4 +1,4 @@
-"""Fixtures for strix.tools tests."""
+"""Fixtures for ExaAiAgent tool tests."""
 
 from collections.abc import Callable
 from typing import Any

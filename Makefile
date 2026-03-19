@@ -41,19 +41,19 @@ lint:
 	@echo "🔍 Linting code with ruff..."
 	poetry run ruff check . --fix
 	@echo "📝 Running additional linting with pylint..."
-	poetry run pylint strix/ --score=no --reports=no
+	poetry run pylint exaaiagnt/ --score=no --reports=no
 	@echo "✅ Linting complete!"
 
 type-check:
 	@echo "🔍 Type checking with mypy..."
-	poetry run mypy strix/
+	poetry run mypy exaaiagnt/
 	@echo "🔍 Type checking with pyright..."
-	poetry run pyright strix/
+	poetry run pyright exaaiagnt/
 	@echo "✅ Type checking complete!"
 
 security:
 	@echo "🔒 Running security checks with bandit..."
-	poetry run bandit -r strix/ -c pyproject.toml
+	poetry run bandit -r exaaiagnt/ -c pyproject.toml
 	@echo "✅ Security checks complete!"
 
 check-all: format lint type-check security
@@ -66,7 +66,7 @@ test:
 
 test-cov:
 	@echo "🧪 Running tests with coverage..."
-	poetry run pytest -v --cov=strix --cov-report=term-missing --cov-report=html
+	poetry run pytest -v --cov=exaaiagnt --cov-report=term-missing --cov-report=html
 	@echo "✅ Tests with coverage complete!"
 	@echo "📊 Coverage report generated in htmlcov/"
 

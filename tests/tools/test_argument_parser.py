@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 import pytest
 
-from strix.tools.argument_parser import (
+from exaaiagnt.tools.argument_parser import (
     ArgumentConversionError,
     _convert_basic_types,
     _convert_to_bool,
