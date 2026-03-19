@@ -483,6 +483,8 @@ class BaseAgent(metaclass=AgentMeta):
                                     tracer = get_global_tracer()
                                     if tracer:
                                         tracer.update_agent_status(state.agent_id, "running")
+                                    if state.agent_id in _agent_graph["nodes"]:
+                                        _agent_graph["nodes"][state.agent_id]["status"] = "running"
                             else:
                                 state.resume_from_waiting()
                                 has_new_messages = True
@@ -492,11 +494,13 @@ class BaseAgent(metaclass=AgentMeta):
                                 tracer = get_global_tracer()
                                 if tracer:
                                     tracer.update_agent_status(state.agent_id, "running")
+                                if state.agent_id in _agent_graph["nodes"]:
+                                    _agent_graph["nodes"][state.agent_id]["status"] = "running"
 
                         if sender_id == "user":
-                            sender_name = "User"
                             state.add_message("user", message.get("content", ""))
                         else:
+                            sender_name = "Unknown Agent"
                             if sender_id and sender_id in _agent_graph.get("nodes", {}):
                                 sender_name = _agent_graph["nodes"][sender_id]["name"]
 
@@ -534,6 +538,8 @@ class BaseAgent(metaclass=AgentMeta):
                     tracer = get_global_tracer()
                     if tracer:
                         tracer.update_agent_status(agent_id, "running")
+                    if agent_id in _agent_graph["nodes"]:
+                        _agent_graph["nodes"][agent_id]["status"] = "running"
 
         except (AttributeError, KeyError, TypeError) as e:
             import logging

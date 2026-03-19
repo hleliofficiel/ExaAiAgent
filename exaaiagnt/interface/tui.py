@@ -1180,7 +1180,13 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         try:
             from exaaiagnt.tools.agents_graph.agents_graph_actions import send_user_message_to_agent
 
-            send_user_message_to_agent(self.selected_agent_id, message)
+            result = send_user_message_to_agent(self.selected_agent_id, message)
+            if not result.get("success", False):
+                logging.warning(
+                    "Failed to send message to agent %s: %s",
+                    self.selected_agent_id,
+                    result.get("error", "unknown error"),
+                )
 
         except (ImportError, AttributeError) as e:
             import logging

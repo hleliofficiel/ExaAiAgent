@@ -257,7 +257,26 @@ class DockerRuntime(AbstractRuntime):
             user="pentester",
         )
 
-        time.sleep(5)
+        self._wait_for_tool_server_ready(tool_server_port, tool_server_token)
+
+    def _wait_for_tool_server_ready(
+        self, tool_server_port: int, tool_server_token: str, max_attempts: int = 20
+    ) -> None:
+        api_url = f"http://{self._resolve_docker_host()}:{tool_server_port}/health"
+        headers = {"Authorization": f"Bearer {tool_server_token}"}
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = httpx.get(api_url, headers=headers, timeout=2.0, trust_env=False)
+                if response.status_code == 200:
+                    logger.info("Tool server ready on attempt %s", attempt)
+                    return
+            except httpx.HTTPError:
+                logger.debug("Tool server not ready yet (attempt %s/%s)", attempt, max_attempts)
+
+            time.sleep(1)
+
+        raise RuntimeError("Tool server failed readiness check and did not become healthy in time")
 
     def _copy_local_directory_to_container(
         self, container: Container, local_path: str, target_name: str | None = None
