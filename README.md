@@ -11,49 +11,51 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.2-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-2.2.5-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v2.2.2 Released!** Now supports **Reconnaissance Engine**, **AI Agent Integration (OpenClaw)**, Kubernetes Security, Azure/GCP modules, and Prompt Injection detection.
+> **🚀 v2.2.5 Released!** Focused on runtime reliability, cleaner CLI/TUI flows, stronger agent coordination, import-safe sandbox tooling, and improved prompt specialization.
 >
-> 🤖 **Connect Your Agent:** You can now control ExaAiAgent via any AI agent (OpenClaw, etc).
-> Just send this command to your agent:
+> 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```
-> Read https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/SKILL.md and follow the instructions to join ExaAiAgent
+> Read https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/SKILL.md and follow the instructions to operate ExaAiAgent
 > ```
 
 ---
 
-## 🔥 What's New in v2.2.2
+## 🔥 What's New in v2.2.5
 
-### 🔍 Reconnaissance Engine
+### 🧱 Runtime Reliability & Developer Workflow
 
-A new suite of modules dedicated to automated reconnaissance and attack surface mapping:
+This release focuses on making ExaAiAgent much more predictable to operate and easier to integrate into agent-driven workflows:
 
-- **Subdomain Enumeration**: Discovery of hidden subdomains and asset mapping
-- **Port Scanning**: Context-aware port scanning and service identification
-- **Technology Fingerprinting**: Detection of frameworks, CMS, and server-side tech stacks
+- **CI on Pull Requests**: lint, type-check, unit tests, and smoke tests now run automatically
+- **Legacy Cleanup**: removed stale `strix` references that broke tests and dev tooling
+- **Import-Safe Tool Server**: sandbox tool server no longer parses CLI arguments at import time
+- **Dependency Compatibility Fixes**: resolved `websockets` compatibility issues affecting installs
 
-### 🤖 AI Agent Integration (OpenClaw)
+### 🧠 Better Agent Orchestration
 
-Seamlessly integrate ExaAiAgent with your AI workforce:
+- **Improved Agent Messaging**: fixed agent resume/waiting behavior and sandbox readiness issues
+- **Normalized Agent Statuses**: cleaner status flow across graph, tracer, and UI
+- **Multi-Tool LLM Responses**: no longer truncates model output to the first tool call only
+- **Prompt Module Merging**: role defaults and user-selected modules now combine correctly
 
-- **Agent Control**: Control scans via OpenClaw or any agent framework
-- **Auto-Discovery**: Agents can read `SKILL.md` to self-onboard
-- **Output Optimization**: Tools now output cleaner data (no ANSI codes) for LLM consumption
+### 💻 Better CLI/TUI Behavior
 
-### ⚓ Kubernetes & Cloud Security (Updated)
+- **Interactive Target Submission**: TUI can now queue a target and start scanning more cleanly
+- **Improved Error Surfacing**: clearer runtime errors in CLI/TUI instead of silent failures
+- **Smarter Prompt Resolution**: auto-detected prompt modules now wire into execution more reliably
+- **Docker Requirement Made Explicit**: first-run/runtime expectations are clearer during startup
 
-Expanded coverage for cloud-native infrastructure:
+### 🤖 AI Agent Integration
 
-- **Kubernetes**: Deep RBAC auditing, Pod Security Standards (PSS), Network Policy checks
-- **Azure**: Blob Storage, Entra ID (Azure AD), Key Vault auditing
-- **GCP**: Cloud Storage, IAM, Service Account key leaks
-- **Prompt Injection**: Dedicated scanner for AI/LLM applications
+- **Repository Skill Updated**: `SKILL.md` now cleanly onboards other AI agents to use and operate ExaAiAgent
+- **OpenClaw-Friendly Operation**: better fit for external AI agents controlling scans or maintaining the tool
 
 ### 🛡️ Smart Security Tools
 
@@ -322,7 +324,14 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🆕 Changelog
 
-### v2.2.2 (Latest)
+### v2.2.5 (Latest)
+- **Runtime Reliability**: fixed interactive scan flow, tool-server import safety, sandbox readiness, and agent messaging issues
+- **Developer Workflow**: CI now runs lint, type-check, tests, and smoke checks on pull requests
+- **Prompt Intelligence**: smarter prompt resolution, merged default/user modules, and new specialist prompt modules for planning, validation, reporting, and runtime recovery
+- **Agent Coordination**: normalized statuses and improved multi-tool execution behavior
+- **Agent Onboarding**: refreshed `SKILL.md` so external AI agents can operate and maintain ExaAiAgent more reliably
+
+### v2.2.2
 - **Reconnaissance Engine**: New modules for subdomain enumeration, port scanning, and tech fingerprinting
 - **AI Agent Integration**: OpenClaw/Agent compatibility
 - **Stability Fixes**: ToolManager thread-safety, Resource cleanup

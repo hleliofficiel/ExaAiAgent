@@ -1,102 +1,111 @@
 ---
-name: ExaAiAgent
-description: "AI-powered penetration testing framework (v2.2.2). Features Multi-Agent Swarm orchestration, autonomous 100% awareness, advanced K8s/Cloud auditing, and automated owner reporting."
-homepage: https://github.com/hleliofficiel/ExaAiAgent
-metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🛡️",
-        "requires": { "bins": ["exaai", "docker"] },
-        "install":
-          [
-            {
-              "id": "pipx",
-              "kind": "shell",
-              "command": "pipx install exaai-agent",
-              "bins": ["exaai"],
-              "label": "Install ExaAiAgent (pipx)",
-            },
-            {
-              "id": "pip",
-              "kind": "shell",
-              "command": "pip install exaai-agent",
-              "bins": ["exaai"],
-              "label": "Install ExaAiAgent (pip)",
-            },
-          ],
-      },
-  }
+name: exaaiagent
+description: Use ExaAiAgent for AI-assisted penetration testing, security scans, attack-surface mapping, repo/code security review, and multi-agent offensive-security workflows. Trigger when a user wants to run, debug, review, extend, or operate ExaAiAgent itself; when an agent should launch ExaAiAgent scans; or when another AI agent needs onboarding instructions for using ExaAiAgent safely and correctly.
 ---
 
-# ExaAiAgent Skill (v2.2.2) 🛡️
+# ExaAiAgent Skill
 
-ExaAiAgent is an elite AI-powered cybersecurity agent designed to function as an autonomous penetration tester. Version 2.2.2 introduces the **Swarm Intelligence** engine, allowing multiple specialized agents to collaborate in real-time with 100% autonomy.
+Use ExaAiAgent as a Docker-backed security testing framework driven by LiteLLM-compatible models.
 
----
+## Operate the tool
 
-## 🚀 Key Features in v2.2.2
-- **Multi-Agent Swarm**: Intelligent orchestration of RECON, ATTACK, and AUDITOR agents.
-- **100% Autonomous Awareness**: Enhanced system prompts for zero-input operation and self-critique.
-- **Automated Owner Reporting**: Built-in protocol to broadcast findings directly to the system owner.
-- **Reconnaissance Engine**: Automated subdomain discovery and technology fingerprinting.
-- **Advanced Kubernetes Audit**: Deep scanning for RBAC issues and PSS compliance.
+- Ensure Docker is installed and running.
+- Ensure Python 3.12+ is available.
+- Ensure a LiteLLM-compatible model is configured through environment variables.
+- First run pulls the sandbox image automatically.
 
----
+Minimum environment:
 
-## 🐝 Swarm Roles & 100% Awareness Protocol
-
-### 1. Autonomous Decisions
-The agent operates with **100% awareness** of its environment. It will no longer ask for "how to proceed" or seek user confirmation. It analyzes tool outputs, selects the next logical step (e.g., pivot from recon to SQLi), and only notifies the user upon finding critical issues or finishing the task.
-
-### 2. Self-Critique Loop
-Before every report, the agent performs a validation check:
-- Is the evidence (HTTP requests/responses) attached?
-- Is the severity correctly assessed based on business impact?
-- Are the remediation steps actionable and technical?
-
-### 3. Swarm Roles
-- **RECON**: Focused on mapping attack surfaces and asset discovery.
-- **ATTACK**: Specialized in exploitation, fuzzing, and WAF bypass.
-- **AUDITOR**: Validates findings, performs config audits, and generates final reports.
-- **SUPERVISOR**: Manages the swarm, delegates tasks, and communicates with the owner.
-
----
-
-## 📋 Reporting to Owner
-
-### Automatic Notification Protocol
-ExaAiAgent is configured to automatically send the current findings and progress report directly to the system owner. This is triggered:
-- When a **CRITICAL** or **HIGH** severity vulnerability is confirmed.
-- Upon completion of a specific task by any swarm member.
-- As a final summary after the `finish_scan` tool is called.
-
-The report includes:
-- **📊 Stats**: Vulnerability count and severity breakdown.
-- **🚨 Alerts**: Quick preview of the most dangerous findings.
-- **📝 Summary**: A high-level overview for the system owner.
-
----
-
-## 🛠️ Commands & Usage
-
-### Launching an Autonomous Swarm Scan
 ```bash
-# Launch a full autonomous swarm-based scan (100% Awareness Mode)
-exaai -n --target https://api.example.com --instruction "Perform a full swarm audit and report findings"
+export EXAAI_LLM="openrouter/auto"
+export LLM_API_KEY="..."
+# optional when provider requires a custom base
+export LLM_API_BASE="https://openrouter.ai/api/v1"
 ```
 
-### New Reconnaissance Commands
-```bash
-# Automated Subdomain & Asset Discovery
-exaai -n --target example.com --prompt-modules subdomain_enumeration
+Basic commands:
 
-# Full Tech Stack & Port Audit
-exaai -n --target https://api.example.com --prompt-modules technology_fingerprinting,port_scanning
+```bash
+# non-interactive CLI scan
+exaai -n --target https://example.com
+
+# interactive TUI
+exaai tui
+
+# repository or local code
+exaai --target https://github.com/org/repo
+exaai --target ./app
 ```
 
----
+## Understand the runtime
 
-## 🔗 Resources
-- **GitHub:** https://github.com/hleliofficiel/ExaAiAgent
-- **Changelog:** See `IMPROVEMENTS.md` for v2.2.2 details.
+- ExaAiAgent depends on Docker for its sandbox runtime.
+- If Docker is unavailable, startup fails before the scan loop begins.
+- Tool execution happens through the sandbox tool server.
+- Prompt modules are auto-resolved when the user does not specify them explicitly.
+
+## Diagnose common failures
+
+### Docker not available
+
+Check:
+
+```bash
+docker version
+docker info
+```
+
+If Docker is not reachable, fix Docker before debugging higher layers.
+
+### LLM/provider issues
+
+Check:
+
+- `EXAAI_LLM`
+- `LLM_API_KEY`
+- `LLM_API_BASE` when needed
+- model/provider compatibility with LiteLLM
+
+### Tool/runtime issues
+
+If the scan starts but tools fail:
+
+- inspect sandbox startup
+- inspect tool server health
+- inspect missing host dependencies required by the chosen tool path
+
+## Develop ExaAiAgent itself
+
+When modifying ExaAiAgent:
+
+1. Fix runtime/CLI/TUI issues before adding new features.
+2. Keep version strings synchronized in:
+   - `pyproject.toml`
+   - `exaaiagnt/interface/main.py`
+   - `exaaiagnt/interface/tui.py`
+   - `README.md`
+3. Run targeted tests first, then broader test batches.
+4. Prefer improving error surfacing over silent failure.
+5. Keep LiteLLM as the provider abstraction layer; avoid login-session provider hacks unless explicitly requested.
+
+Useful checks:
+
+```bash
+pytest -q
+python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/tui.py exaaiagnt/runtime/tool_server.py
+exaai --version
+```
+
+## Release checklist
+
+Before a release:
+
+- confirm tests pass
+- confirm version strings are aligned
+- confirm README changelog/announcement is updated
+- confirm Docker requirement is documented clearly
+- confirm at least one real startup path was exercised
+
+## Safety note
+
+Only run ExaAiAgent on assets the operator is authorized to test.

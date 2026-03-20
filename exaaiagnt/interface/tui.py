@@ -181,7 +181,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v2.2.2."""
+        """Build new features highlight for v2.2.5."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
         text.append("Recon Engine", style=Style(color=self.NEON_PINK))
