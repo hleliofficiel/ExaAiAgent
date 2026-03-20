@@ -19,13 +19,15 @@ SANDBOX_MODE = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
 if not SANDBOX_MODE:
     raise RuntimeError("Tool server should only run in sandbox mode (EXAAI_SANDBOX_MODE=true)")
 
-parser = argparse.ArgumentParser(description="Start ExaaiAgnt tool server")
-parser.add_argument("--token", required=True, help="Authentication token")
-parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")  # nosec
-parser.add_argument("--port", type=int, required=True, help="Port to bind to")
+EXPECTED_TOKEN = os.getenv("EXAAI_TOOL_SERVER_TOKEN", "")
 
-args = parser.parse_args()
-EXPECTED_TOKEN = args.token
+
+def parse_server_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Start ExaaiAgnt tool server")
+    parser.add_argument("--token", required=True, help="Authentication token")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")  # nosec
+    parser.add_argument("--port", type=int, required=True, help="Port to bind to")
+    return parser.parse_args()
 
 app = FastAPI()
 security = HTTPBearer()
@@ -89,7 +91,13 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
             try:
                 tool_func = get_tool_by_name(tool_name)
                 if not tool_func:
-                    response_queue.put({"error": f"Tool '{tool_name}' not found"})
+                    available_tools = sorted(get_tool_names())
+                    response_queue.put({
+                        "error": (
+                            f"Tool '{tool_name}' not found. "
+                            f"Registered tools: {', '.join(available_tools[:25])}"
+                        )
+                    })
                     continue
 
                 converted_kwargs = convert_arguments(tool_func, kwargs)
@@ -200,6 +208,9 @@ signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == "__main__":
+    args = parse_server_args()
+    EXPECTED_TOKEN = args.token
+    os.environ["EXAAI_TOOL_SERVER_TOKEN"] = EXPECTED_TOKEN
     try:
         uvicorn.run(app, host=args.host, port=args.port, log_level="info")
     finally:
