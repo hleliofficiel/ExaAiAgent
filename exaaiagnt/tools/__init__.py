@@ -91,12 +91,17 @@ if not SANDBOX_MODE:
     if HAS_PERPLEXITY_API:
         from .web_search import *  # noqa: F403
 else:
+    # Sandbox workers still need coordination/finalization tools so sub-agents can
+    # wait, report completion, and exchange messages with parents.
+    from .agents_graph import *  # noqa: F403
     from .browser import *  # noqa: F403
     from .file_edit import *  # noqa: F403
+    from .finish import *  # noqa: F403
     from .notes import *  # noqa: F403
     from .proxy import *  # noqa: F403
     from .python import *  # noqa: F403
     from .terminal import *  # noqa: F403
+    from .thinking import *  # noqa: F403
 
 __all__ = [
     "ImplementedInClientSideOnlyError",

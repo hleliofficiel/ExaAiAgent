@@ -315,22 +315,24 @@ class AdaptiveLLMController:
         self._enable_verbose_logging = enabled
 
 
-# Global instance
-_controller: AdaptiveLLMController | None = None
+# Per-event-loop instances (important for multi-threaded sub-agent execution)
+_controllers_by_loop: dict[int, AdaptiveLLMController] = {}
 
 
 def get_traffic_controller() -> AdaptiveLLMController:
-    """Get or create the global traffic controller."""
-    global _controller
-    if _controller is None:
-        _controller = AdaptiveLLMController()
-    return _controller
+    """Get or create a traffic controller bound to the current event loop."""
+    loop = asyncio.get_running_loop()
+    loop_id = id(loop)
+    controller = _controllers_by_loop.get(loop_id)
+    if controller is None:
+        controller = AdaptiveLLMController()
+        _controllers_by_loop[loop_id] = controller
+    return controller
 
 
 def reset_traffic_controller():
-    """Reset the global traffic controller."""
-    global _controller
-    _controller = None
+    """Reset all event-loop scoped traffic controllers."""
+    _controllers_by_loop.clear()
 
 
 # Convenience decorator for LLM requests
