@@ -379,6 +379,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         self._agent_verb_timers: dict[str, Any] = {}  # agent_id -> timer
         self._agent_dot_states: dict[str, int] = {}  # agent_id -> dot_count (0-3)
         self._dot_animation_timer: Any | None = None
+        self._last_runtime_error: str | None = None
 
         self._setup_cleanup_handlers()
 

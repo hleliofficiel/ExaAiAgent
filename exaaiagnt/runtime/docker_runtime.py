@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import cast
 
 import docker
+import httpx
 from docker.errors import DockerException, ImageNotFound, NotFound
 from docker.models.containers import Container
 
