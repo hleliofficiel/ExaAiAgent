@@ -855,11 +855,31 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
                 ) not in ["running", "waiting"]:
                     del self._agent_dot_states[agent_id]
 
+    def _normalize_event_timestamp(self, raw_timestamp: Any) -> float:
+        if isinstance(raw_timestamp, (int, float)):
+            return float(raw_timestamp)
+
+        if isinstance(raw_timestamp, str):
+            try:
+                return float(raw_timestamp)
+            except ValueError:
+                pass
+
+            try:
+                normalized = raw_timestamp.replace("Z", "+00:00")
+                from datetime import datetime
+
+                return datetime.fromisoformat(normalized).timestamp()
+            except ValueError:
+                return 0.0
+
+        return 0.0
+
     def _gather_agent_events(self, agent_id: str) -> list[dict[str, Any]]:
         chat_events = [
             {
                 "type": "chat",
-                "timestamp": msg["timestamp"],
+                "timestamp": self._normalize_event_timestamp(msg.get("timestamp")),
                 "id": f"chat_{msg['message_id']}",
                 "data": msg,
             }
@@ -870,7 +890,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         tool_events = [
             {
                 "type": "tool",
-                "timestamp": tool_data["timestamp"],
+                "timestamp": self._normalize_event_timestamp(tool_data.get("timestamp")),
                 "id": f"tool_{exec_id}",
                 "data": tool_data,
             }
