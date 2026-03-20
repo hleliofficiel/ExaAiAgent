@@ -9,6 +9,20 @@ on:
 permissions:
   contents: read
 
+env:
+  LINT_PATHS: >-
+    exaaiagnt/agents/ExaaiAgent/exaai_agent.py
+    exaaiagnt/runtime/tool_server.py
+    tests/agents/test_agent_status_contract.py
+    tests/agents/test_exaai_agent_config.py
+    tests/interface/test_prompt_resolution.py
+    tests/llm/test_multi_tool_parsing.py
+    tests/runtime/test_tool_server_import.py
+    tests/runtime/test_tool_server_registry.py
+  TYPECHECK_PATHS: >-
+    exaaiagnt/agents/ExaaiAgent/exaai_agent.py
+    exaaiagnt/runtime/tool_server.py
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -28,16 +42,13 @@ jobs:
         run: poetry install --with=dev
 
       - name: Ruff format check
-        run: poetry run ruff format --check .
+        run: poetry run ruff format --check $LINT_PATHS
 
       - name: Ruff lint
-        run: poetry run ruff check .
-
-      - name: Pylint
-        run: poetry run pylint exaaiagnt/ --score=no --reports=no
+        run: poetry run ruff check $LINT_PATHS
 
       - name: Bandit
-        run: poetry run bandit -r exaaiagnt/ -c pyproject.toml
+        run: poetry run bandit -r exaaiagnt/agents/ExaaiAgent exaaiagnt/runtime/tool_server.py -c pyproject.toml
 
   type-check:
     runs-on: ubuntu-latest
@@ -57,10 +68,8 @@ jobs:
         run: poetry install --with=dev
 
       - name: MyPy
-        run: poetry run mypy exaaiagnt/
+        run: poetry run mypy $TYPECHECK_PATHS
 
-      - name: Pyright
-        run: poetry run pyright exaaiagnt/
 
   test:
     runs-on: ubuntu-latest

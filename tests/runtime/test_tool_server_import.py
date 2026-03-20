@@ -1,5 +1,4 @@
 import importlib
-import os
 
 
 def test_tool_server_can_be_imported_without_cli_args(monkeypatch) -> None:

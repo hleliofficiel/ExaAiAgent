@@ -1,7 +1,8 @@
-from typing import Any, Optional
+from contextlib import suppress
+from typing import Any
 
-from exaaiagnt.agents.base_agent import BaseAgent
 from exaaiagnt.agents.agent_supervisor import AgentRole, get_supervisor
+from exaaiagnt.agents.base_agent import BaseAgent
 from exaaiagnt.llm.config import LLMConfig
 
 
@@ -14,16 +15,39 @@ class ExaaiAgent(BaseAgent):
 
         state = config.get("state")
         if state is None or (hasattr(state, "parent_id") and state.parent_id is None):
-            default_modules = ["root_agent", "attack_planner", "report_synthesis", "runtime_recovery"]
+            default_modules = [
+                "root_agent",
+                "attack_planner",
+                "report_synthesis",
+                "runtime_recovery",
+            ]
             self.role = AgentRole.SUPERVISOR
 
         # Set specific modules based on role
         role_modules = {
-            AgentRole.RECON: ["attack_planner", "subdomain_enumeration", "port_scanning", "technology_fingerprinting"],
-            AgentRole.ATTACK: ["exploit_validation", "sql_injection", "xss", "rce", "idor", "waf_bypass"],
-            AgentRole.AUDITOR: ["report_synthesis", "runtime_recovery", "api_security", "kubernetes_security", "cloud_security"],
+            AgentRole.RECON: [
+                "attack_planner",
+                "subdomain_enumeration",
+                "port_scanning",
+                "technology_fingerprinting",
+            ],
+            AgentRole.ATTACK: [
+                "exploit_validation",
+                "sql_injection",
+                "xss",
+                "rce",
+                "idor",
+                "waf_bypass",
+            ],
+            AgentRole.AUDITOR: [
+                "report_synthesis",
+                "runtime_recovery",
+                "api_security",
+                "kubernetes_security",
+                "cloud_security",
+            ],
         }
-        
+
         if self.role in role_modules:
             default_modules.extend(role_modules[self.role])
 
@@ -54,14 +78,12 @@ class ExaaiAgent(BaseAgent):
         self.default_llm_config = config["llm_config"]
 
         super().__init__(config)
-        
+
         # Update role in supervisor
-        try:
+        with suppress(Exception):
             supervisor = get_supervisor()
             if self.state.agent_id in supervisor._agents:
                 supervisor._agents[self.state.agent_id].role = self.role
-        except Exception:
-            pass
 
     async def execute_scan(self, scan_config: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0912
         user_instructions = scan_config.get("user_instructions", "")
@@ -132,4 +154,3 @@ class ExaaiAgent(BaseAgent):
             task_description += f"\n\nSpecial instructions: {user_instructions}"
 
         return await self.agent_loop(task=task_description)
-

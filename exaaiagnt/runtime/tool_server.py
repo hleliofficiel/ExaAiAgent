@@ -29,6 +29,7 @@ def parse_server_args() -> argparse.Namespace:
     parser.add_argument("--port", type=int, required=True, help="Port to bind to")
     return parser.parse_args()
 
+
 app = FastAPI()
 security = HTTPBearer()
 
@@ -74,7 +75,9 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
     root_logger.handlers = [null_handler]
     root_logger.setLevel(logging.CRITICAL)
 
-    import exaaiagnt.tools  # noqa: F401  # Force tool registration in sandbox workers
+    import exaaiagnt.tools as _registered_tools  # Force tool registration in sandbox workers
+
+    _ = _registered_tools
     from exaaiagnt.tools.argument_parser import ArgumentConversionError, convert_arguments
     from exaaiagnt.tools.registry import get_tool_by_name, get_tool_names
 
@@ -92,12 +95,14 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
                 tool_func = get_tool_by_name(tool_name)
                 if not tool_func:
                     available_tools = sorted(get_tool_names())
-                    response_queue.put({
-                        "error": (
-                            f"Tool '{tool_name}' not found. "
-                            f"Registered tools: {', '.join(available_tools[:25])}"
-                        )
-                    })
+                    response_queue.put(
+                        {
+                            "error": (
+                                f"Tool '{tool_name}' not found. "
+                                f"Registered tools: {', '.join(available_tools[:25])}"
+                            )
+                        }
+                    )
                     continue
 
                 converted_kwargs = convert_arguments(tool_func, kwargs)
