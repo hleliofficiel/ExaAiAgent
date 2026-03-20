@@ -923,6 +923,14 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
             self._record_runtime_error("No active target. Enter a target URL/domain/path to start scanning.")
             return
 
+        try:
+            from exaaiagnt.interface.utils import check_docker_connection
+
+            check_docker_connection()
+        except RuntimeError as e:
+            self._record_runtime_error(f"Cannot start scan: {e}")
+            return
+
         if self._scan_thread and self._scan_thread.is_alive():
             return
 

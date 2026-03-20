@@ -423,8 +423,8 @@ class LLM:
 
         async def do_request():
             try:
-                from litellm import completion
-                return await completion(**completion_args, stream=False)
+                from litellm import acompletion
+                return await acompletion(**completion_args, stream=False)
             except litellm.RateLimitError:
                 # Let tenacity (in controller) handle retry
                 raise
