@@ -62,7 +62,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console.print()
         console.print(BANNER, style="bold cyan", justify="center")
         console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
-        console.print("[dim]v2.2.7[/]", justify="center")
+        console.print("[dim]v2.2.9[/]", justify="center")
         console.print()
     else:
         # Simple text output for headless/pipe mode
