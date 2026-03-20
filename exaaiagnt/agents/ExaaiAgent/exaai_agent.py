@@ -14,14 +14,14 @@ class ExaaiAgent(BaseAgent):
 
         state = config.get("state")
         if state is None or (hasattr(state, "parent_id") and state.parent_id is None):
-            default_modules = ["root_agent"]
+            default_modules = ["root_agent", "attack_planner", "report_synthesis", "runtime_recovery"]
             self.role = AgentRole.SUPERVISOR
 
         # Set specific modules based on role
         role_modules = {
-            AgentRole.RECON: ["subdomain_enumeration", "port_scanning", "technology_fingerprinting"],
-            AgentRole.ATTACK: ["sql_injection", "xss", "rce", "idor", "waf_bypass"],
-            AgentRole.AUDITOR: ["api_security", "kubernetes_security", "cloud_security"],
+            AgentRole.RECON: ["attack_planner", "subdomain_enumeration", "port_scanning", "technology_fingerprinting"],
+            AgentRole.ATTACK: ["exploit_validation", "sql_injection", "xss", "rce", "idor", "waf_bypass"],
+            AgentRole.AUDITOR: ["report_synthesis", "runtime_recovery", "api_security", "kubernetes_security", "cloud_security"],
         }
         
         if self.role in role_modules:
@@ -132,3 +132,4 @@ class ExaaiAgent(BaseAgent):
             task_description += f"\n\nSpecial instructions: {user_instructions}"
 
         return await self.agent_loop(task=task_description)
+

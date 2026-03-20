@@ -380,7 +380,7 @@ def agent_finish(
 
         agent_node = _agent_graph["nodes"][agent_id]
 
-        agent_node["status"] = "finished" if success else "failed"
+        agent_node["status"] = "completed" if success else "failed"
         agent_node["finished_at"] = datetime.now(UTC).isoformat()
         agent_node["result"] = {
             "summary": result_summary,
@@ -478,7 +478,7 @@ def stop_agent(agent_id: str) -> dict[str, Any]:
 
         agent_node = _agent_graph["nodes"][agent_id]
 
-        if agent_node["status"] in ["completed", "error", "failed", "stopped"]:
+        if agent_node["status"] in ["completed", "finished", "error", "failed", "stopped"]:
             return {
                 "success": True,
                 "message": f"Agent '{agent_node['name']}' was already stopped",
