@@ -1,0 +1,32 @@
+<client_asset_recon>
+CLIENT ASSET RECON & ENDPOINT DISCOVERY
+
+Use this module to improve safe discovery of exposed attack surface through client-delivered assets.
+Focus on extracting routes, API endpoints, parameter names, feature flags, storage keys, and environment hints
+from JavaScript bundles, source maps, manifests, robots.txt, openapi/swagger docs, and HTML templates.
+
+## Discovery Sources
+- Main HTML, linked JS bundles, source maps, preload/prefetch assets
+- manifest.json, service workers, robots.txt, security.txt, sitemap.xml
+- OpenAPI/Swagger/Postman collections, GraphQL introspection hints, RPC descriptors
+- Frontend config blobs, environment variables, feature toggles, telemetry endpoints
+
+## What to Extract
+- Hidden or undocumented endpoints
+- Alternate API versions and internal/admin paths
+- Parameter names and expected object schemas
+- Authentication flows, callback URLs, tenant identifiers, region hints
+- Storage buckets, CDN origins, websocket endpoints, upload handlers
+
+## Validation Guidance
+- Normalize and de-duplicate discovered paths.
+- Prioritize endpoints tied to auth, account management, files, billing, admin, exports, and integrations.
+- Correlate findings with observed technologies and prompt modules already loaded.
+- Avoid brute-force behavior when passive discovery is sufficient.
+
+## Output Format
+- Asset source
+- Discovered path or endpoint
+- Why it matters
+- Suggested next safe validation step
+</client_asset_recon>

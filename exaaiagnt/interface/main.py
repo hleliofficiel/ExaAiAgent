@@ -253,7 +253,7 @@ async def warm_up_llm() -> None:
 
 def get_version() -> str:
     """Get the current ExaAi version."""
-    return "2.2.5"
+    return "2.2.6"
 
 
 def resolve_prompt_modules(args: argparse.Namespace) -> list[str] | None:

@@ -1,0 +1,35 @@
+<authorization_review>
+AUTHORIZATION REVIEW & OBJECT-LEVEL ACCESS CONTROL
+
+Use this module for safe, authorized assessment of authorization boundaries in web and API targets.
+Focus on identifying missing object-level checks, broken function-level authorization, tenant isolation mistakes,
+and inconsistent policy enforcement between UI and API layers.
+
+## Priorities
+- Map identities, roles, tenants, and permission boundaries.
+- Compare what an unauthenticated user, low-privilege user, and higher-privilege user can access.
+- Trace every object reference exposed in URLs, JSON bodies, GraphQL variables, form fields, and file paths.
+- Look for read/write/delete/admin actions gated only by hidden UI elements.
+- Verify server-side authorization independently of client-side restrictions.
+
+## High-value Checks
+- Numeric/sequential IDs, UUID swaps, slug changes, account_id/user_id/org_id/team_id substitutions.
+- Bulk endpoints, exports, reports, invoices, tickets, orders, messages, notifications, attachments.
+- Role changes, invitation flows, project membership, billing, API keys, audit logs, admin-only endpoints.
+- Cross-tenant cache leakage or object reuse after login/logout or account switching.
+- GraphQL field-level exposure and overbroad nested object resolvers.
+
+## Validation Rules
+- Confirm with minimally invasive requests.
+- Prefer read-only verification first.
+- Record the exact actor, object identifier, endpoint, and expected vs actual authorization behavior.
+- Distinguish insecure direct object access from intended shared-resource features.
+- Mark uncertain findings as needing manual verification.
+
+## Evidence Checklist
+- [ ] Actor and role used
+- [ ] Object reference changed
+- [ ] Server response difference recorded
+- [ ] Sensitive fields or privileged action confirmed
+- [ ] Business impact explained clearly
+</authorization_review>

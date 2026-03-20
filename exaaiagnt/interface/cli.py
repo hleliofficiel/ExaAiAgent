@@ -1,4 +1,5 @@
 import atexit
+import os
 import signal
 import sys
 import threading
@@ -32,6 +33,15 @@ BANNER = r"""
 from exaaiagnt.dashboard.server import start_dashboard
 
 
+def should_use_live_display() -> bool:
+    term = (os.getenv("TERM") or "").lower()
+    if not sys.stdout.isatty():
+        return False
+    if term in {"", "dumb", "unknown"}:
+        return False
+    return True
+
+
 async def run_cli(args: Any) -> None:  # noqa: PLR0915
     # Start the live dashboard
     try:
@@ -42,8 +52,8 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         import logging
         logging.exception(f"Failed to start dashboard: {e}")
 
-    # Detect if running in a real terminal or headless (pipe/background)
-    is_tty = sys.stdout.isatty()
+    # Detect if running in a terminal that can reliably handle Live redraws
+    is_tty = should_use_live_display()
     console = Console(force_terminal=is_tty, no_color=not is_tty)
 
     if is_tty:
@@ -52,7 +62,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console.print()
         console.print(BANNER, style="bold cyan", justify="center")
         console.print("[bold purple]Advanced AI-Powered Cybersecurity Agent[/]", justify="center")
-        console.print("[dim]v2.2.2[/]", justify="center")
+        console.print("[dim]v2.2.6[/]", justify="center")
         console.print()
     else:
         # Simple text output for headless/pipe mode
@@ -187,35 +197,50 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console.print("[bold cyan]🚀 Starting penetration test...[/]")
         console.print()
 
-        with Live(
-            create_live_status(), console=console, refresh_per_second=2, transient=False
-        ) as live:
-            stop_updates = threading.Event()
+        if is_tty:
+            with Live(
+                create_live_status(),
+                console=console,
+                refresh_per_second=2,
+                transient=False,
+                auto_refresh=False,
+            ) as live:
+                stop_updates = threading.Event()
 
-            def update_status() -> None:
-                while not stop_updates.is_set():
-                    try:
-                        live.update(create_live_status())
-                        time.sleep(2)
-                    except Exception:  # noqa: BLE001
-                        break
+                def update_status() -> None:
+                    while not stop_updates.is_set():
+                        try:
+                            live.update(create_live_status(), refresh=True)
+                            time.sleep(2)
+                        except Exception:  # noqa: BLE001
+                            break
 
-            update_thread = threading.Thread(target=update_status, daemon=True)
-            update_thread.start()
+                update_thread = threading.Thread(target=update_status, daemon=True)
+                update_thread.start()
 
-            try:
-                agent = ExaaiAgent(agent_config)
-                result = await agent.execute_scan(scan_config)
+                try:
+                    agent = ExaaiAgent(agent_config)
+                    result = await agent.execute_scan(scan_config)
 
-                if isinstance(result, dict) and not result.get("success", True):
-                    error_msg = result.get("error", "Unknown error")
-                    console.print()
-                    console.print(f"[bold red]❌ Scan failed: {error_msg}[/]")
-                    console.print()
-                    sys.exit(1)
-            finally:
-                stop_updates.set()
-                update_thread.join(timeout=1)
+                    if isinstance(result, dict) and not result.get("success", True):
+                        error_msg = result.get("error", "Unknown error")
+                        console.print()
+                        console.print(f"[bold red]❌ Scan failed: {error_msg}[/]")
+                        console.print()
+                        sys.exit(1)
+                finally:
+                    stop_updates.set()
+                    update_thread.join(timeout=1)
+        else:
+            agent = ExaaiAgent(agent_config)
+            result = await agent.execute_scan(scan_config)
+
+            if isinstance(result, dict) and not result.get("success", True):
+                error_msg = result.get("error", "Unknown error")
+                console.print()
+                console.print(f"[bold red]❌ Scan failed: {error_msg}[/]")
+                console.print()
+                sys.exit(1)
 
     except Exception as e:
         tracer_error = ""

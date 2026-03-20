@@ -1,0 +1,31 @@
+<environment_bootstrap>
+ANALYSIS ENVIRONMENT BOOTSTRAP
+
+Use this module when the agent lacks a required dependency to perform legitimate analysis tasks.
+The goal is to keep the sandbox productive while remaining minimal, auditable, and reversible.
+
+## Principles
+- Install only what is necessary for the current task.
+- Prefer existing tools already available in the environment.
+- Prefer language-native package managers when working inside project repos.
+- Log what was installed and why.
+- Avoid background services or persistent modifications unless the task explicitly requires them.
+
+## Safe Workflow
+1. Identify the missing binary/module/package from the actual error.
+2. Check whether an equivalent existing tool already exists.
+3. Install the smallest dependency that solves the blocker.
+4. Re-run the failed step and confirm the blocker is gone.
+5. Record the dependency and command in notes/report output.
+
+## Examples
+- Python: pip install only the missing package or use the project virtualenv.
+- Node: npm/pnpm install the exact package needed in the local workspace.
+- OS packages: use apt only for clear runtime prerequisites that cannot be satisfied locally.
+
+## Checklist
+- [ ] Missing dependency confirmed from logs
+- [ ] Minimal install selected
+- [ ] Install command recorded
+- [ ] Verification rerun completed
+</environment_bootstrap>

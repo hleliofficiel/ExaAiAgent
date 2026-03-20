@@ -113,6 +113,22 @@ MODULE_PATTERNS = {
         "keywords": ["auth", "jwt", "token", "session", "login", "password"],
     },
 
+    # Authorization / object-level access control
+    "authorization_review": {
+        "url_patterns": [
+            r"/account",
+            r"/user",
+            r"/users",
+            r"/profile",
+            r"/admin",
+            r"/api/",
+            r"/org",
+            r"/team",
+            r"/tenant",
+        ],
+        "keywords": ["idor", "bola", "bfla", "authorization", "access control", "permission", "role", "tenant"],
+    },
+
     # API Security (Refined)
     "api_security": {
         "url_patterns": [
@@ -203,6 +219,20 @@ MODULE_PATTERNS = {
     "technology_fingerprinting": {
         "url_patterns": [],
         "keywords": ["tech", "stack", "framework", "cms", "fingerprint", "version"],
+    },
+
+    # Client-side asset reconnaissance
+    "client_asset_recon": {
+        "url_patterns": [
+            r"\.js($|\?)",
+            r"/static/",
+            r"/_next/",
+            r"/assets/",
+            r"/manifest\.json",
+            r"/swagger",
+            r"/openapi",
+        ],
+        "keywords": ["javascript", "bundle", "source map", "sourcemap", "manifest", "asset", "swagger", "openapi", "endpoint discovery"],
     },
 
     # Advanced Recon (Refined)

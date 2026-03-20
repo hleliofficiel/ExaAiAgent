@@ -41,3 +41,16 @@ def test_detect_technology_fingerprinting():
     instruction = "perform technology fingerprinting on the target"
     modules = detect_modules_from_target(target, instruction)
     assert "technology_fingerprinting" in modules
+
+
+def test_detect_authorization_review():
+    target = "https://api.example.com/users/123"
+    instruction = "focus on IDOR, BOLA, and access control"
+    modules = detect_modules_from_target(target, instruction)
+    assert "authorization_review" in modules
+
+
+def test_detect_client_asset_recon():
+    target = "https://app.example.com/_next/static/chunks/main.js"
+    modules = detect_modules_from_target(target)
+    assert "client_asset_recon" in modules
