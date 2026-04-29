@@ -1,6 +1,6 @@
 ---
 name: exaaiagent
-description: Run, debug, maintain, or extend ExaAiAgent for AI-assisted penetration testing, attack-surface mapping, repo/code security review, and multi-agent offensive-security workflows. Use when an AI agent needs onboarding instructions for operating ExaAiAgent, when a user wants to launch scans from CLI/TUI, when ExaAiAgent itself needs maintenance, or when another agent should use ExaAiAgent with any LiteLLM-supported provider (OpenAI, Anthropic, OpenRouter, Ollama, Gemini-compatible endpoints, and other LiteLLM-backed providers).
+description: "Run, debug, maintain, or extend ExaAiAgent for AI-assisted penetration testing, attack-surface mapping, repo/code security review, and multi-agent offensive-security workflows. Use when an AI agent needs onboarding instructions for operating ExaAiAgent, when a user wants to launch scans from CLI/TUI, when ExaAiAgent itself needs maintenance, or when another agent should use ExaAiAgent with any LiteLLM-supported provider (OpenAI, Anthropic, OpenRouter, Ollama, Gemini-compatible endpoints, and other LiteLLM-backed providers)."
 ---
 
 # ExaAiAgent Skill
@@ -9,11 +9,8 @@ Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLL
 
 ## Core operating rules
 
-- Require Docker. If Docker is unavailable, runtime startup fails before scanning begins.
-- Require a LiteLLM-supported model provider.
-- Treat `EXAAI_LLM` as the active model selector.
-- Use `LLM_API_KEY` and `LLM_API_BASE` only when the chosen provider needs them.
-- Expect the first run to pull the sandbox Docker image automatically.
+- Treat `EXAAI_LLM` as the active model selector; set `LLM_API_KEY` and `LLM_API_BASE` only when the chosen provider needs them.
+- The first run pulls the sandbox Docker image automatically.
 - Save results under `exaai_runs/<run-name>`.
 - Use only on assets the operator is authorized to test.
 
@@ -29,199 +26,97 @@ pip install exaai-agent
 pipx install exaai-agent
 ```
 
-Configure a LiteLLM-supported provider. ExaAiAgent is **not limited to OpenRouter**; use any provider LiteLLM supports.
+Configure a LiteLLM-supported provider using the pattern `export EXAAI_LLM="provider/model-name"`. Set `LLM_API_KEY` and `LLM_API_BASE` when the provider requires them.
 
-### OpenAI
+| Provider | `EXAAI_LLM` | `LLM_API_KEY` | `LLM_API_BASE` |
+|----------|-------------|---------------|-----------------|
+| OpenAI | `openai/gpt-5` | required | — |
+| Anthropic | `anthropic/claude-sonnet-4-5` | required | — |
+| OpenRouter | `openrouter/auto` | required | `https://openrouter.ai/api/v1` |
+| Ollama | `ollama/llama3` | — | `http://localhost:11434` |
+| Other | `provider/model-name` | if needed | if needed |
 
-```bash
-export EXAAI_LLM="openai/gpt-5"
-export LLM_API_KEY="your-openai-key"
-```
-
-### Anthropic
-
-```bash
-export EXAAI_LLM="anthropic/claude-sonnet-4-5"
-export LLM_API_KEY="your-anthropic-key"
-```
-
-### OpenRouter
+Verify the setup before scanning:
 
 ```bash
-export EXAAI_LLM="openrouter/auto"
-export LLM_API_KEY="your-openrouter-key"
-export LLM_API_BASE="https://openrouter.ai/api/v1"
+docker version && exaai --version
 ```
 
-### Ollama
-
-```bash
-export EXAAI_LLM="ollama/llama3"
-export LLM_API_BASE="http://localhost:11434"
-```
-
-### Any other LiteLLM-backed provider
-
-```bash
-export EXAAI_LLM="provider/model-name"
-export LLM_API_KEY="provider-key-if-needed"
-export LLM_API_BASE="provider-base-url-if-needed"
-```
-
-Run the first scan:
+Run the first scan and verify results:
 
 ```bash
 exaai --target https://your-app.com
+# Check results — if empty or errored, re-run with verbose output
+ls exaai_runs/*/  || exaai --target https://your-app.com --verbose
 ```
 
 ## Basic usage
 
-### Local codebase
-
 ```bash
+# Local codebase
 exaai --target ./app-directory
-```
 
-### GitHub repository review
-
-```bash
+# GitHub repository review
 exaai --target https://github.com/org/repo
-```
 
-### Black-box web assessment
-
-```bash
+# Black-box web assessment
 exaai --target https://your-app.com
-```
 
-### Headless mode
-
-```bash
+# Headless mode
 exaai -n --target https://your-app.com
-```
 
-### Interactive mode
-
-```bash
+# Interactive mode
 exaai tui
 ```
 
-## Smart auto-loading examples
+## Smart auto-loading
 
-ExaAiAgent can auto-resolve prompt modules when the user does not explicitly set `--prompt-modules`.
+ExaAiAgent auto-resolves prompt modules when `--prompt-modules` is not set.
 
 ```bash
-# GraphQL target
-exaai --target https://api.example.com/graphql
-
-# WebSocket target
-exaai --target wss://chat.example.com/socket
-
-# OAuth/OIDC target
-exaai --target https://auth.example.com/oauth/authorize
-
-# Recon-focused domain testing
-exaai --target example.com --instruction "enumerate subdomains"
+exaai --target https://api.example.com/graphql          # GraphQL
+exaai --target wss://chat.example.com/socket             # WebSocket
+exaai --target https://auth.example.com/oauth/authorize  # OAuth/OIDC
+exaai --target example.com --instruction "enumerate subdomains"  # Recon
 ```
 
-## Advanced usage examples
-
-### Authenticated or grey-box testing
+## Advanced usage
 
 ```bash
+# Authenticated or grey-box testing
 exaai --target https://your-app.com --instruction "Perform authenticated testing using provided credentials and identify authorization flaws"
-```
 
-### Multi-target testing
-
-```bash
+# Multi-target testing
 exaai -t https://github.com/org/app -t https://your-app.com
-```
 
-### Explicit modules
-
-```bash
+# Explicit modules
 exaai --target https://api.example.com --prompt-modules graphql_security,waf_bypass
+
+# Lightweight mode
+EXAAI_LIGHTWEIGHT_MODE=true exaai --target https://example.com --instruction "quick security scan"
 ```
-
-### Lightweight mode
-
-```bash
-export EXAAI_LIGHTWEIGHT_MODE=true
-exaai --target https://example.com --instruction "quick security scan"
-```
-
-## Runtime expectations
-
-- Docker is mandatory for sandbox execution.
-- Tool execution is routed through the sandbox tool server.
-- If Docker is unavailable, ExaAiAgent can fail before agent/tool execution begins.
-- Prompt modules auto-resolve unless the operator overrides them with `--prompt-modules`.
 
 ## Diagnose common failures
 
-### Docker failures
+Follow this order — each layer depends on the one above it:
 
-Check:
-
-```bash
-docker version
-docker info
-```
-
-If Docker is unavailable, fix Docker before debugging LiteLLM, agents, or tool-server behavior.
-
-### Provider or LiteLLM failures
-
-Check:
-
-- `EXAAI_LLM`
-- `LLM_API_KEY`
-- `LLM_API_BASE` when applicable
-- provider/model compatibility with LiteLLM
-
-### Tool/runtime failures
-
-If startup succeeds but scan execution fails:
-
-- inspect sandbox startup
-- inspect tool-server health
-- inspect missing system dependencies required by the selected tools
-- inspect model/provider rate limits or request failures
+1. **Docker**: Run `docker version && docker info`. Fix Docker before debugging anything else.
+2. **Provider/LiteLLM**: Verify `EXAAI_LLM`, `LLM_API_KEY`, and `LLM_API_BASE` (when applicable). Confirm the provider/model pair is supported by LiteLLM.
+3. **Tool/runtime**: If startup succeeds but scan execution fails, inspect sandbox startup, tool-server health, missing system dependencies, and model/provider rate limits.
 
 ## Maintain ExaAiAgent itself
 
 When editing ExaAiAgent:
 
 1. Fix runtime, CLI, TUI, and tool-server issues before adding new features.
-2. Keep version strings synchronized in:
-   - `pyproject.toml`
-   - `exaaiagnt/interface/main.py`
-   - `exaaiagnt/interface/tui.py`
-   - `README.md`
+2. Keep version strings synchronized in `pyproject.toml`, `exaaiagnt/interface/main.py`, `exaaiagnt/interface/tui.py`, and `README.md`.
 3. Keep LiteLLM as the model-provider abstraction layer.
 4. Prefer stronger error surfacing over silent failure.
-5. Validate CI before release.
 
-Useful checks:
+Before release, confirm tests pass, CI is green, version strings are aligned, docs are updated, and at least one real startup path was exercised.
 
 ```bash
 pytest -q
 python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/tui.py exaaiagnt/runtime/tool_server.py
 exaai --version
 ```
-
-## Release checklist
-
-Before release:
-
-- confirm tests pass
-- confirm CI is green
-- confirm version strings are aligned
-- confirm README and SKILL.md are updated
-- confirm Docker requirement is documented clearly
-- confirm at least one real startup path was exercised
-
-## Safety note
-
-Only run ExaAiAgent on assets the operator is explicitly authorized to test.
