@@ -59,7 +59,7 @@ class SecurityFinding:
 from exaaiagnt.tools.registry import register_tool
 
 
-@register_tool
+
 class K8sScanner:
     """
     Kubernetes Security Scanner.
@@ -341,6 +341,7 @@ class K8sScanner:
 
 # === Convenience Functions ===
 
+
 @register_tool
 def scan_cluster(context: str | None = None) -> dict[str, Any]:
     """Run a full cluster scan."""
@@ -349,12 +350,14 @@ def scan_cluster(context: str | None = None) -> dict[str, Any]:
     return scanner.export_report()
 
 
+
 @register_tool
 def check_rbac(namespace: str = "default") -> list[dict[str, Any]]:
     """Run RBAC checks only."""
     scanner = K8sScanner()
     scanner._check_rbac(namespace)
     return scanner.export_report()["findings"]
+
 
 
 @register_tool
