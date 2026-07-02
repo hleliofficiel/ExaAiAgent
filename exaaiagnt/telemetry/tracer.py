@@ -225,6 +225,31 @@ class Tracer:
             if mark_complete:
                 self.end_time = datetime.now(UTC).isoformat()
 
+            import json
+
+            # Save chat messages
+            if self.chat_messages:
+                messages_file = run_dir / "chat_messages.json"
+                with messages_file.open("w", encoding="utf-8") as f:
+                    json.dump(self.chat_messages, f, indent=2)
+
+            # Save run metadata
+            metadata_file = run_dir / "run_metadata.json"
+            with metadata_file.open("w", encoding="utf-8") as f:
+                json.dump(self.run_metadata, f, indent=2)
+
+            # Save agents
+            if self.agents:
+                agents_file = run_dir / "agents.json"
+                with agents_file.open("w", encoding="utf-8") as f:
+                    json.dump(self.agents, f, indent=2)
+
+            # Save tool executions
+            if self.tool_executions:
+                tools_file = run_dir / "tool_executions.json"
+                with tools_file.open("w", encoding="utf-8") as f:
+                    json.dump(self.tool_executions, f, indent=2, default=str)
+
             if self.final_scan_result:
                 penetration_test_report_file = run_dir / "penetration_test_report.md"
                 with penetration_test_report_file.open("w", encoding="utf-8") as f:
@@ -239,13 +264,13 @@ class Tracer:
                     f.write("| :--- | :--- |\n")
                     f.write(f"| **Overall Result** | {'✅ SECURE' if not self.vulnerability_reports else '⚠️ VULNERABLE'} |\n")
                     f.write(f"| **Total Vulnerabilities** | {len(self.vulnerability_reports)} |\n")
-                    
+
                     sev_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
                     for v in self.vulnerability_reports:
                         s = v["severity"].lower()
                         if s in sev_counts:
                             sev_counts[s] += 1
-                    
+
                     f.write(f"| **Critical / High** | {sev_counts['critical']} / {sev_counts['high']} |\n")
                     f.write(f"| **Medium / Low** | {sev_counts['medium']} / {sev_counts['low']} |\n")
                     f.write(f"| **Total Agents** | {len(self.agents)} |\n")
