@@ -8,3 +8,4 @@ def test_tools_registry_is_populated_after_importing_tools() -> None:
 
     assert tool_names
     assert "scan_cluster" in tool_names
+    assert "K8sScanner" not in tool_names
