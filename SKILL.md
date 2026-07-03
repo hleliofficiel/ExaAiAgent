@@ -7,6 +7,17 @@ description: "Run, debug, maintain, or extend ExaAiAgent for AI-assisted penetra
 
 Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**.
 
+## Agent Team Capabilities
+
+ExaAiAgent operates using a multi-agent orchestration workflow to achieve comprehensive security assessments. This swarm intelligence relies on distinct roles and autonomous decision-making to find, analyze, and validate vulnerabilities efficiently:
+
+- **RECON Agent:** Focuses on mapping the attack surface, discovering endpoints, and identifying potential entry points.
+- **ATTACK Agent:** Executes targeted testing and exploitation techniques against identified surfaces.
+- **AUDITOR Agent:** Performs in-depth code and configuration reviews to detect logical flaws and misconfigurations.
+- **SUPERVISOR Agent:** Orchestrates the other agents, delegating tasks, reviewing findings, and maintaining overall context.
+
+The system utilizes built-in self-critique protocols, ensuring high confidence in generated proof-of-concepts, minimizing false positives, and providing 100% awareness of the scanning state across the swarm.
+
 ## Core operating rules
 
 - Treat `EXAAI_LLM` as the active model selector; set `LLM_API_KEY` and `LLM_API_BASE` only when the chosen provider needs them.
