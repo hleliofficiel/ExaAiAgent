@@ -45,7 +45,7 @@ def get_package_version() -> str:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
         # Fallback version if package not installed
-        return "2.2.2"
+        return "2.2.6"
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -80,7 +80,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
 
-    # Enhanced ASCII Logo - ExaAi v2.2.2
+    # Enhanced ASCII Logo - ExaAi v2.2.6
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
@@ -104,7 +104,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._animation_step = 0
         self._animation_timer: Timer | None = None
         self._panel_static: Static | None = None
-        self._version = "2.1.2"
+        self._version = "2.2.6"
 
     def compose(self) -> ComposeResult:
         self._version = get_package_version()
@@ -181,7 +181,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v2.2.5."""
+        """Build new features highlight for v2.2.6."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
         text.append("Recon Engine", style=Style(color=self.NEON_PINK))

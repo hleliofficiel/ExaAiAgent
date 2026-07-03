@@ -120,3 +120,10 @@ pytest -q
 python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/tui.py exaaiagnt/runtime/tool_server.py
 exaai --version
 ```
+
+
+## Enhanced Capabilities (v2.2.6+)
+
+- **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
+- **Robust Tool Registration**: `@register_tool` should only be used on tool functions, never on classes (e.g. `K8sScanner`), ensuring proper API and schema generation.
+- **Improved Code Quality**: Consistent formatting and rigorous linting across all security modules, including `smart_fuzzer` and `waf_bypass`.
