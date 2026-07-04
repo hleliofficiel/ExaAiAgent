@@ -225,31 +225,6 @@ class Tracer:
             if mark_complete:
                 self.end_time = datetime.now(UTC).isoformat()
 
-            import json
-
-            # Save chat messages
-            if self.chat_messages:
-                messages_file = run_dir / "chat_messages.json"
-                with messages_file.open("w", encoding="utf-8") as f:
-                    json.dump(self.chat_messages, f, indent=2)
-
-            # Save run metadata
-            metadata_file = run_dir / "run_metadata.json"
-            with metadata_file.open("w", encoding="utf-8") as f:
-                json.dump(self.run_metadata, f, indent=2)
-
-            # Save agents
-            if self.agents:
-                agents_file = run_dir / "agents.json"
-                with agents_file.open("w", encoding="utf-8") as f:
-                    json.dump(self.agents, f, indent=2)
-
-            # Save tool executions
-            if self.tool_executions:
-                tools_file = run_dir / "tool_executions.json"
-                with tools_file.open("w", encoding="utf-8") as f:
-                    json.dump(self.tool_executions, f, indent=2, default=str)
-
             if self.final_scan_result:
                 penetration_test_report_file = run_dir / "penetration_test_report.md"
                 with penetration_test_report_file.open("w", encoding="utf-8") as f:

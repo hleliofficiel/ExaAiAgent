@@ -1,0 +1,34 @@
+<ios_security_guide>
+<title>IOS APPLICATION SECURITY TESTING PLAYBOOK</title>
+
+<critical>iOS applications operate in a sandboxed environment, but often suffer from data leakage, weak binary protections, insecure IPC (Custom URL Schemes), and keychain misuse. Assume testing on a jailbroken device to analyze the application's runtime behavior and file system interactions.</critical>
+
+## CORE VULNERABILITY VECTORS
+
+### 1. Insecure Data Storage
+- **NSUserDefaults:** Check if sensitive data (passwords, tokens) is stored in `NSUserDefaults` without encryption.
+- **Keychain Misuse:** Verify that sensitive data is stored using the Keychain with appropriate accessibility attributes (e.g., `kSecAttrAccessibleWhenUnlocked`).
+- **CoreData/SQLite:** Look for unencrypted databases containing PII or session tokens.
+- **Cache and Logs:** Check `Cache.db`, `Snapshots`, and `syslog` for sensitive data leakage.
+
+### 2. Insecure Inter-Process Communication (IPC)
+- **Custom URL Schemes:** Test if URL parameters passed via custom schemes are blindly trusted (leads to XSS, CSRF, or sensitive actions).
+- **Universal Links:** Verify the `apple-app-site-association` file and handle universal links securely.
+- **UIPasteboard:** Check if the general pasteboard is used for sensitive data without clearing it.
+
+### 3. Binary Protections
+- **PIE (Position Independent Executable):** Ensure PIE is enabled.
+- **ARC (Automatic Reference Counting):** Ensure ARC is used to prevent memory corruption.
+- **Stack Canaries:** Verify stack canaries are present.
+- **Jailbreak Detection:** Check if the app implements jailbreak detection and attempt to bypass it using tools like Frida.
+
+### 4. Network Security and Cryptography
+- **ATS (App Transport Security):** Check `Info.plist` for `NSAllowsArbitraryLoads` (should be false).
+- **Certificate Pinning:** Test if certificate pinning is implemented and attempt to bypass it.
+- **Hardcoded Secrets:** Analyze strings in the binary for hardcoded API keys or cryptographic material.
+
+### 5. WebViews and UI
+- **WKWebView Configuration:** Ensure `javaScriptEnabled` is necessary and secure. Look for insecure use of `WKScriptMessageHandler`.
+- **UI Data Leakage:** Ensure sensitive views are hidden or blurred when the app moves to the background (e.g., in the App Switcher).
+
+</ios_security_guide>

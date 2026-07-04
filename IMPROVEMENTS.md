@@ -1,7 +1,19 @@
-# ExaAiAgent Improvements & Fixes (v2.2.2 Update)
+# ExaAiAgent Improvements & Fixes (v2.2.6 Update)
 
 **Update Date:** 2026-02-21
 **Status:** 🚀 Major update completed
+
+---
+
+## ✅ Completed in v2.2.6
+
+### 1. Agent Swarm Enhancements
+- [x] Improved `SKILL.md` to detail agent team capabilities (RECON, ATTACK, AUDITOR, SUPERVISOR).
+- [x] Clarified multi-agent orchestration workflows and autonomous decision-making in `SKILL.md`.
+- [x] Promoted awareness of built-in self-critique protocols.
+
+### 2. Version Updates
+- [x] Synchronized stable version `2.2.6` across `pyproject.toml`, `exaaiagnt/interface/main.py`, `exaaiagnt/interface/cli.py`, `exaaiagnt/interface/tui.py`, `exaaiagnt/__init__.py`, and tools.
 
 ---
 
@@ -39,7 +51,7 @@
 ## 🟡 Future Roadmap (v2.3.0+)
 
 ### 1. Mobile Security
-- [ ] Add `android_security.jinja` and `ios_security.jinja` prompts.
+- [x] Add `android_security.jinja` and `ios_security.jinja` prompts.
 - [ ] Implement mobile-specific tool integrations.
 
 ### 2. Advanced Test Coverage

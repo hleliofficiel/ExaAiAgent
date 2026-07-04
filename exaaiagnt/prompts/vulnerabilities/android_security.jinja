@@ -1,0 +1,32 @@
+<android_security_guide>
+<title>ANDROID APPLICATION SECURITY TESTING PLAYBOOK</title>
+
+<critical>Android applications often suffer from deep structural issues related to IPC, intent handling, weak cryptography, and unsafe local storage. Assume the device is compromised (rooted) and focus on finding vulnerabilities that expose sensitive user data, permit arbitrary code execution, or bypass authentication flows.</critical>
+
+## CORE VULNERABILITY VECTORS
+
+### 1. Insecure Intent Handling (IPC)
+- **Exported Components:** Analyze `AndroidManifest.xml` for `android:exported="true"`.
+- **Intent Spoofing:** Test if Activities, Services, or BroadcastReceivers can be invoked maliciously without proper permissions.
+- **Implicit Intents:** Verify if implicit intents can be intercepted to leak sensitive data (Intent hijacking).
+
+### 2. Insecure Data Storage
+- **SharedPreferences:** Check if sensitive data is stored unencrypted in `SharedPreferences`.
+- **SQLite Databases:** Look for unencrypted databases containing PII or session tokens.
+- **Internal Storage:** Verify that files in `getFilesDir()` or `getCacheDir()` don't contain plaintext secrets.
+- **External Storage:** Test if sensitive files are written to SD cards (world-readable).
+
+### 3. Deep Links and WebViews
+- **WebView Configurations:** Look for `setJavaScriptEnabled(true)` and exposed `addJavascriptInterface`.
+- **Deep/App Links:** Test if URL parameters passed via deep links are blindly trusted (leads to XSS in WebViews or local file inclusion).
+
+### 4. Weak Cryptography
+- **Hardcoded Keys:** Search decompiled source (`.apk` -> `.smali` or `.java`) for hardcoded AES/RSA keys.
+- **Insecure PRNG:** Look for `java.util.Random` used for secure operations instead of `SecureRandom`.
+- **Custom Crypto:** Identify and break home-rolled cryptographic implementations.
+
+### 5. Network Communication
+- **Certificate Pinning:** Test if certificate pinning is implemented and if it can be bypassed using tools like Frida or Objection.
+- **Cleartext Traffic:** Look for `android:usesCleartextTraffic="true"` or HTTP endpoints in the code.
+
+</android_security_guide>
