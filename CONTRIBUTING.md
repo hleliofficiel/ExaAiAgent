@@ -11,7 +11,7 @@ Thank you for your interest in contributing to ExaAiAgent! This guide will help 
 - Poetry (for dependency management)
 - Git
 
-### Local Development
+### Local Development ...
 
 1. **Clone the repository**
 
