@@ -37,7 +37,9 @@ def should_use_live_display() -> bool:
     term = (os.getenv("TERM") or "").lower()
     if not sys.stdout.isatty():
         return False
-    return term not in {"", "dumb", "unknown"}
+    if term in {"", "dumb", "unknown"}:
+        return False
+    return True
 
 
 async def run_cli(args: Any) -> None:  # noqa: PLR0915
@@ -65,7 +67,9 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console.print()
     else:
         # Simple text output for headless/pipe mode
-        pass
+        print("=" * 50)
+        print("ExaAiAgent - AI-Powered Security Scanner")
+        print("=" * 50)
 
     if is_tty:
         # Target info table (rich formatting)
@@ -93,9 +97,13 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
 
         console.print(Panel(config_text, title="[bold green]⚙️ Configuration", border_style="green"))
         console.print()
-    # Simple text output for headless mode
-    elif args.instruction:
-        pass
+    else:
+        # Simple text output for headless mode
+        print(f"Targets: {[t['original'] for t in args.targets_info]}")
+        print(f"Results: exaai_runs/{args.run_name}")
+        if args.instruction:
+            print(f"Instruction: {args.instruction[:100]}")
+        print("-" * 50)
 
     scan_config = {
         "scan_id": args.run_name,

@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.5-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-2.2.6-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v2.2.5 Released!** Focused on runtime reliability, cleaner CLI/TUI flows, stronger agent coordination, import-safe sandbox tooling, and improved prompt specialization.
+> **🚀 v2.2.6 Released!** Focused on formatting code standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
 >
 > 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```
@@ -26,6 +26,13 @@
 > ```
 
 ---
+
+## 🔥 What's New in v2.2.6
+
+- **K8s Scanner Tool Registration**: Fixed proper tool invocation flow for Kubernetes scanners (ensuring sandbox execution bypass requirements are strictly met).
+- **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
+- **Improved Code Quality**: Consistent formatting and rigorous linting across the codebase, eliminating missing/mutable-default variables and improving logging.
+- **SKILL.md Revisions**: Extensively updated onboarding procedures to accurately convey configuration overrides for LiteLLM dependencies.
 
 ## 🔥 What's New in v2.2.5
 
