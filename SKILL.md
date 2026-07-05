@@ -109,9 +109,8 @@ Follow this order — each layer depends on the one above it:
 When editing ExaAiAgent:
 
 1. Fix runtime, CLI, TUI, and tool-server issues before adding new features.
-2. Keep version strings synchronized in `pyproject.toml`, `exaaiagnt/interface/main.py`, `exaaiagnt/interface/tui.py`, and `README.md`.
-3. Keep LiteLLM as the model-provider abstraction layer.
-4. Prefer stronger error surfacing over silent failure.
+2. Keep LiteLLM as the model-provider abstraction layer.
+3. Prefer stronger error surfacing over silent failure.
 
 Before release, confirm tests pass, CI is green, version strings are aligned, docs are updated, and at least one real startup path was exercised.
 
@@ -122,7 +121,7 @@ poetry run exaai --version
 ```
 
 
-## Enhanced Capabilities (v2.3.2+)
+## Enhanced Capabilities (v2.3.2+) "This is the latest verison"
 
 - **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
 - **Robust Tool Registration**: `@register_tool` should only be used on tool functions, never on classes (e.g. `K8sScanner`), ensuring proper API and schema generation.
