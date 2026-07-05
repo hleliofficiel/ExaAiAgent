@@ -18,7 +18,7 @@
 <br>
 
 > [!TIP]
-> **🚀 v2.2.6 Released!** Focused on formatting code standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
+> **🚀 v2.3.1 Released!** Focused on formatting code standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
 >
 > 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```
@@ -27,7 +27,7 @@
 
 ---
 
-## 🔥 What's New in v2.2.6
+## 🔥 What's New in v2.3.1
 
 - **K8s Scanner Tool Registration**: Fixed proper tool invocation flow for Kubernetes scanners (ensuring sandbox execution bypass requirements are strictly met).
 - **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
@@ -296,7 +296,7 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 - OpenAI GPT-5 (`openai/gpt-5`)
 - Anthropic Claude Sonnet 4.5 (`anthropic/claude-sonnet-4-5`)
-- Google Gemini 2.0 (`gemini/gemini-2.0-flash`)
+- Google Gemini 3.0 (`gemini/gemini-2.0-flash`)
 
 ---
 
@@ -331,11 +331,11 @@ export PERPLEXITY_API_KEY="key"       # For search capabilities
 
 ## 🆕 Changelog
 
-#  v2.2.6
+#  v2.3.1
 
 ## Release Overview
 
-Version **v2.2.6** is a production-ready maintenance and improvement release focused on stability, reliability, code quality, documentation, and developer experience. Existing functionality has been preserved while introducing meaningful improvements across the project.
+Version **v2.3.1** is a production-ready maintenance and improvement release focused on stability, reliability, code quality, documentation, and developer experience. Existing functionality has been preserved while introducing meaningful improvements across the project.
 
 ---
 
@@ -363,7 +363,7 @@ Version **v2.2.6** is a production-ready maintenance and improvement release foc
 
 ## 🖥️ CLI Improvements
 
-- Updated CLI version to **v2.2.6**.
+- Updated CLI version to **v2.3.1**.
 - Restored headless (non-TTY) output behavior after review.
 - Preserved compatibility with:
   - CI pipelines
@@ -388,7 +388,7 @@ The documentation has been significantly expanded with:
 - Testing instructions using Poetry
 - Kubernetes Scanner documentation
 - Best practices
-- New v2.2.6 capabilities
+- New v2.3.1 capabilities
 
 ---
 
@@ -438,7 +438,7 @@ Existing automation, scripts, and CI environments continue to work as expected.
 
 # Release Summary
 
-**ExaAiAgent v2.2.6** focuses on delivering a stable production release with improved agent reliability, Kubernetes scanning enhancements, restored CLI compatibility, expanded documentation, codebase refactoring, and comprehensive testing, while maintaining full backward compatibility.
+**ExaAiAgent v2.3.1** focuses on delivering a stable production release with improved agent reliability, Kubernetes scanning enhancements, restored CLI compatibility, expanded documentation, codebase refactoring, and comprehensive testing, while maintaining full backward compatibility.
 ### v2.2.5 (Latest)
 - **Runtime Reliability**: fixed interactive scan flow, tool-server import safety, sandbox readiness, and agent messaging issues
 - **Developer Workflow**: CI now runs lint, type-check, tests, and smoke checks on pull requests
