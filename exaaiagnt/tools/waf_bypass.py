@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class WAFType(Enum):
     """Known WAF types."""
+
     CLOUDFLARE = "cloudflare"
     AKAMAI = "akamai"
     IMPERVA = "imperva"
@@ -33,6 +34,7 @@ class WAFType(Enum):
 @dataclass
 class WAFDetectionResult:
     """Result of WAF detection."""
+
     detected: bool
     waf_type: WAFType
     confidence: float
@@ -80,7 +82,7 @@ class WAFDetector:
         status_code: int,
         headers: dict[str, str],
         body: str,
-        cookies: dict[str, str] = None
+        cookies: dict[str, str] | None = None,
     ) -> WAFDetectionResult:
         """Detect WAF from response."""
         cookies = cookies or {}
@@ -130,7 +132,7 @@ class WAFDetector:
             waf_type=detected_waf,
             confidence=min(max_confidence, 1.0),
             indicators=indicators,
-            bypass_suggestions=self._get_bypass_suggestions(detected_waf) if detected else []
+            bypass_suggestions=self._get_bypass_suggestions(detected_waf) if detected else [],
         )
 
     def _get_bypass_suggestions(self, waf_type: WAFType) -> list[str]:
@@ -215,10 +217,8 @@ class PayloadEncoder:
     def case_variation(payload: str) -> str:
         """Apply random case variation."""
         import random
-        return "".join(
-            c.upper() if random.random() > 0.5 else c.lower()
-            for c in payload
-        )
+
+        return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in payload)
 
     @staticmethod
     def null_byte_inject(payload: str) -> str:
@@ -240,7 +240,7 @@ class PayloadEncoder:
     def chunked_encode(payload: str) -> list[str]:
         """Split payload into chunks for chunked transfer."""
         chunk_size = 10
-        return [payload[i:i+chunk_size] for i in range(0, len(payload), chunk_size)]
+        return [payload[i : i + chunk_size] for i in range(0, len(payload), chunk_size)]
 
 
 class WAFBypass:
@@ -257,15 +257,13 @@ class WAFBypass:
         status_code: int,
         headers: dict[str, str],
         body: str,
-        cookies: dict[str, str] = None
+        cookies: dict[str, str] | None = None,
     ) -> WAFDetectionResult:
         """Detect WAF from response."""
         return self.detector.detect(status_code, headers, body, cookies)
 
     def generate_bypass_payloads(
-        self,
-        original_payload: str,
-        waf_type: WAFType = WAFType.UNKNOWN
+        self, original_payload: str, waf_type: WAFType = WAFType.UNKNOWN
     ) -> list[tuple[str, str]]:
         """
         Generate bypass payloads for a given original payload.
@@ -274,52 +272,34 @@ class WAFBypass:
         payloads = []
 
         # URL encoding variations
-        payloads.append((
-            self.encoder.url_encode(original_payload),
-            "URL encoded"
-        ))
-        payloads.append((
-            self.encoder.url_encode(original_payload, double=True),
-            "Double URL encoded"
-        ))
+        payloads.append((self.encoder.url_encode(original_payload), "URL encoded"))
+        payloads.append(
+            (self.encoder.url_encode(original_payload, double=True), "Double URL encoded")
+        )
 
         # Unicode normalization
-        payloads.append((
-            self.encoder.unicode_normalize(original_payload),
-            "Unicode normalized"
-        ))
+        payloads.append((self.encoder.unicode_normalize(original_payload), "Unicode normalized"))
 
         # Hex encoding
-        payloads.append((
-            self.encoder.hex_encode(original_payload),
-            "Hex encoded"
-        ))
+        payloads.append((self.encoder.hex_encode(original_payload), "Hex encoded"))
 
         # Case variation
-        payloads.append((
-            self.encoder.case_variation(original_payload),
-            "Case variation"
-        ))
+        payloads.append((self.encoder.case_variation(original_payload), "Case variation"))
 
         # Comment injection (for SQL-like payloads)
         if any(kw in original_payload.lower() for kw in ["select", "union", "insert", "update"]):
-            payloads.append((
-                self.encoder.add_comments(original_payload, "sql"),
-                "SQL comment injection"
-            ))
+            payloads.append(
+                (self.encoder.add_comments(original_payload, "sql"), "SQL comment injection")
+            )
 
         # Null byte injection
-        payloads.append((
-            self.encoder.null_byte_inject(original_payload),
-            "Null byte injection"
-        ))
+        payloads.append((self.encoder.null_byte_inject(original_payload), "Null byte injection"))
 
         # WAF-specific techniques
         if waf_type == WAFType.AKAMAI:
-            payloads.append((
-                self.encoder.json_smuggle(original_payload),
-                "JSON smuggling (Akamai)"
-            ))
+            payloads.append(
+                (self.encoder.json_smuggle(original_payload), "JSON smuggling (Akamai)")
+            )
 
         return payloads
 

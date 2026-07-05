@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class VulnStatus(Enum):
     """Vulnerability validation status."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     FALSE_POSITIVE = "false_positive"
@@ -30,6 +31,7 @@ class VulnStatus(Enum):
 
 class Severity(Enum):
     """Vulnerability severity levels."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -40,6 +42,7 @@ class Severity(Enum):
 @dataclass
 class VulnerabilityReport:
     """A validated vulnerability report."""
+
     vuln_id: str
     vuln_type: str
     status: VulnStatus
@@ -59,6 +62,7 @@ class VulnerabilityReport:
 @dataclass
 class ValidationTest:
     """A validation test case."""
+
     test_name: str
     test_func: Callable
     required: bool = True
@@ -67,7 +71,7 @@ class ValidationTest:
 class VulnValidator:
     """
     Vulnerability validation engine.
-    
+
     Features:
     - Confirms vulnerabilities with additional tests
     - Generates PoC steps
@@ -111,8 +115,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Insert payload '{payload}' in parameter '{parameter}'",
                     "Observe the response showing SQL error or data leakage",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "xss": {
                 "severity": Severity.HIGH,
@@ -128,8 +132,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Insert XSS payload '{payload}' in parameter '{parameter}'",
                     "Observe JavaScript execution or DOM modification",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "ssrf": {
                 "severity": Severity.HIGH,
@@ -145,8 +149,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Supply internal URL '{payload}' in parameter '{parameter}'",
                     "Observe access to internal resources",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "path_traversal": {
                 "severity": Severity.HIGH,
@@ -162,8 +166,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Supply path traversal payload '{payload}' in parameter '{parameter}'",
                     "Observe disclosure of system files",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "command_injection": {
                 "severity": Severity.CRITICAL,
@@ -179,8 +183,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Insert command injection payload '{payload}' in parameter '{parameter}'",
                     "Observe command execution on server",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "idor": {
                 "severity": Severity.MEDIUM,
@@ -197,8 +201,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Change parameter '{parameter}' to another user's ID '{payload}'",
                     "Observe access to User B's data",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "ssti": {
                 "severity": Severity.CRITICAL,
@@ -214,8 +218,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Insert template payload '{payload}' in parameter '{parameter}'",
                     "Observe template expression evaluation",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
             "open_redirect": {
                 "severity": Severity.LOW,
@@ -231,8 +235,8 @@ class VulnValidator:
                     "Navigate to {url}",
                     "Supply external URL '{payload}' in parameter '{parameter}'",
                     "Observe redirect to external site",
-                    "Evidence: {evidence}"
-                ]
+                    "Evidence: {evidence}",
+                ],
             },
         }
 
@@ -243,7 +247,7 @@ class VulnValidator:
         parameter: str,
         payload: str,
         evidence: str,
-        status: VulnStatus = VulnStatus.PENDING
+        status: VulnStatus = VulnStatus.PENDING,
     ) -> VulnerabilityReport:
         """Create a new vulnerability report."""
         vuln_id = f"{vuln_type}_{hash(url + parameter + payload) & 0xFFFFFFFF:08x}"
@@ -272,7 +276,7 @@ class VulnValidator:
             evidence=evidence,
             poc_steps=poc_steps,
             remediation=remediation.strip(),
-            cvss_score=cvss
+            cvss_score=cvss,
         )
 
         self._reports[vuln_id] = report
@@ -330,9 +334,7 @@ class VulnValidator:
         return self._reports.get(vuln_id)
 
     def get_all_reports(
-        self,
-        status: VulnStatus | None = None,
-        severity: Severity | None = None
+        self, status: VulnStatus | None = None, severity: Severity | None = None
     ) -> list[VulnerabilityReport]:
         """Get all reports, optionally filtered."""
         reports = list(self._reports.values())
@@ -348,7 +350,8 @@ class VulnValidator:
     def get_confirmed_vulns(self) -> list[VulnerabilityReport]:
         """Get all confirmed vulnerabilities."""
         return [
-            r for r in self._reports.values()
+            r
+            for r in self._reports.values()
             if r.status in [VulnStatus.CONFIRMED, VulnStatus.EXPLOITABLE]
         ]
 
@@ -403,11 +406,7 @@ def get_vuln_validator() -> VulnValidator:
 
 
 def create_vuln_report(
-    vuln_type: str,
-    url: str,
-    parameter: str,
-    payload: str,
-    evidence: str
+    vuln_type: str, url: str, parameter: str, payload: str, evidence: str
 ) -> VulnerabilityReport:
     """Convenience function to create a vulnerability report."""
     validator = get_vuln_validator()

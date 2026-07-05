@@ -61,7 +61,7 @@ class FallbackResult:
 class LLMFallbackManager:
     """
     Manages fallback between multiple LLM models.
-    
+
     Features:
     - Automatic failover to backup models
     - Weighted model selection
@@ -72,7 +72,7 @@ class LLMFallbackManager:
     def __init__(self, models: list[str] | None = None):
         """
         Initialize the fallback manager.
-        
+
         Args:
             models: List of model names to use. If None, uses defaults.
         """
@@ -134,7 +134,7 @@ class LLMFallbackManager:
     def select_model(self) -> ModelConfig | None:
         """
         Select a model using weighted random selection.
-        
+
         Returns:
             Selected model config or None if no models available.
         """
@@ -168,11 +168,11 @@ class LLMFallbackManager:
     ) -> FallbackResult:
         """
         Make a request with automatic fallback on failure.
-        
+
         Args:
             messages: Chat messages to send.
             **kwargs: Additional arguments for litellm.
-            
+
         Returns:
             FallbackResult containing the response or error info.
         """
@@ -234,7 +234,7 @@ class LLMFallbackManager:
                 # Permanent errors for this model - disable and try another
                 model_config.enabled = False
                 result.error = str(e)
-                logger.error(f"Model {model_config.name} permanently disabled: {e}")
+                logger.exception(f"Model {model_config.name} permanently disabled: {e}")
                 continue
 
             except Exception as e:
@@ -250,7 +250,7 @@ class LLMFallbackManager:
 class LLMLoadBalancer:
     """
     Load balancer for distributing requests across multiple models.
-    
+
     Strategies:
     - Round-robin: Equal distribution
     - Weighted: Based on model weights
@@ -264,7 +264,7 @@ class LLMLoadBalancer:
     ):
         """
         Initialize the load balancer.
-        
+
         Args:
             models: List of model names to balance across.
             strategy: Load balancing strategy ('round-robin', 'weighted', 'least-failures').
@@ -276,7 +276,7 @@ class LLMLoadBalancer:
     def get_next_model(self) -> str:
         """
         Get the next model based on the selected strategy.
-        
+
         Returns:
             Name of the selected model.
         """

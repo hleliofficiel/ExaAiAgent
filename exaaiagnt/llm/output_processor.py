@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OutputConfig:
     """Configuration for output processing."""
+
     max_urls: int = 100
     max_lines: int = 200
     max_chars: int = 10000
@@ -30,7 +31,7 @@ class OutputConfig:
 class OutputProcessor:
     """
     Processes tool outputs to reduce token consumption.
-    
+
     Features:
     - URL deduplication and limiting
     - Large output summarization
@@ -52,7 +53,7 @@ class OutputProcessor:
         # Convert to string if needed
         if isinstance(output, dict):
             output_str = json.dumps(output, indent=2, default=str)
-        elif isinstance(output, (list, tuple)):
+        elif isinstance(output, list | tuple):
             output_str = self._process_list(output)
         else:
             output_str = str(output)
@@ -105,10 +106,7 @@ class OutputProcessor:
 
             # Extract URL if line contains other data
             url_match = re.search(r"https?://[^\s]+", line)
-            if url_match:
-                url = url_match.group(0)
-            else:
-                url = line
+            url = url_match.group(0) if url_match else line
 
             # Deduplicate
             if self.config.deduplicate:
@@ -123,7 +121,7 @@ class OutputProcessor:
         prioritized = self._prioritize_urls(urls)
 
         # Limit count
-        limited = prioritized[:self.config.max_urls]
+        limited = prioritized[: self.config.max_urls]
 
         # Generate summary
         total = len(urls)
@@ -146,15 +144,34 @@ class OutputProcessor:
         low_priority = []
 
         high_patterns = [
-            r"/admin", r"/api", r"/auth", r"/login", r"/upload",
-            r"/config", r"/backup", r"/debug", r"/test", r"/internal",
-            r"\.json$", r"\.xml$", r"\.yaml$", r"\.env",
-            r"/graphql", r"/rest", r"/v1/", r"/v2/",
+            r"/admin",
+            r"/api",
+            r"/auth",
+            r"/login",
+            r"/upload",
+            r"/config",
+            r"/backup",
+            r"/debug",
+            r"/test",
+            r"/internal",
+            r"\.json$",
+            r"\.xml$",
+            r"\.yaml$",
+            r"\.env",
+            r"/graphql",
+            r"/rest",
+            r"/v1/",
+            r"/v2/",
         ]
 
         medium_patterns = [
-            r"/user", r"/account", r"/profile", r"/dashboard",
-            r"/search", r"/query", r"\?.*=",
+            r"/user",
+            r"/account",
+            r"/profile",
+            r"/dashboard",
+            r"/search",
+            r"/query",
+            r"\?.*=",
         ]
 
         for url in urls:
@@ -203,7 +220,9 @@ class OutputProcessor:
         for service, ports in sorted(services.items()):
             result += f"  {service}: {', '.join(ports)}\n"
 
-        result += f"\nAll open ports: {', '.join(sorted(open_ports, key=lambda x: int(x.split('/')[0])))}"
+        result += (
+            f"\nAll open ports: {', '.join(sorted(open_ports, key=lambda x: int(x.split('/')[0])))}"
+        )
 
         return result
 
@@ -215,13 +234,22 @@ class OutputProcessor:
             "directories": [],
             "files": [],
             "interesting": [],
-            "status_codes": defaultdict(list)
+            "status_codes": defaultdict(list),
         }
 
         interesting_patterns = [
-            r"\.env", r"\.config", r"\.git", r"\.svn",
-            r"backup", r"admin", r"secret", r"private",
-            r"\.sql", r"\.bak", r"\.old", r"\.log",
+            r"\.env",
+            r"\.config",
+            r"\.git",
+            r"\.svn",
+            r"backup",
+            r"admin",
+            r"secret",
+            r"private",
+            r"\.sql",
+            r"\.bak",
+            r"\.old",
+            r"\.log",
         ]
 
         for line in lines:
@@ -265,13 +293,7 @@ class OutputProcessor:
         """Process vulnerability scan results."""
         lines = output.strip().split("\n")
 
-        findings = {
-            "critical": [],
-            "high": [],
-            "medium": [],
-            "low": [],
-            "info": []
-        }
+        findings = {"critical": [], "high": [], "medium": [], "low": [], "info": []}
 
         for line in lines:
             line_lower = line.lower()
@@ -314,13 +336,15 @@ class OutputProcessor:
 
         if len(lines) > self.config.max_lines:
             # Truncate with summary
-            shown_lines = lines[:self.config.max_lines]
+            shown_lines = lines[: self.config.max_lines]
             result = "\n".join(shown_lines)
-            result += f"\n\n[Output truncated: showed {self.config.max_lines} of {len(lines)} lines]"
+            result += (
+                f"\n\n[Output truncated: showed {self.config.max_lines} of {len(lines)} lines]"
+            )
             return result
 
         if len(output) > self.config.max_chars:
-            result = output[:self.config.max_chars]
+            result = output[: self.config.max_chars]
             result += f"\n\n[Output truncated: showed {self.config.max_chars} of {len(output)} characters]"
             return result
 
@@ -340,7 +364,7 @@ class OutputProcessor:
 
         # Limit items
         if len(str_items) > self.config.max_lines:
-            shown = str_items[:self.config.max_lines]
+            shown = str_items[: self.config.max_lines]
             result = "\n".join(shown)
             result += f"\n\n[{len(str_items) - self.config.max_lines} items omitted]"
             return result

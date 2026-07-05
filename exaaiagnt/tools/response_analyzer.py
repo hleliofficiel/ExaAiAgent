@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class DetectionType(Enum):
     """Types of detections."""
+
     SQL_ERROR = "sql_error"
     PATH_DISCLOSURE = "path_disclosure"
     STACK_TRACE = "stack_trace"
@@ -36,6 +37,7 @@ class DetectionType(Enum):
 @dataclass
 class Detection:
     """A detection finding."""
+
     detection_type: DetectionType
     confidence: float  # 0.0 - 1.0
     evidence: str
@@ -46,6 +48,7 @@ class Detection:
 @dataclass
 class AnalysisResult:
     """Result of response analysis."""
+
     detections: list[Detection] = field(default_factory=list)
     response_hash: str = ""
     response_length: int = 0
@@ -57,7 +60,7 @@ class AnalysisResult:
 class ResponseAnalyzer:
     """
     Intelligent response analyzer for vulnerability detection.
-    
+
     Detects:
     - SQL/Database errors
     - Path disclosures
@@ -170,7 +173,7 @@ class ResponseAnalyzer:
         response_body: str,
         status_code: int = 200,
         response_time_ms: float = 0.0,
-        headers: dict[str, str] | None = None
+        headers: dict[str, str] | None = None,
     ) -> AnalysisResult:
         """Analyze a response for vulnerabilities and information leakage."""
         result = AnalysisResult(
@@ -178,7 +181,7 @@ class ResponseAnalyzer:
             response_length=len(response_body),
             response_time_ms=response_time_ms,
             status_code=status_code,
-            is_error=status_code >= 400
+            is_error=status_code >= 400,
         )
 
         # Check response body
@@ -186,12 +189,14 @@ class ResponseAnalyzer:
             for pattern, confidence in patterns:
                 matches = re.findall(pattern, response_body, re.IGNORECASE)
                 if matches:
-                    result.detections.append(Detection(
-                        detection_type=detection_type,
-                        confidence=confidence,
-                        evidence=matches[0] if isinstance(matches[0], str) else str(matches[0]),
-                        severity=self._get_severity(detection_type)
-                    ))
+                    result.detections.append(
+                        Detection(
+                            detection_type=detection_type,
+                            confidence=confidence,
+                            evidence=matches[0] if isinstance(matches[0], str) else str(matches[0]),
+                            severity=self._get_severity(detection_type),
+                        )
+                    )
 
         # Check headers
         if headers:
@@ -199,33 +204,34 @@ class ResponseAnalyzer:
             for pattern, confidence in self._patterns.get(DetectionType.VERSION_DISCLOSURE, []):
                 matches = re.findall(pattern, header_str, re.IGNORECASE)
                 if matches:
-                    result.detections.append(Detection(
-                        detection_type=DetectionType.VERSION_DISCLOSURE,
-                        confidence=confidence,
-                        evidence=matches[0],
-                        location="headers"
-                    ))
+                    result.detections.append(
+                        Detection(
+                            detection_type=DetectionType.VERSION_DISCLOSURE,
+                            confidence=confidence,
+                            evidence=matches[0],
+                            location="headers",
+                        )
+                    )
 
         # Timing analysis
         if response_time_ms > 5000:  # 5 seconds
-            result.detections.append(Detection(
-                detection_type=DetectionType.TIMING_ANOMALY,
-                confidence=0.7,
-                evidence=f"Response time: {response_time_ms}ms",
-                severity=6
-            ))
+            result.detections.append(
+                Detection(
+                    detection_type=DetectionType.TIMING_ANOMALY,
+                    confidence=0.7,
+                    evidence=f"Response time: {response_time_ms}ms",
+                    severity=6,
+                )
+            )
 
         return result
 
     def compare_responses(
-        self,
-        response1: str,
-        response2: str,
-        threshold: float = 0.9
+        self, response1: str, response2: str, threshold: float = 0.9
     ) -> tuple[bool, float]:
         """
         Compare two responses to detect differences.
-        
+
         Returns: (are_similar, similarity_ratio)
         """
         ratio = SequenceMatcher(None, response1, response2).ratio()
@@ -289,7 +295,7 @@ def analyze_response(
     response_body: str,
     status_code: int = 200,
     response_time_ms: float = 0.0,
-    headers: dict[str, str] | None = None
+    headers: dict[str, str] | None = None,
 ) -> AnalysisResult:
     """Convenience function to analyze a response."""
     analyzer = get_response_analyzer()

@@ -75,7 +75,7 @@
                         <!-- Logs injected here -->
                     </div>
                 </div>
-                
+
                 <!-- Quick Stats Chart -->
                 <div class="w-1/3 p-4 bg-slate-800/30 flex flex-col items-center justify-center">
                     <canvas id="statusChart"></canvas>
@@ -101,7 +101,7 @@
     <script>
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
-        
+
         // Chart setup
         const ctx = document.getElementById('statusChart').getContext('2d');
         const statusChart = new Chart(ctx, {
@@ -131,11 +131,11 @@
         function updateDashboard(data) {
             // Update Headers
             document.getElementById('total-agents').textContent = Object.keys(data.agents).length;
-            
+
             // Update Agent List
             const agentList = document.getElementById('agent-list');
             agentList.innerHTML = '';
-            
+
             Object.values(data.agents).forEach(agent => {
                 const div = document.createElement('div');
                 div.className = `agent-card p-3 rounded bg-slate-800 border border-slate-700 ${agent.status === 'running' ? 'border-l-4 border-l-blue-500' : ''}`;
@@ -178,10 +178,10 @@
                 const response = await fetch('/api/vulnerabilities');
                 const vulns = await response.json();
                 document.getElementById('total-vulns').textContent = vulns.length;
-                
+
                 const container = document.getElementById('vuln-list');
                 container.innerHTML = '';
-                
+
                 if (vulns.length === 0) {
                     container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No vulnerabilities detected... yet.</div>';
                     return;

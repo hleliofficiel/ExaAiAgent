@@ -300,7 +300,7 @@ class OAuthTester:
         self.auth_url = auth_url
         self.token_url = token_url
         self.client_id = client_id
-    
+
     def test_redirect_uri_bypass(self, legitimate_redirect):
         bypasses = [
             f"{legitimate_redirect}@attacker.com",
@@ -308,13 +308,13 @@ class OAuthTester:
             f"https://attacker.com/{urlparse(legitimate_redirect).netloc}",
             f"{legitimate_redirect}%00.attacker.com",
         ]
-        
+
         for bypass in bypasses:
             url = f"{self.auth_url}?client_id={self.client_id}&redirect_uri={bypass}&response_type=code"
             r = requests.get(url, allow_redirects=False)
             if r.status_code == 302 and "attacker.com" in r.headers.get("Location", ""):
                 print(f"VULNERABLE: {bypass}")
-    
+
     def test_state_param(self):
         # Test without state
         url = f"{self.auth_url}?client_id={self.client_id}&redirect_uri=https://target.com/cb&response_type=code"

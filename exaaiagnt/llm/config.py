@@ -52,18 +52,16 @@ class LLMConfig:
         self.optimize_prompts = optimize_prompts
 
         # Lightweight mode: reduces sub-agent creation and uses direct execution
-        self.lightweight_mode = lightweight_mode or os.getenv(
-            "EXAAI_LIGHTWEIGHT_MODE", "false"
-        ).lower() == "true"
+        self.lightweight_mode = (
+            lightweight_mode or os.getenv("EXAAI_LIGHTWEIGHT_MODE", "false").lower() == "true"
+        )
 
         # Reasoning depth limits
         self.min_reasoning_depth = min_reasoning_depth
         self.max_reasoning_depth = max_reasoning_depth
 
         # Rate limiting settings - optimized defaults
-        self.rate_limit_delay = rate_limit_delay or float(
-            os.getenv("LLM_RATE_LIMIT_DELAY", "1.5")
-        )
+        self.rate_limit_delay = rate_limit_delay or float(os.getenv("LLM_RATE_LIMIT_DELAY", "1.5"))
         self.max_concurrent_requests = max_concurrent_requests or int(
             os.getenv("LLM_RATE_LIMIT_CONCURRENT", "5")
         )

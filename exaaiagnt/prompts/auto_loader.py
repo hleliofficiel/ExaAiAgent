@@ -20,7 +20,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["graphql", "query", "mutation", "schema"],
     },
-
     # WebSocket detection
     "websocket_security": {
         "url_patterns": [
@@ -33,7 +32,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["websocket", "socket", "realtime", "ws://", "wss://"],
     },
-
     # OAuth/OIDC detection
     "oauth_oidc": {
         "url_patterns": [
@@ -50,20 +48,17 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["oauth", "oidc", "openid", "authorization", "token", "sso", "jwt"],
     },
-
     # Subdomain takeover detection (domain-only targets)
     "subdomain_takeover": {
         "url_patterns": [],
         "keywords": ["subdomain", "takeover", "dns", "cname", "enumerate"],
         "domain_only": True,  # Triggered when target is just a domain
     },
-
     # WAF bypass (always useful, detect WAF keywords)
     "waf_bypass": {
         "url_patterns": [],
         "keywords": ["waf", "firewall", "cloudflare", "akamai", "blocked", "forbidden"],
     },
-
     # SQL Injection
     "sql_injection": {
         "url_patterns": [
@@ -75,7 +70,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["sql", "database", "query", "injection", "sqli"],
     },
-
     # XSS
     "xss": {
         "url_patterns": [
@@ -87,7 +81,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["xss", "script", "javascript", "cross-site"],
     },
-
     # SSRF
     "ssrf": {
         "url_patterns": [
@@ -100,7 +93,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["ssrf", "server-side", "internal", "metadata"],
     },
-
     # Authentication/JWT
     "authentication_jwt": {
         "url_patterns": [
@@ -112,7 +104,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["auth", "jwt", "token", "session", "login", "password"],
     },
-
     # Authorization / object-level access control
     "authorization_review": {
         "url_patterns": [
@@ -126,9 +117,17 @@ MODULE_PATTERNS = {
             r"/team",
             r"/tenant",
         ],
-        "keywords": ["idor", "bola", "bfla", "authorization", "access control", "permission", "role", "tenant"],
+        "keywords": [
+            "idor",
+            "bola",
+            "bfla",
+            "authorization",
+            "access control",
+            "permission",
+            "role",
+            "tenant",
+        ],
     },
-
     # API Security (Refined)
     "api_security": {
         "url_patterns": [
@@ -140,7 +139,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["api", "rest", "endpoint", "json", "bola", "idor"],
     },
-    
     # REST API Security (NEW v2.2)
     "rest_api_security": {
         "url_patterns": [
@@ -150,7 +148,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["rest", "restful", "endpoint", "resource", "json", "xml"],
     },
-    
     # gRPC Security (NEW v2.2)
     "grpc_security": {
         "url_patterns": [
@@ -160,7 +157,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["grpc", "protobuf", "proto", "reflection", "binary", "http2"],
     },
-
     # SSTI - Server-Side Template Injection (NEW)
     "ssti": {
         "url_patterns": [
@@ -172,13 +168,11 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["ssti", "template", "jinja", "twig", "freemarker", "thymeleaf"],
     },
-
     # HTTP Request Smuggling (NEW)
     "http_smuggling": {
         "url_patterns": [],
         "keywords": ["smuggling", "desync", "cl.te", "te.cl", "chunked"],
     },
-
     # Deserialization (NEW)
     "deserialization": {
         "url_patterns": [
@@ -186,41 +180,51 @@ MODULE_PATTERNS = {
             r"/rpc",
             r"/soap",
         ],
-        "keywords": ["deserialize", "pickle", "marshal", "serialized", "ysoserial", "java", "viewstate"],
+        "keywords": [
+            "deserialize",
+            "pickle",
+            "marshal",
+            "serialized",
+            "ysoserial",
+            "java",
+            "viewstate",
+        ],
     },
-
     # Prototype Pollution (NEW)
     "prototype_pollution": {
         "url_patterns": [],
-        "keywords": ["prototype", "__proto__", "pollution", "javascript", "node", "merge", "lodash"],
+        "keywords": [
+            "prototype",
+            "__proto__",
+            "pollution",
+            "javascript",
+            "node",
+            "merge",
+            "lodash",
+        ],
     },
-
     # Cache Poisoning (NEW)
     "cache_poisoning": {
         "url_patterns": [],
         "keywords": ["cache", "cdn", "cloudflare", "akamai", "varnish", "poison"],
     },
-
     # Subdomain enumeration (NEW v2.2)
     "subdomain_enumeration": {
         "url_patterns": [],
         "keywords": ["subdomain", "enumerate", "dns", "discovery", "osint"],
         "domain_only": True,
     },
-
     # Port scanning (NEW v2.2)
     "port_scanning": {
         "url_patterns": [],
         "keywords": ["port", "scan", "service", "open ports", "nmap", "fingerprint"],
         "domain_only": True,
     },
-
     # Technology fingerprinting (NEW v2.2)
     "technology_fingerprinting": {
         "url_patterns": [],
         "keywords": ["tech", "stack", "framework", "cms", "fingerprint", "version"],
     },
-
     # Client-side asset reconnaissance
     "client_asset_recon": {
         "url_patterns": [
@@ -232,16 +236,24 @@ MODULE_PATTERNS = {
             r"/swagger",
             r"/openapi",
         ],
-        "keywords": ["javascript", "bundle", "source map", "sourcemap", "manifest", "asset", "swagger", "openapi", "endpoint discovery"],
+        "keywords": [
+            "javascript",
+            "bundle",
+            "source map",
+            "sourcemap",
+            "manifest",
+            "asset",
+            "swagger",
+            "openapi",
+            "endpoint discovery",
+        ],
     },
-
     # Advanced Recon (Refined)
     "advanced_recon": {
         "url_patterns": [],
         "keywords": ["recon", "reconnaissance", "enumerate", "discover", "fingerprint", "osint"],
         "domain_only": True,
     },
-
     # React2Shell - RSC Deserialization RCE (CVE-2025-55182)
     "react2shell": {
         "url_patterns": [
@@ -250,10 +262,17 @@ MODULE_PATTERNS = {
             r"/_actions",
             r"/api/",
         ],
-        "keywords": ["react", "next.js", "nextjs", "vercel", "rsc", "server components", "app router"],
+        "keywords": [
+            "react",
+            "next.js",
+            "nextjs",
+            "vercel",
+            "rsc",
+            "server components",
+            "app router",
+        ],
         "header_patterns": ["x-nextjs", "x-vercel", "x-powered-by.*next"],
     },
-
     # Modern JS Frameworks Security
     "modern_js_frameworks": {
         "url_patterns": [
@@ -265,7 +284,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["next.js", "nuxt", "sveltekit", "remix", "astro", "react", "vue", "svelte"],
     },
-
     # AWS/Cloud Security
     "aws_cloud_security": {
         "url_patterns": [
@@ -279,7 +297,6 @@ MODULE_PATTERNS = {
         ],
         "keywords": ["aws", "s3", "ec2", "lambda", "azure", "gcp", "cloud", "bucket", "metadata"],
     },
-
     # Kubernetes Security (NEW v2.1)
     "kubernetes_security": {
         "url_patterns": [
@@ -289,10 +306,21 @@ MODULE_PATTERNS = {
             r":10250",
             r":8443",
         ],
-        "keywords": ["kubernetes", "k8s", "kubectl", "pod", "deployment", "service",
-                    "ingress", "helm", "kubelet", "etcd", "rbac", "namespace"],
+        "keywords": [
+            "kubernetes",
+            "k8s",
+            "kubectl",
+            "pod",
+            "deployment",
+            "service",
+            "ingress",
+            "helm",
+            "kubelet",
+            "etcd",
+            "rbac",
+            "namespace",
+        ],
     },
-
     # AI/LLM Prompt Injection (NEW v2.1)
     "prompt_injection": {
         "url_patterns": [
@@ -306,9 +334,23 @@ MODULE_PATTERNS = {
             r"/v1/completions",
             r"/assistant",
         ],
-        "keywords": ["openai", "anthropic", "llm", "gpt", "claude", "chatbot",
-                    "ai assistant", "langchain", "llama", "gemini", "copilot",
-                    "rag", "embedding", "vector", "prompt"],
+        "keywords": [
+            "openai",
+            "anthropic",
+            "llm",
+            "gpt",
+            "claude",
+            "chatbot",
+            "ai assistant",
+            "langchain",
+            "llama",
+            "gemini",
+            "copilot",
+            "rag",
+            "embedding",
+            "vector",
+            "prompt",
+        ],
     },
 }
 
@@ -316,15 +358,15 @@ MODULE_PATTERNS = {
 def detect_modules_from_target(target: str, instruction: str = "") -> list[str]:
     """
     Automatically detect which prompt modules should be loaded based on target URL and instruction.
-    
+
     This function:
     1. Checks defined patterns in MODULE_PATTERNS
     2. Auto-discovers ALL .jinja files and matches by filename keywords
-    
+
     Args:
         target: The target URL or domain
         instruction: The user's instruction/task description
-        
+
     Returns:
         List of module names to load
     """
@@ -376,10 +418,10 @@ def detect_modules_from_target(target: str, instruction: str = "") -> list[str]:
 def _auto_discover_modules(search_text: str) -> set[str]:
     """
     Auto-discover modules by scanning all .jinja files and matching by filename.
-    
+
     Any new .jinja file will be automatically discovered and used if its name
     or keywords from name appear in the target/instruction.
-    
+
     Example: 'react2shell.jinja' will be loaded if 'react' or 'shell' appears in target.
     """
     from pathlib import Path
@@ -407,7 +449,9 @@ def _auto_discover_modules(search_text: str) -> set[str]:
 
             # Check if any keyword matches
             for keyword in keywords:
-                if len(keyword) >= 3 and keyword in search_text:  # Min 3 chars to avoid false positives
+                if (
+                    len(keyword) >= 3 and keyword in search_text
+                ):  # Min 3 chars to avoid false positives
                     discovered.add(module_name)
                     break
 
@@ -424,6 +468,7 @@ def _extract_keywords_from_name(name: str) -> list[str]:
 
     # Split by numbers (react2shell -> react, shell)
     import re
+
     alpha_parts = re.split(r"\d+", name)
     keywords.extend([p for p in alpha_parts if p])
 
@@ -434,7 +479,7 @@ def _extract_keywords_from_name(name: str) -> list[str]:
 def get_recommended_modules(target: str, instruction: str = "") -> dict:
     """
     Get recommended modules with confidence scores.
-    
+
     Returns:
         Dict with 'auto_load' (high confidence) and 'suggested' (medium confidence) modules
     """
@@ -444,14 +489,11 @@ def get_recommended_modules(target: str, instruction: str = "") -> dict:
     auto_load = []
     suggested = []
 
-    parsed = urlparse(target if "://" in target else f"https://{target}")
+    urlparse(target if "://" in target else f"https://{target}")
 
     for module in all_detected:
         patterns = MODULE_PATTERNS.get(module, {})
-        url_match = any(
-            re.search(p, target.lower())
-            for p in patterns.get("url_patterns", [])
-        )
+        url_match = any(re.search(p, target.lower()) for p in patterns.get("url_patterns", []))
 
         if url_match:
             auto_load.append(module)
@@ -477,7 +519,3 @@ if __name__ == "__main__":
 
     for target, instruction in tests:
         modules = detect_modules_from_target(target, instruction)
-        print(f"Target: {target}")
-        print(f"Instruction: {instruction}")
-        print(f"Auto-detected modules: {modules}")
-        print("-" * 50)

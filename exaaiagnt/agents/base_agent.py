@@ -121,7 +121,7 @@ class BaseAgent(metaclass=AgentMeta):
                 agent_id=self.state.agent_id,
                 agent_name=self.agent_name,
                 agent_instance=self,
-                parent_id=self.state.parent_id
+                parent_id=self.state.parent_id,
             )
         except Exception as e:
             logger.debug(f"Could not register with supervisor: {e}")
@@ -175,10 +175,8 @@ class BaseAgent(metaclass=AgentMeta):
 
         while True:
             # Send heartbeat to supervisor
-            try:
+            with contextlib.suppress(Exception):
                 supervisor.heartbeat(self.state.agent_id)
-            except Exception:
-                pass
 
             self._check_agent_messages(self.state)
 

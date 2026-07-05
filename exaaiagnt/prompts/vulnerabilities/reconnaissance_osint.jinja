@@ -49,7 +49,7 @@ site:pastebin.com "target.com"
 # Find sensitive files
 site:target.com filetype:pdf OR filetype:doc OR filetype:xls
 site:target.com filetype:sql OR filetype:bak OR filetype:log
-site:target.com intitle:"index of" 
+site:target.com intitle:"index of"
 site:target.com inurl:admin OR inurl:login OR inurl:dashboard
 
 # Find exposed data
@@ -156,23 +156,23 @@ async def run_recon(domain):
     """Comprehensive reconnaissance automation."""
     output_dir = Path(f"recon_{domain}")
     output_dir.mkdir(exist_ok=True)
-    
+
     tasks = [
         # Subdomain enumeration
         run_cmd(f"subfinder -d {domain} -all -o {output_dir}/subdomains.txt"),
-        
+
         # Port scanning
         run_cmd(f"naabu -host {domain} -top-ports 1000 -o {output_dir}/ports.txt"),
-        
+
         # Technology detection
         run_cmd(f"httpx -l {output_dir}/subdomains.txt -tech-detect -o {output_dir}/tech.txt"),
-        
+
         # Screenshots
         run_cmd(f"gowitness file -f {output_dir}/subdomains.txt -P {output_dir}/screenshots"),
     ]
-    
+
     await asyncio.gather(*tasks)
-    
+
     # Consolidate results
     return consolidate_recon(output_dir)
 

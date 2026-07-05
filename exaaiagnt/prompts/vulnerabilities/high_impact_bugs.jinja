@@ -148,7 +148,7 @@ unicode_payloads = [
 # Headers to try
 bypass_headers = {
     "X-Forwarded-For": "127.0.0.1",
-    "X-Real-IP": "127.0.0.1", 
+    "X-Real-IP": "127.0.0.1",
     "X-Originating-IP": "127.0.0.1",
     "X-Client-IP": "127.0.0.1",
     "X-Remote-IP": "127.0.0.1",
@@ -166,7 +166,7 @@ for i in range(255):
 ```
 1. Response manipulation
    - Change response from {"success": false} to {"success": true}
-   
+
 2. Status code manipulation
    - Change 403 to 200 in proxy
 
@@ -195,7 +195,7 @@ class BugHunter:
     def __init__(self, target: str):
         self.target = target
         self.findings = []
-        
+
     async def scan_all(self):
         """Run comprehensive vulnerability scan."""
         await asyncio.gather(
@@ -207,7 +207,7 @@ class BugHunter:
             self.check_rate_limits(),
         )
         return self.findings
-    
+
     async def check_idor(self):
         """Test for IDOR vulnerabilities."""
         endpoints = await self.discover_api_endpoints()
@@ -222,7 +222,7 @@ class BugHunter:
                         "payload": test_id,
                         "severity": "HIGH"
                     })
-    
+
     async def check_ssrf(self):
         """Test for SSRF vulnerabilities."""
         ssrf_payloads = [

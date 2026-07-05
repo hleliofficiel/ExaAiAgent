@@ -65,7 +65,7 @@ esac
 add_to_path() {
     local PATH_DIR="$1"
     local CONFIG_FILE="$2"
-    
+
     if [[ ":$PATH:" != *":$PATH_DIR:"* ]]; then
         echo "   Adding $PATH_DIR to $CONFIG_FILE"
         if [ "$SHELL_NAME" == "fish" ]; then

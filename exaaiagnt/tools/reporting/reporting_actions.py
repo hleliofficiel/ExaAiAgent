@@ -35,7 +35,7 @@ def create_vulnerability_report(
         "content": content,
         "severity": severity,
         "timestamp": datetime.now().isoformat(),
-        "agent": os.getenv("EXAAI_AGENT_NAME", "unknown")
+        "agent": os.getenv("EXAAI_AGENT_NAME", "unknown"),
     }
 
     # Save to local reports directory
@@ -50,6 +50,7 @@ def create_vulnerability_report(
 
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to save local report: {e}")
 
     try:
@@ -68,7 +69,7 @@ def create_vulnerability_report(
                 "message": f"Vulnerability report '{title}' created successfully",
                 "report_id": report_id,
                 "severity": severity.lower(),
-                "local_path": filepath
+                "local_path": filepath,
             }
         import logging
 
@@ -78,7 +79,7 @@ def create_vulnerability_report(
             "success": True,
             "message": f"Vulnerability report '{title}' created successfully (saved locally)",
             "warning": "Report not persisted in tracer",
-            "local_path": filepath
+            "local_path": filepath,
         }
 
     except ImportError:
@@ -86,7 +87,7 @@ def create_vulnerability_report(
             "success": True,
             "message": f"Vulnerability report '{title}' created successfully (saved locally)",
             "warning": "Report not persisted - tracer module unavailable",
-            "local_path": filepath
+            "local_path": filepath,
         }
     except (ValueError, TypeError) as e:
         return {"success": False, "message": f"Failed to create vulnerability report: {e!s}"}

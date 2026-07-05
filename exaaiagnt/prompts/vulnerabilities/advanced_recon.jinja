@@ -282,7 +282,7 @@ class EliteRecon:
     def __init__(self, target):
         self.target = target
         self.results = {}
-    
+
     async def run_all(self):
         await asyncio.gather(
             self.subdomain_enum(),
@@ -292,23 +292,23 @@ class EliteRecon:
             self.param_discovery(),
         )
         return self.results
-    
+
     async def subdomain_enum(self):
         # Run subfinder, amass, etc.
         pass
-    
+
     async def port_scan(self):
         # Run naabu, nmap
         pass
-    
+
     async def content_discovery(self):
         # Run ffuf, dirsearch
         pass
-    
+
     async def js_analysis(self):
         # Download and analyze JS
         pass
-    
+
     async def param_discovery(self):
         # Run arjun, x8
         pass

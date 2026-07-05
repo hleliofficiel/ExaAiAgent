@@ -22,7 +22,9 @@ class DummyTracer:
     def update_tool_execution(self, *args, **kwargs) -> None:
         return None
 
-    def update_agent_status(self, agent_id: str, status: str, error_message: str | None = None) -> None:
+    def update_agent_status(
+        self, agent_id: str, status: str, error_message: str | None = None
+    ) -> None:
         self.status_updates.append((agent_id, status))
 
 

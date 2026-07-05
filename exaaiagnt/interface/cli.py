@@ -21,11 +21,11 @@ from .utils import build_final_stats_text, build_live_stats_text, get_severity_c
 
 # Clean ASCII Banner
 BANNER = r"""
- ______  _  _   ____    ____   _____ 
+ ______  _  _   ____    ____   _____
 |  ____|| || | / __ \  / __ \ |_   _|
-| |__   | || || |  | || |  | |  | |  
-|  __|  |__   || |  | || |  | |  | |  
-| |____    | || |__| || |__| | _| |_ 
+| |__   | || || |  | || |  | |  | |
+|  __|  |__   || |  | || |  | |  | |
+| |____    | || |__| || |__| | _| |_
 |______|   |_| \____/  \____/ |_____|
 """
 
@@ -50,6 +50,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         console_temp.print("[bold green]🚀 Live Dashboard available at: http://localhost:8000[/]")
     except Exception as e:
         import logging
+
         logging.exception(f"Failed to start dashboard: {e}")
 
     # Detect if running in a terminal that can reliably handle Live redraws
@@ -89,7 +90,10 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
         config_text.append(f"exaai_runs/{args.run_name}\n", style="white")
         if args.instruction:
             config_text.append("📝 Instruction: ", style="dim")
-            config_text.append(f"{args.instruction[:100]}{'...' if len(args.instruction) > 100 else ''}", style="white")
+            config_text.append(
+                f"{args.instruction[:100]}{'...' if len(args.instruction) > 100 else ''}",
+                style="white",
+            )
 
         console.print(Panel(config_text, title="[bold green]⚙️ Configuration", border_style="green"))
         console.print()
@@ -135,7 +139,9 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
 
         vuln_panel = Panel(
             Text.assemble(
-                ("🔴 ", "bold red") if severity_lower in ["critical", "high"] else ("🟡 ", "bold yellow"),
+                ("🔴 ", "bold red")
+                if severity_lower in ["critical", "high"]
+                else ("🟡 ", "bold yellow"),
                 (title, "bold white"),
                 ("\n\n", ""),
                 (f"Severity: {severity.upper()}", f"bold {severity_color}"),
@@ -277,23 +283,29 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
     total = sum(vuln_count.values())
     summary_table.add_row("[bold white]TOTAL[/]", f"[bold white]{total}[/]")
 
-    console.print(Panel(summary_table, title="[bold cyan]📊 Vulnerability Summary", border_style="cyan"))
+    console.print(
+        Panel(summary_table, title="[bold cyan]📊 Vulnerability Summary", border_style="cyan")
+    )
 
     # Final stats
     console.print()
     final_stats_text = build_final_stats_text(tracer)
     if final_stats_text:
-        console.print(Panel(final_stats_text, title="[bold green]📈 Statistics", border_style="green"))
+        console.print(
+            Panel(final_stats_text, title="[bold green]📈 Statistics", border_style="green")
+        )
 
     # Final report
     if tracer.final_scan_result:
         console.print()
-        console.print(Panel(
-            tracer.final_scan_result,
-            title="[bold cyan]📄 Final Report",
-            border_style="cyan",
-            padding=(1, 2),
-        ))
+        console.print(
+            Panel(
+                tracer.final_scan_result,
+                title="[bold cyan]📄 Final Report",
+                border_style="cyan",
+                padding=(1, 2),
+            )
+        )
 
     console.print()
     console.print(f"[dim]Results saved to: exaai_runs/{args.run_name}[/]")

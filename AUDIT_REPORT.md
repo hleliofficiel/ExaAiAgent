@@ -16,7 +16,7 @@
 ```python
 class SmartFuzzer:
     _instance: Optional["SmartFuzzer"] = None
-    
+
     def __new__(cls) -> "SmartFuzzer":
         if cls._instance is None:  # Race condition here!
             cls._instance = super().__new__(cls)
@@ -31,7 +31,7 @@ import threading
 class SmartFuzzer:
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:

@@ -229,11 +229,19 @@ async def warm_up_llm() -> None:
         # Enhanced error diagnosis
         error_str = str(e)
         if "AuthenticationError" in error_str:
-             error_text.append("🔍 Hint: Your API key seems invalid or expired.\n", style="bold yellow")
+            error_text.append(
+                "🔍 Hint: Your API key seems invalid or expired.\n", style="bold yellow"
+            )
         elif "NotFoundError" in error_str:
-             error_text.append(f"🔍 Hint: The model '{model_name}' was not found. Check if the model name is correct.\n", style="bold yellow")
+            error_text.append(
+                f"🔍 Hint: The model '{model_name}' was not found. Check if the model name is correct.\n",
+                style="bold yellow",
+            )
         elif "ConnectionError" in error_str:
-             error_text.append("🔍 Hint: Network connection failed. Check your internet or proxy settings.\n", style="bold yellow")
+            error_text.append(
+                "🔍 Hint: Network connection failed. Check your internet or proxy settings.\n",
+                style="bold yellow",
+            )
 
         error_text.append(f"\nError Details: {e}", style="dim white")
 
@@ -373,7 +381,9 @@ Examples:
     # Handle scan command or legacy direct target
     if args.command == "scan" or args.target:
         if not args.target:
-            parser.error("--target is required for scanning. Use 'exaai tui' to launch TUI without a target.")
+            parser.error(
+                "--target is required for scanning. Use 'exaai tui' to launch TUI without a target."
+            )
 
         if args.instruction:
             instruction_path = Path(args.instruction)

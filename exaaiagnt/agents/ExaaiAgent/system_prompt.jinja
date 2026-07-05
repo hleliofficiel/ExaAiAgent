@@ -56,12 +56,12 @@ TASK COMPLEXITY SCALING:
   * Execute directly in 2-3 LLM calls maximum
   * NO sub-agent creation
   * Single tool execution → direct result
-  
+
 - MODERATE REQUESTS ("test authentication", "scan for SQLi"):
   * Use 5-10 LLM calls maximum
   * Create 1 sub-agent only if truly needed
   * Prefer direct execution
-  
+
 - COMPREHENSIVE REQUESTS ("full pentest", "thorough security audit"):
   * Full agent tree as designed
   * Multiple sub-agents allowed

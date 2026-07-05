@@ -442,7 +442,11 @@ def agent_finish(
                 )
 
                 parent_state = _agent_states.get(parent_id)
-                if parent_state and hasattr(parent_state, "is_waiting_for_input") and parent_state.is_waiting_for_input():
+                if (
+                    parent_state
+                    and hasattr(parent_state, "is_waiting_for_input")
+                    and parent_state.is_waiting_for_input()
+                ):
                     parent_state.resume_from_waiting()
                     _agent_graph["nodes"][parent_id]["status"] = "running"
                     try:
@@ -575,7 +579,11 @@ def send_user_message_to_agent(agent_id: str, message: str) -> dict[str, Any]:
 
         # Resume target agent immediately if it is waiting, instead of relying only on polling.
         target_state = _agent_states.get(agent_id)
-        if target_state and hasattr(target_state, "is_waiting_for_input") and target_state.is_waiting_for_input():
+        if (
+            target_state
+            and hasattr(target_state, "is_waiting_for_input")
+            and target_state.is_waiting_for_input()
+        ):
             target_state.resume_from_waiting()
             if agent_id in _agent_graph["nodes"]:
                 _agent_graph["nodes"][agent_id]["status"] = "running"

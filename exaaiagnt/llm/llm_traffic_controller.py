@@ -24,14 +24,16 @@ logger = logging.getLogger(__name__)
 
 class RequestPriority(Enum):
     """Priority levels for LLM requests."""
+
     CRITICAL = 3  # Must execute ASAP (auth, security critical)
-    NORMAL = 2    # Standard agent requests
-    LOW = 1       # Background tasks, summaries
+    NORMAL = 2  # Standard agent requests
+    LOW = 1  # Background tasks, summaries
 
 
 @dataclass
 class QueuedRequest:
     """A queued LLM request with metadata."""
+
     request_id: str
     agent_id: str
     priority: RequestPriority
@@ -45,7 +47,7 @@ class QueuedRequest:
 class AdaptiveLLMController:
     """
     Adaptive Multi-Agent LLM Traffic Controller.
-    
+
     Implements:
     1. Single concurrent LLM request (serialized calls)
     2. Non-blocking queue for agents
@@ -104,11 +106,11 @@ class AdaptiveLLMController:
         *args,
         agent_id: str = "unknown",
         priority: RequestPriority = RequestPriority.NORMAL,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Queue an LLM request and wait for result.
-        
+
         Non-blocking for the caller - they just await the result.
         Internally, requests are processed one at a time.
         """
@@ -125,7 +127,7 @@ class AdaptiveLLMController:
             request_func=request_func,
             args=args,
             kwargs=kwargs,
-            future=future
+            future=future,
         )
 
         # Add to queue
@@ -186,9 +188,7 @@ class AdaptiveLLMController:
             try:
                 # Execute the request
                 result = await self._call_with_timeout(
-                    request.request_func,
-                    *request.args,
-                    **request.kwargs
+                    request.request_func, *request.args, **request.kwargs
                 )
 
                 # Success!
@@ -210,10 +210,7 @@ class AdaptiveLLMController:
                     self._retries += 1
 
                     # Increase delay exponentially
-                    self._current_delay = min(
-                        self._current_delay * 1.5,
-                        self._max_delay
-                    )
+                    self._current_delay = min(self._current_delay * 1.5, self._max_delay)
 
                     if attempt < self._max_retries:
                         wait_time = self._rate_limit_wait * (attempt + 1)
@@ -243,8 +240,7 @@ class AdaptiveLLMController:
         # Run sync function in thread
         loop = asyncio.get_event_loop()
         return await asyncio.wait_for(
-            loop.run_in_executor(None, lambda: func(*args, **kwargs)),
-            timeout=timeout
+            loop.run_in_executor(None, lambda: func(*args, **kwargs)), timeout=timeout
         )
 
     async def _apply_rate_limit_delay(self):
@@ -338,16 +334,16 @@ def reset_traffic_controller():
 # Convenience decorator for LLM requests
 def with_traffic_control(priority: RequestPriority = RequestPriority.NORMAL):
     """Decorator to route LLM requests through traffic controller."""
+
     def decorator(func: Callable):
         async def wrapper(*args, agent_id: str = "unknown", **kwargs):
             controller = get_traffic_controller()
             return await controller.queue_request(
-                func, *args,
-                agent_id=agent_id,
-                priority=priority,
-                **kwargs
+                func, *args, agent_id=agent_id, priority=priority, **kwargs
             )
+
         return wrapper
+
     return decorator
 
 
