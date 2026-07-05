@@ -392,14 +392,6 @@ The documentation has been significantly expanded with:
 
 ---
 
-### README.md
-
-- Updated the displayed release version to **v2.2.6**.
-- Added a **What's New in v2.2.6** section.
-- Preserved all existing README content and formatting.
-
----
-
 ## 🔧 Refactoring
 
 - Improved overall code readability.
@@ -415,17 +407,6 @@ The documentation has been significantly expanded with:
 - Fixed missing tool argument metadata.
 - Restored CLI output for non-interactive environments.
 - Fixed minor inconsistencies discovered during review.
-
----
-
-## 📦 Version Updates
-
-Updated project version to **v2.2.6** across all required project files, including:
-
-- `pyproject.toml`
-- `exaaiagnt/interface/main.py`
-- `exaaiagnt/interface/cli.py`
-- `exaaiagnt/interface/tui.py`
 
 ---
 
