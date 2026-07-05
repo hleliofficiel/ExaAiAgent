@@ -424,6 +424,7 @@ class LLM:
         async def do_request():
             try:
                 from litellm import acompletion
+
                 return await acompletion(**completion_args, stream=False)
             except litellm.RateLimitError:
                 # Let tenacity (in controller) handle retry
@@ -443,21 +444,21 @@ class LLM:
         )
 
         @retry(
-            retry=retry_if_exception_type((
-                litellm.RateLimitError,
-                litellm.ServiceUnavailableError,
-                litellm.APIConnectionError,
-                litellm.Timeout
-            )),
+            retry=retry_if_exception_type(
+                (
+                    litellm.RateLimitError,
+                    litellm.ServiceUnavailableError,
+                    litellm.APIConnectionError,
+                    litellm.Timeout,
+                )
+            ),
             wait=wait_exponential(multiplier=1, min=4, max=60),
             stop=stop_after_attempt(5),
-            reraise=True
+            reraise=True,
         )
         async def execute_with_retries():
             return await controller.queue_request(
-                do_request,
-                agent_id=agent_id,
-                priority=RequestPriority.NORMAL
+                do_request, agent_id=agent_id, priority=RequestPriority.NORMAL
             )
 
         try:

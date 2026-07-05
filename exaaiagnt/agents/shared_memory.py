@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class DataCategory(Enum):
     """Categories of shared data."""
+
     URLS = "urls"
     ENDPOINTS = "endpoints"
     PARAMETERS = "parameters"
@@ -33,6 +34,7 @@ class DataCategory(Enum):
 
 class AccessLevel(Enum):
     """Access permission levels."""
+
     READ = "read"
     WRITE = "write"
     READ_WRITE = "read_write"
@@ -41,6 +43,7 @@ class AccessLevel(Enum):
 @dataclass
 class MemoryEntry:
     """Single entry in shared memory."""
+
     key: str
     value: Any
     category: DataCategory
@@ -54,7 +57,7 @@ class MemoryEntry:
 class SharedMemory:
     """
     Global memory bus for inter-agent communication.
-    
+
     Features:
     - Categorized data storage
     - Read/write access control
@@ -95,11 +98,11 @@ class SharedMemory:
         value: Any,
         source_agent: str,
         ttl: float | None = None,
-        deduplicate: bool = True
+        deduplicate: bool = True,
     ) -> bool:
         """
         Store data in shared memory.
-        
+
         Returns True if stored, False if duplicate.
         """
         with self._lock:
@@ -110,7 +113,6 @@ class SharedMemory:
 
             # Deduplication check
             if deduplicate:
-                dedup_key = f"{category.value}:{key}"
                 if category == DataCategory.URLS:
                     if key in self._seen_urls:
                         return False
@@ -126,11 +128,7 @@ class SharedMemory:
 
             # Store entry
             entry = MemoryEntry(
-                key=key,
-                value=value,
-                category=category,
-                source_agent=source_agent,
-                ttl=ttl
+                key=key, value=value, category=category, source_agent=source_agent, ttl=ttl
             )
             self._data[category][key] = entry
 
@@ -140,12 +138,7 @@ class SharedMemory:
             logger.debug(f"Stored {category.value}/{key} from {source_agent}")
             return True
 
-    def retrieve(
-        self,
-        category: DataCategory,
-        key: str,
-        requester_agent: str
-    ) -> Any | None:
+    def retrieve(self, category: DataCategory, key: str, requester_agent: str) -> Any | None:
         """Retrieve data from shared memory."""
         with self._lock:
             if not self._has_read_permission(requester_agent, category):
@@ -167,10 +160,7 @@ class SharedMemory:
             return entry.value
 
     def get_all(
-        self,
-        category: DataCategory,
-        requester_agent: str,
-        limit: int = 100
+        self, category: DataCategory, requester_agent: str, limit: int = 100
     ) -> list[MemoryEntry]:
         """Get all entries in a category."""
         with self._lock:
@@ -181,18 +171,11 @@ class SharedMemory:
 
             # Filter expired
             now = time.time()
-            valid_entries = [
-                e for e in entries
-                if not e.ttl or (now - e.timestamp <= e.ttl)
-            ]
+            valid_entries = [e for e in entries if not e.ttl or (now - e.timestamp <= e.ttl)]
 
             return valid_entries[:limit]
 
-    def bulk_store_urls(
-        self,
-        urls: list[str],
-        source_agent: str
-    ) -> int:
+    def bulk_store_urls(self, urls: list[str], source_agent: str) -> int:
         """Store multiple URLs with deduplication. Returns count of new URLs."""
         stored = 0
         for url in urls:
@@ -200,11 +183,7 @@ class SharedMemory:
                 stored += 1
         return stored
 
-    def bulk_store_endpoints(
-        self,
-        endpoints: list[dict[str, Any]],
-        source_agent: str
-    ) -> int:
+    def bulk_store_endpoints(self, endpoints: list[dict[str, Any]], source_agent: str) -> int:
         """Store multiple endpoints. Returns count of new endpoints."""
         stored = 0
         for endpoint in endpoints:
@@ -217,7 +196,7 @@ class SharedMemory:
         """Get URLs that haven't been scanned by this agent."""
         with self._lock:
             urls = []
-            for key, entry in self._data.get(DataCategory.URLS, {}).items():
+            for entry in self._data.get(DataCategory.URLS, {}).values():
                 if requester_agent not in entry.accessed_by:
                     urls.append(entry.value)
                     if len(urls) >= limit:
@@ -225,9 +204,7 @@ class SharedMemory:
             return urls
 
     def set_agent_permissions(
-        self,
-        agent_id: str,
-        permissions: dict[DataCategory, AccessLevel]
+        self, agent_id: str, permissions: dict[DataCategory, AccessLevel]
     ) -> None:
         """Set permissions for an agent."""
         with self._lock:
@@ -264,7 +241,7 @@ class SharedMemory:
             try:
                 callback(category, key, value)
             except Exception as e:
-                logger.error(f"Subscriber callback error: {e}")
+                logger.exception(f"Subscriber callback error: {e}")
 
     def get_stats(self) -> dict[str, Any]:
         """Get memory statistics."""
@@ -274,10 +251,7 @@ class SharedMemory:
                 "endpoints": len(self._seen_endpoints),
                 "parameters": len(self._seen_params),
                 "total_entries": sum(len(d) for d in self._data.values()),
-                "categories": {
-                    cat.value: len(self._data.get(cat, {}))
-                    for cat in DataCategory
-                }
+                "categories": {cat.value: len(self._data.get(cat, {})) for cat in DataCategory},
             }
 
     def clear(self) -> None:
@@ -310,6 +284,4 @@ def store_endpoint(endpoint: dict, source_agent: str) -> bool:
 
 def store_vulnerability(vuln_id: str, vuln_data: dict, source_agent: str) -> bool:
     """Store a vulnerability finding."""
-    return get_shared_memory().store(
-        DataCategory.VULNERABILITIES, vuln_id, vuln_data, source_agent
-    )
+    return get_shared_memory().store(DataCategory.VULNERABILITIES, vuln_id, vuln_data, source_agent)

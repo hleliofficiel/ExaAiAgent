@@ -4,6 +4,7 @@ Provides monitoring, restart, and graceful degradation capabilities.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 import time
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ToolStatus(Enum):
     """Tool lifecycle states."""
+
     IDLE = "idle"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -30,6 +32,7 @@ class ToolStatus(Enum):
 @dataclass
 class ToolExecution:
     """Represents a single tool execution."""
+
     tool_id: str
     tool_name: str
     args: dict[str, Any] = field(default_factory=dict)
@@ -47,7 +50,7 @@ class ToolExecution:
 class ToolManager:
     """
     Manages tool lifecycle with process isolation.
-    
+
     Features:
     - Process isolation per tool
     - Tool health monitoring
@@ -108,15 +111,15 @@ class ToolManager:
         self,
         tool_name: str,
         command: str,
-        args: dict[str, Any] = None,
-        timeout: float = None,
-        cwd: str = None,
-        env: dict[str, str] = None,
-        retry_on_failure: bool = True
+        args: dict[str, Any] | None = None,
+        timeout: float | None = None,
+        cwd: str | None = None,
+        env: dict[str, str] | None = None,
+        retry_on_failure: bool = True,
     ) -> ToolExecution:
         """
         Execute a tool with process isolation.
-        
+
         Args:
             tool_name: Name of the tool
             command: Command to execute
@@ -125,7 +128,7 @@ class ToolManager:
             cwd: Working directory
             env: Environment variables
             retry_on_failure: Whether to retry on failure
-            
+
         Returns:
             ToolExecution with results
         """
@@ -142,14 +145,10 @@ class ToolManager:
 
         async with self._tool_semaphore:
             try:
-                result = await self._run_with_timeout(
-                    execution, command, cwd, env
-                )
+                result = await self._run_with_timeout(execution, command, cwd, env)
 
                 if result.status == ToolStatus.FAILED and retry_on_failure:
-                    result = await self._retry_execution(
-                        execution, command, cwd, env
-                    )
+                    result = await self._retry_execution(execution, command, cwd, env)
 
                 return result
 
@@ -157,7 +156,7 @@ class ToolManager:
                 execution.status = ToolStatus.FAILED
                 execution.error = str(e)
                 self._stats["failed"] += 1
-                logger.error(f"Tool {tool_name} failed: {e}")
+                logger.exception(f"Tool {tool_name} failed: {e}")
 
                 self._notify_failure(execution)
                 return execution
@@ -166,8 +165,8 @@ class ToolManager:
         self,
         execution: ToolExecution,
         command: str,
-        cwd: str = None,
-        env: dict[str, str] = None
+        cwd: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> ToolExecution:
         """Run command with timeout handling."""
         execution.status = ToolStatus.RUNNING
@@ -194,8 +193,7 @@ class ToolManager:
             try:
                 # Wait with timeout
                 stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=execution.timeout
+                    process.communicate(), timeout=execution.timeout
                 )
 
                 execution.end_time = time.time()
@@ -236,8 +234,8 @@ class ToolManager:
         self,
         execution: ToolExecution,
         command: str,
-        cwd: str = None,
-        env: dict[str, str] = None
+        cwd: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> ToolExecution:
         """Retry failed execution."""
         while execution.retries < execution.max_retries:
@@ -250,7 +248,7 @@ class ToolManager:
             )
 
             # Wait before retry (exponential backoff)
-            await asyncio.sleep(min(2 ** execution.retries, 30))
+            await asyncio.sleep(min(2**execution.retries, 30))
 
             # Reset for retry
             execution.status = ToolStatus.IDLE
@@ -261,10 +259,7 @@ class ToolManager:
             if result.status == ToolStatus.COMPLETED:
                 return result
 
-        logger.error(
-            f"Tool {execution.tool_name} failed after "
-            f"{execution.max_retries} retries"
-        )
+        logger.error(f"Tool {execution.tool_name} failed after {execution.max_retries} retries")
         return execution
 
     async def _kill_process(self, tool_id: str) -> bool:
@@ -293,7 +288,7 @@ class ToolManager:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to kill process {tool_id}: {e}")
+            logger.exception(f"Failed to kill process {tool_id}: {e}")
             return False
         finally:
             if tool_id in self._running_processes:
@@ -317,11 +312,7 @@ class ToolManager:
 
     def get_running_tools(self) -> list[ToolExecution]:
         """Get list of currently running tools."""
-        return [
-            self._executions[tid]
-            for tid in self._running_processes.keys()
-            if tid in self._executions
-        ]
+        return [self._executions[tid] for tid in self._running_processes if tid in self._executions]
 
     def get_stats(self) -> dict[str, int]:
         """Get execution statistics."""
@@ -341,7 +332,7 @@ class ToolManager:
             try:
                 callback(execution)
             except Exception as e:
-                logger.error(f"Failure callback error: {e}")
+                logger.exception(f"Failure callback error: {e}")
 
     def _notify_complete(self, execution: ToolExecution) -> None:
         """Notify completion callbacks."""
@@ -349,7 +340,7 @@ class ToolManager:
             try:
                 callback(execution)
             except Exception as e:
-                logger.error(f"Complete callback error: {e}")
+                logger.exception(f"Complete callback error: {e}")
 
     async def start_monitoring(self) -> None:
         """Start the tool monitoring loop."""
@@ -365,10 +356,8 @@ class ToolManager:
         self._running = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Tool monitoring stopped")
 
     async def _monitoring_loop(self) -> None:
@@ -380,7 +369,7 @@ class ToolManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Tool monitoring error: {e}")
+                logger.exception(f"Tool monitoring error: {e}")
                 await asyncio.sleep(1)
 
     async def _check_tool_health(self) -> None:
@@ -396,7 +385,9 @@ class ToolManager:
                 process = self._running_processes[tool_id]
                 if process.returncode is not None:
                     # Process has ended
-                    execution.status = ToolStatus.COMPLETED if process.returncode == 0 else ToolStatus.FAILED
+                    execution.status = (
+                        ToolStatus.COMPLETED if process.returncode == 0 else ToolStatus.FAILED
+                    )
                     execution.end_time = now
                     del self._running_processes[tool_id]
 
@@ -405,8 +396,7 @@ class ToolManager:
                 elapsed = now - execution.start_time
                 if elapsed > execution.timeout:
                     logger.warning(
-                        f"Tool {execution.tool_name} ({tool_id}) timed out "
-                        f"after {elapsed:.0f}s"
+                        f"Tool {execution.tool_name} ({tool_id}) timed out after {elapsed:.0f}s"
                     )
                     await self._kill_process(tool_id)
 
@@ -418,16 +408,9 @@ def get_tool_manager() -> ToolManager:
 
 
 # Convenience functions
-async def run_tool(
-    tool_name: str,
-    command: str,
-    timeout: float = 300,
-    **kwargs
-) -> ToolExecution:
+async def run_tool(tool_name: str, command: str, timeout: float = 300, **kwargs) -> ToolExecution:
     """Run a tool with the global ToolManager."""
-    return await get_tool_manager().execute(
-        tool_name, command, timeout=timeout, **kwargs
-    )
+    return await get_tool_manager().execute(tool_name, command, timeout=timeout, **kwargs)
 
 
 async def kill_tool(tool_id: str) -> bool:

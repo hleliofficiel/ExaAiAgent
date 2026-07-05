@@ -247,30 +247,30 @@ class CachePoisonTester:
     def __init__(self, base_url):
         self.base_url = base_url.rstrip('/')
         self.canary = ''.join(random.choices(string.ascii_lowercase, k=8))
-    
+
     def cache_buster(self):
         return f"cb={''.join(random.choices(string.ascii_lowercase, k=6))}"
-    
+
     def test_header(self, header_name, path="/"):
         """Test if a header is unkeyed and reflected."""
         url = f"{self.base_url}{path}?{self.cache_buster()}"
-        
+
         # Request with poison header
         headers = {header_name: self.canary}
         r1 = requests.get(url, headers=headers)
-        
+
         if self.canary not in r1.text:
             return None  # Not reflected
-        
+
         # Check if cached
         time.sleep(1)
         r2 = requests.get(url)  # No poison header
-        
+
         if self.canary in r2.text:
             return f"VULNERABLE: {header_name} is unkeyed and reflected"
-        
+
         return None
-    
+
     def scan_common_headers(self, path="/"):
         """Scan common unkeyed headers."""
         headers_to_test = [
@@ -282,13 +282,13 @@ class CachePoisonTester:
             "X-Rewrite-URL",
             "X-Custom-Header",
         ]
-        
+
         results = []
         for header in headers_to_test:
             result = self.test_header(header, path)
             if result:
                 results.append(result)
-        
+
         return results
 
 if __name__ == "__main__":

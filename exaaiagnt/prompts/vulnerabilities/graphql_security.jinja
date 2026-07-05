@@ -141,7 +141,7 @@ query {
 
 **SQL Injection via GraphQL:**
 ```graphql
-query { 
+query {
   user(name: "admin' OR '1'='1") { id email }
 }
 

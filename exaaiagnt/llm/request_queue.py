@@ -39,12 +39,12 @@ def should_retry_exception(exception: Exception) -> bool:
         return True
 
     # Retry on timeout
-    if isinstance(exception, (litellm.Timeout, asyncio.TimeoutError)):
+    if isinstance(exception, litellm.Timeout | asyncio.TimeoutError):
         logger.warning("Request timeout, will retry...")
         return True
 
     # Retry on server errors
-    if isinstance(exception, (litellm.ServiceUnavailableError, litellm.InternalServerError)):
+    if isinstance(exception, litellm.ServiceUnavailableError | litellm.InternalServerError):
         logger.warning("Server error, will retry...")
         return True
 
@@ -129,7 +129,7 @@ class LLMRequestQueue:
                 # Increase delay if we've had failures
                 adaptive_delay = self.delay_between_requests
                 if self._consecutive_failures > 0:
-                    adaptive_delay *= (1.5 ** self._consecutive_failures)
+                    adaptive_delay *= 1.5**self._consecutive_failures
                     adaptive_delay = min(adaptive_delay, 30.0)  # Cap at 30s
 
                 sleep_needed = max(0, adaptive_delay - time_since_last)
@@ -143,8 +143,7 @@ class LLMRequestQueue:
             # Make the request with timeout
             try:
                 response = await asyncio.wait_for(
-                    self._reliable_request(completion_args),
-                    timeout=self.request_timeout
+                    self._reliable_request(completion_args), timeout=self.request_timeout
                 )
                 # Reset failure counter on success
                 with self._lock:
@@ -152,7 +151,7 @@ class LLMRequestQueue:
                 return response
 
             except TimeoutError:
-                logger.error(f"Request timed out after {self.request_timeout}s")
+                logger.exception(f"Request timed out after {self.request_timeout}s")
                 with self._lock:
                     self._consecutive_failures += 1
                 raise litellm.Timeout(f"Request timed out after {self.request_timeout}s")
@@ -193,9 +192,7 @@ class LLMRequestQueue:
                 self._consecutive_failures += 1
             raise
 
-    async def _try_fallback_models(
-        self, completion_args: dict[str, Any]
-    ) -> ModelResponse | None:
+    async def _try_fallback_models(self, completion_args: dict[str, Any]) -> ModelResponse | None:
         """Try fallback models when primary fails."""
         original_model = completion_args.get("model", "")
 

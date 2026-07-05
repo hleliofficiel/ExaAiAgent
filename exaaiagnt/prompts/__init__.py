@@ -32,30 +32,33 @@ def get_all_module_names() -> set[str]:
 def auto_detect_modules(target: str, instruction: str = "") -> list[str]:
     """
     Automatically detect and return relevant prompt modules based on target and instruction.
-    
+
     Args:
         target: The target URL or domain
         instruction: The user's instruction
-        
+
     Returns:
         List of auto-detected module names
     """
     try:
         from exaaiagnt.prompts.auto_loader import detect_modules_from_target
+
         return detect_modules_from_target(target, instruction)
     except ImportError:
         return []
 
 
-def get_smart_modules(target: str, instruction: str = "", user_modules: list[str] | None = None) -> list[str]:
+def get_smart_modules(
+    target: str, instruction: str = "", user_modules: list[str] | None = None
+) -> list[str]:
     """
     Get final list of modules combining user-specified and auto-detected modules.
-    
+
     Args:
         target: The target URL or domain
         instruction: The user's instruction
         user_modules: Modules explicitly specified by user
-        
+
     Returns:
         Combined list of modules (user + auto-detected, max 5)
     """

@@ -19,7 +19,11 @@ def test_send_user_message_resumes_waiting_agent() -> None:
     state = AgentState(agent_name="Child")
     state.enter_waiting_state()
     _agent_states[state.agent_id] = state
-    _agent_graph["nodes"][state.agent_id] = {"id": state.agent_id, "name": "Child", "status": "waiting"}
+    _agent_graph["nodes"][state.agent_id] = {
+        "id": state.agent_id,
+        "name": "Child",
+        "status": "waiting",
+    }
 
     result = send_user_message_to_agent(state.agent_id, "status?")
 

@@ -30,8 +30,8 @@ Configure a LiteLLM-supported provider using the pattern `export EXAAI_LLM="prov
 
 | Provider | `EXAAI_LLM` | `LLM_API_KEY` | `LLM_API_BASE` |
 |----------|-------------|---------------|-----------------|
-| OpenAI | `openai/gpt-5` | required | — |
-| Anthropic | `anthropic/claude-sonnet-4-5` | required | — |
+| OpenAI | `openai/gpt-4o` | required | — |
+| Anthropic | `anthropic/claude-3-5-sonnet-20241022` | required | — |
 | OpenRouter | `openrouter/auto` | required | `https://openrouter.ai/api/v1` |
 | Ollama | `ollama/llama3` | — | `http://localhost:11434` |
 | Other | `provider/model-name` | if needed | if needed |
@@ -116,9 +116,9 @@ When editing ExaAiAgent:
 Before release, confirm tests pass, CI is green, version strings are aligned, docs are updated, and at least one real startup path was exercised.
 
 ```bash
-pytest -q
-python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/tui.py exaaiagnt/runtime/tool_server.py
-exaai --version
+poetry run pytest -q
+poetry run python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/tui.py exaaiagnt/runtime/tool_server.py
+poetry run exaai --version
 ```
 
 
@@ -127,3 +127,4 @@ exaai --version
 - **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
 - **Robust Tool Registration**: `@register_tool` should only be used on tool functions, never on classes (e.g. `K8sScanner`), ensuring proper API and schema generation.
 - **Improved Code Quality**: Consistent formatting and rigorous linting across all security modules, including `smart_fuzzer` and `waf_bypass`.
+- **Kubernetes Scanner Capabilities**: Now natively supporting K8s assessments with improved reporting structures and execution flows directly linked to tool functions.

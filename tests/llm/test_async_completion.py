@@ -13,7 +13,11 @@ async def test_generate_uses_async_acompletion(monkeypatch):
     async def fake_acompletion(**kwargs):
         called["acompletion"] = True
         return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content="<function=wait_for_message></function>"))],
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(content="<function=wait_for_message></function>")
+                )
+            ],
             usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5),
         )
 

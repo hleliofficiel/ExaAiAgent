@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class CheckStatus(Enum):
     """Status of a security check."""
+
     PASS = "PASS"
     FAIL = "FAIL"
     WARN = "WARN"
@@ -35,6 +36,7 @@ class CheckStatus(Enum):
 
 class Severity(Enum):
     """Severity of a finding."""
+
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -45,6 +47,7 @@ class Severity(Enum):
 @dataclass
 class SecurityFinding:
     """Represents a security finding in the cluster."""
+
     check_id: str
     title: str
     description: str
@@ -57,7 +60,6 @@ class SecurityFinding:
 
 
 from exaaiagnt.tools.registry import register_tool
-
 
 
 class K8sScanner:
@@ -81,7 +83,7 @@ class K8sScanner:
 
     def _run_kubectl(self, args: list[str]) -> dict[str, Any]:
         """Run a kubectl command and return JSON output."""
-        cmd = ["kubectl"] + args + ["-o", "json"]
+        cmd = ["kubectl", *args, "-o", "json"]
         if self.context:
             cmd.extend(["--context", self.context])
 
@@ -89,10 +91,10 @@ class K8sScanner:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec: B603
             return json.loads(result.stdout)
         except subprocess.CalledProcessError as e:
-            logger.error(f"kubectl command failed: {e.stderr}")
+            logger.exception(f"kubectl command failed: {e.stderr}")
             return {}
         except json.JSONDecodeError:
-            logger.error("Failed to decode kubectl output")
+            logger.exception("Failed to decode kubectl output")
             return {}
 
     def scan(self, namespaces: list[str] | None = None) -> list[SecurityFinding]:
@@ -128,27 +130,33 @@ class K8sScanner:
             if role_name == "cluster-admin":
                 for subject in binding.get("subjects", []):
                     if subject.get("kind") == "ServiceAccount":
-                        self.findings.append(SecurityFinding(
-                            check_id="RBAC-002",
-                            title="ServiceAccount with cluster-admin",
-                            description=f"ServiceAccount '{subject.get('name')}' in namespace '{subject.get('namespace', 'default')}' has cluster-admin binding via '{binding_name}'.",
-                            severity=Severity.CRITICAL,
-                            resource_kind="ClusterRoleBinding",
-                            resource_name=binding_name,
-                            namespace=subject.get("namespace", "cluster-wide"),
-                            remediation="Remove cluster-admin binding. Create a scoped Role with minimum required permissions."
-                        ))
-                    elif subject.get("kind") == "User" and not subject.get("name", "").startswith("system:"):
-                        self.findings.append(SecurityFinding(
-                            check_id="RBAC-003",
-                            title="User with cluster-admin",
-                            description=f"User '{subject.get('name')}' has cluster-admin binding via '{binding_name}'.",
-                            severity=Severity.HIGH,
-                            resource_kind="ClusterRoleBinding",
-                            resource_name=binding_name,
-                            namespace="cluster-wide",
-                            remediation="Review if user truly needs cluster-admin. Apply least privilege principle."
-                        ))
+                        self.findings.append(
+                            SecurityFinding(
+                                check_id="RBAC-002",
+                                title="ServiceAccount with cluster-admin",
+                                description=f"ServiceAccount '{subject.get('name')}' in namespace '{subject.get('namespace', 'default')}' has cluster-admin binding via '{binding_name}'.",
+                                severity=Severity.CRITICAL,
+                                resource_kind="ClusterRoleBinding",
+                                resource_name=binding_name,
+                                namespace=subject.get("namespace", "cluster-wide"),
+                                remediation="Remove cluster-admin binding. Create a scoped Role with minimum required permissions.",
+                            )
+                        )
+                    elif subject.get("kind") == "User" and not subject.get("name", "").startswith(
+                        "system:"
+                    ):
+                        self.findings.append(
+                            SecurityFinding(
+                                check_id="RBAC-003",
+                                title="User with cluster-admin",
+                                description=f"User '{subject.get('name')}' has cluster-admin binding via '{binding_name}'.",
+                                severity=Severity.HIGH,
+                                resource_kind="ClusterRoleBinding",
+                                resource_name=binding_name,
+                                namespace="cluster-wide",
+                                remediation="Review if user truly needs cluster-admin. Apply least privilege principle.",
+                            )
+                        )
 
     def _get_all_namespaces(self) -> list[str]:
         """Get list of all namespaces."""
@@ -163,16 +171,18 @@ class K8sScanner:
             name = role["metadata"]["name"]
             for rule in role.get("rules", []):
                 if "*" in rule.get("verbs", []) and "*" in rule.get("resources", []):
-                    self.findings.append(SecurityFinding(
-                        check_id="RBAC-001",
-                        title="Cluster Admin-like Role",
-                        description=f"Role '{name}' has wildcard permissions (*/*).",
-                        severity=Severity.CRITICAL,
-                        resource_kind="Role",
-                        resource_name=name,
-                        namespace=namespace,
-                        remediation="Apply least privilege. Remove wildcard permissions."
-                    ))
+                    self.findings.append(
+                        SecurityFinding(
+                            check_id="RBAC-001",
+                            title="Cluster Admin-like Role",
+                            description=f"Role '{name}' has wildcard permissions (*/*).",
+                            severity=Severity.CRITICAL,
+                            resource_kind="Role",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Apply least privilege. Remove wildcard permissions.",
+                        )
+                    )
 
         # Check 2: ServiceAccounts with cluster-admin binding
         # (Simplified check - full graph analysis requires more logic)
@@ -191,85 +201,97 @@ class K8sScanner:
 
                 # Privileged containers
                 if security_context.get("privileged", False):
-                    self.findings.append(SecurityFinding(
-                        check_id="PSS-001",
-                        title="Privileged Container",
-                        description=f"Container '{container_name}' in pod '{name}' runs as privileged.",
-                        severity=Severity.HIGH,
-                        resource_kind="Pod",
-                        resource_name=name,
-                        namespace=namespace,
-                        remediation="Remove 'privileged: true' from securityContext."
-                    ))
+                    self.findings.append(
+                        SecurityFinding(
+                            check_id="PSS-001",
+                            title="Privileged Container",
+                            description=f"Container '{container_name}' in pod '{name}' runs as privileged.",
+                            severity=Severity.HIGH,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Remove 'privileged: true' from securityContext.",
+                        )
+                    )
 
                 # Allow Privilege Escalation
                 if security_context.get("allowPrivilegeEscalation", True):
-                    self.findings.append(SecurityFinding(
-                        check_id="PSS-003",
-                        title="Privilege Escalation Allowed",
-                        description=f"Container '{container_name}' in pod '{name}' allows privilege escalation.",
-                        severity=Severity.MEDIUM,
-                        resource_kind="Pod",
-                        resource_name=name,
-                        namespace=namespace,
-                        remediation="Set 'allowPrivilegeEscalation: false' in securityContext."
-                    ))
+                    self.findings.append(
+                        SecurityFinding(
+                            check_id="PSS-003",
+                            title="Privilege Escalation Allowed",
+                            description=f"Container '{container_name}' in pod '{name}' allows privilege escalation.",
+                            severity=Severity.MEDIUM,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Set 'allowPrivilegeEscalation: false' in securityContext.",
+                        )
+                    )
 
                 # Read Only Root Filesystem
                 if not security_context.get("readOnlyRootFilesystem", False):
-                    self.findings.append(SecurityFinding(
-                        check_id="PSS-004",
-                        title="Writable Root Filesystem",
-                        description=f"Container '{container_name}' in pod '{name}' has a writable root filesystem.",
-                        severity=Severity.LOW,
-                        resource_kind="Pod",
-                        resource_name=name,
-                        namespace=namespace,
-                        remediation="Set 'readOnlyRootFilesystem: true' in securityContext."
-                    ))
+                    self.findings.append(
+                        SecurityFinding(
+                            check_id="PSS-004",
+                            title="Writable Root Filesystem",
+                            description=f"Container '{container_name}' in pod '{name}' has a writable root filesystem.",
+                            severity=Severity.LOW,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Set 'readOnlyRootFilesystem: true' in securityContext.",
+                        )
+                    )
 
                 # Capabilities
                 capabilities = security_context.get("capabilities", {})
                 add_caps = capabilities.get("add", [])
                 if add_caps:
-                    self.findings.append(SecurityFinding(
-                        check_id="PSS-005",
-                        title="Dangerous Capabilities Added",
-                        description=f"Container '{container_name}' in pod '{name}' adds capabilities: {add_caps}.",
-                        severity=Severity.MEDIUM,
-                        resource_kind="Pod",
-                        resource_name=name,
-                        namespace=namespace,
-                        remediation="Review and remove unnecessary capabilities. Drop 'ALL' and add only required ones."
-                    ))
+                    self.findings.append(
+                        SecurityFinding(
+                            check_id="PSS-005",
+                            title="Dangerous Capabilities Added",
+                            description=f"Container '{container_name}' in pod '{name}' adds capabilities: {add_caps}.",
+                            severity=Severity.MEDIUM,
+                            resource_kind="Pod",
+                            resource_name=name,
+                            namespace=namespace,
+                            remediation="Review and remove unnecessary capabilities. Drop 'ALL' and add only required ones.",
+                        )
+                    )
 
             # Check 2: Host PID/Network/IPC
             if spec.get("hostPID") or spec.get("hostNetwork") or spec.get("hostIPC"):
-                self.findings.append(SecurityFinding(
-                    check_id="PSS-002",
-                    title="Host Namespace Usage",
-                    description=f"Pod '{name}' shares host namespaces (PID/Net/IPC).",
-                    severity=Severity.HIGH,
-                    resource_kind="Pod",
-                    resource_name=name,
-                    namespace=namespace,
-                    remediation="Disable hostPID, hostNetwork, and hostIPC."
-                ))
+                self.findings.append(
+                    SecurityFinding(
+                        check_id="PSS-002",
+                        title="Host Namespace Usage",
+                        description=f"Pod '{name}' shares host namespaces (PID/Net/IPC).",
+                        severity=Severity.HIGH,
+                        resource_kind="Pod",
+                        resource_name=name,
+                        namespace=namespace,
+                        remediation="Disable hostPID, hostNetwork, and hostIPC.",
+                    )
+                )
 
     def _check_network_policies(self, namespace: str):
         """Check if network policies are defined."""
         policies = self._run_kubectl(["get", "networkpolicies", "-n", namespace])
         if not policies.get("items"):
-            self.findings.append(SecurityFinding(
-                check_id="NET-001",
-                title="Missing Network Policy",
-                description=f"Namespace '{namespace}' has no NetworkPolicies defined. Traffic is unrestricted.",
-                severity=Severity.MEDIUM,
-                resource_kind="Namespace",
-                resource_name=namespace,
-                namespace=namespace,
-                remediation="Define a default deny-all NetworkPolicy."
-            ))
+            self.findings.append(
+                SecurityFinding(
+                    check_id="NET-001",
+                    title="Missing Network Policy",
+                    description=f"Namespace '{namespace}' has no NetworkPolicies defined. Traffic is unrestricted.",
+                    severity=Severity.MEDIUM,
+                    resource_kind="Namespace",
+                    resource_name=namespace,
+                    namespace=namespace,
+                    remediation="Define a default deny-all NetworkPolicy.",
+                )
+            )
 
     def _check_secrets(self, namespace: str):
         """Check for secrets issues."""
@@ -291,36 +313,50 @@ class K8sScanner:
                         continue
 
                     # Check for suspicious env var names with plain values
-                    sensitive_keywords = ["password", "secret", "key", "token",
-                                         "api_key", "apikey", "auth", "credential",
-                                         "private", "access_key", "secret_key"]
+                    sensitive_keywords = [
+                        "password",
+                        "secret",
+                        "key",
+                        "token",
+                        "api_key",
+                        "apikey",
+                        "auth",
+                        "credential",
+                        "private",
+                        "access_key",
+                        "secret_key",
+                    ]
 
                     if any(kw in env_name for kw in sensitive_keywords) and env_value:
-                        self.findings.append(SecurityFinding(
-                            check_id="SEC-001",
-                            title="Secret in Plain Environment Variable",
-                            description=f"Container '{container_name}' in pod '{name}' has sensitive data in plain env var '{env.get('name')}'.",
-                            severity=Severity.HIGH,
-                            resource_kind="Pod",
-                            resource_name=name,
-                            namespace=namespace,
-                            remediation="Use Kubernetes Secrets with secretKeyRef instead of plain values. Never commit secrets in manifests."
-                        ))
+                        self.findings.append(
+                            SecurityFinding(
+                                check_id="SEC-001",
+                                title="Secret in Plain Environment Variable",
+                                description=f"Container '{container_name}' in pod '{name}' has sensitive data in plain env var '{env.get('name')}'.",
+                                severity=Severity.HIGH,
+                                resource_kind="Pod",
+                                resource_name=name,
+                                namespace=namespace,
+                                remediation="Use Kubernetes Secrets with secretKeyRef instead of plain values. Never commit secrets in manifests.",
+                            )
+                        )
 
                 # Check for automountServiceAccountToken
                 if spec.get("automountServiceAccountToken", True):
                     # Only flag if not system namespace
                     if namespace not in ["kube-system", "kube-public", "kube-node-lease"]:
-                        self.findings.append(SecurityFinding(
-                            check_id="SEC-002",
-                            title="ServiceAccount Token Auto-Mounted",
-                            description=f"Pod '{name}' has automountServiceAccountToken enabled (default).",
-                            severity=Severity.LOW,
-                            resource_kind="Pod",
-                            resource_name=name,
-                            namespace=namespace,
-                            remediation="Set automountServiceAccountToken: false unless the pod needs K8s API access."
-                        ))
+                        self.findings.append(
+                            SecurityFinding(
+                                check_id="SEC-002",
+                                title="ServiceAccount Token Auto-Mounted",
+                                description=f"Pod '{name}' has automountServiceAccountToken enabled (default).",
+                                severity=Severity.LOW,
+                                resource_kind="Pod",
+                                resource_name=name,
+                                namespace=namespace,
+                                remediation="Set automountServiceAccountToken: false unless the pod needs K8s API access.",
+                            )
+                        )
 
     def export_report(self) -> dict[str, Any]:
         """Export findings summary."""
@@ -332,17 +368,17 @@ class K8sScanner:
                     "title": f.title,
                     "severity": f.severity.value,
                     "resource": f"{f.namespace}/{f.resource_kind}/{f.resource_name}",
-                    "remediation": f.remediation
+                    "remediation": f.remediation,
                 }
                 for f in self.findings
-            ]
+            ],
         }
 
 
 # === Convenience Functions ===
 
 
-@register_tool
+@register_tool(sandbox_execution=False)
 def scan_cluster(context: str | None = None) -> dict[str, Any]:
     """Run a full cluster scan."""
     scanner = K8sScanner(context=context)
@@ -350,8 +386,7 @@ def scan_cluster(context: str | None = None) -> dict[str, Any]:
     return scanner.export_report()
 
 
-
-@register_tool
+@register_tool(sandbox_execution=False)
 def check_rbac(namespace: str = "default") -> list[dict[str, Any]]:
     """Run RBAC checks only."""
     scanner = K8sScanner()
@@ -359,8 +394,7 @@ def check_rbac(namespace: str = "default") -> list[dict[str, Any]]:
     return scanner.export_report()["findings"]
 
 
-
-@register_tool
+@register_tool(sandbox_execution=False)
 def check_pod_security(namespace: str = "default") -> list[dict[str, Any]]:
     """Run Pod Security checks only."""
     scanner = K8sScanner()

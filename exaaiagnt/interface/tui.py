@@ -157,7 +157,14 @@ class SplashScreen(Static):  # type: ignore[misc]
         text = Text()
 
         # Color gradient from cyan to purple
-        colors = [self.NEON_CYAN, self.NEON_GREEN, self.NEON_CYAN, self.NEON_PURPLE, self.NEON_PINK, self.NEON_PURPLE]
+        colors = [
+            self.NEON_CYAN,
+            self.NEON_GREEN,
+            self.NEON_CYAN,
+            self.NEON_PURPLE,
+            self.NEON_PINK,
+            self.NEON_PURPLE,
+        ]
 
         for i, line in enumerate(lines):
             color = colors[i % len(colors)]
@@ -177,7 +184,10 @@ class SplashScreen(Static):  # type: ignore[misc]
         text = Text("v", style=Style(color=self.SOFT_WHITE, dim=True))
         text.append(f"{self._version}", style=Style(color=self.NEON_GREEN, bold=True))
         text.append(" ", style=Style(color=self.SOFT_WHITE))
-        text.append("• Adaptive LLM • Smart Fuzzing • WAF Bypass", style=Style(color=self.SOFT_WHITE, dim=True))
+        text.append(
+            "• Adaptive LLM • Smart Fuzzing • WAF Bypass",
+            style=Style(color=self.SOFT_WHITE, dim=True),
+        )
         return text
 
     def _build_new_features_text(self) -> Text:
@@ -191,10 +201,12 @@ class SplashScreen(Static):  # type: ignore[misc]
         text.append("OpenClaw Support", style=Style(color=self.NEON_GREEN))
         return text
 
-
     def _build_tagline_text(self) -> Text:
         text = Text("🔒 ", style=Style(color=self.NEON_ORANGE))
-        text.append("Advanced AI-Powered Cybersecurity Agent", style=Style(color=self.SOFT_WHITE, italic=True))
+        text.append(
+            "Advanced AI-Powered Cybersecurity Agent",
+            style=Style(color=self.SOFT_WHITE, italic=True),
+        )
         text.append(" 🔒", style=Style(color=self.NEON_ORANGE))
         return text
 
@@ -856,7 +868,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
                     del self._agent_dot_states[agent_id]
 
     def _normalize_event_timestamp(self, raw_timestamp: Any) -> float:
-        if isinstance(raw_timestamp, (int, float)):
+        if isinstance(raw_timestamp, int | float):
             return float(raw_timestamp)
 
         if isinstance(raw_timestamp, str):
@@ -920,7 +932,9 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
     def _start_scan_if_ready(self) -> None:
         if not self.scan_config.get("targets"):
-            self._record_runtime_error("No active target. Enter a target URL/domain/path to start scanning.")
+            self._record_runtime_error(
+                "No active target. Enter a target URL/domain/path to start scanning."
+            )
             return
 
         try:

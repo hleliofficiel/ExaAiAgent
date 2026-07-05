@@ -4,6 +4,7 @@ Provides timeout detection, heartbeat monitoring, and self-healing capabilities.
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AgentStatus(Enum):
     """Agent lifecycle states."""
+
     INIT = "init"
     RUNNING = "running"
     WAITING = "waiting"
@@ -32,6 +34,7 @@ class AgentStatus(Enum):
 
 class AgentRole(Enum):
     """Agent roles in the swarm."""
+
     SUPERVISOR = "supervisor"
     RECON = "recon"
     ATTACK = "attack"
@@ -40,6 +43,7 @@ class AgentRole(Enum):
 
 class AgentPriority(Enum):
     """Agent priority levels."""
+
     HIGH = 3
     MEDIUM = 2
     LOW = 1
@@ -48,6 +52,7 @@ class AgentPriority(Enum):
 @dataclass
 class AgentHealth:
     """Health status of an agent with priority and token tracking."""
+
     agent_id: str
     agent_name: str
     status: AgentStatus = AgentStatus.INIT
@@ -70,7 +75,7 @@ class AgentHealth:
 class AgentSupervisor:
     """
     Central supervisor for monitoring and managing agents.
-    
+
     Features:
     - Heartbeat monitoring
     - Timeout detection
@@ -124,7 +129,7 @@ class AgentSupervisor:
         timeout: float | None = None,
         priority: AgentPriority = AgentPriority.MEDIUM,
         token_budget: int = 200000,
-        role: AgentRole = AgentRole.RECON
+        role: AgentRole = AgentRole.RECON,
     ) -> None:
         """Register an agent for monitoring with priority, token budget and role."""
         health = AgentHealth(
@@ -133,7 +138,7 @@ class AgentSupervisor:
             parent_id=parent_id,
             priority=priority,
             token_budget=token_budget,
-            role=role
+            role=role,
         )
         self._agents[agent_id] = health
 
@@ -143,7 +148,9 @@ class AgentSupervisor:
         if timeout:
             self._timeout_handlers[agent_id] = timeout
 
-        logger.info(f"Registered agent: {agent_name} ({agent_id}) role={role.value} priority={priority.name}")
+        logger.info(
+            f"Registered agent: {agent_name} ({agent_id}) role={role.value} priority={priority.name}"
+        )
         self._notify_status_change(agent_id, AgentStatus.INIT, AgentStatus.RUNNING)
 
     def set_priority(self, agent_id: str, priority: AgentPriority) -> None:
@@ -162,7 +169,9 @@ class AgentSupervisor:
 
         # Check budget
         if health.token_used > health.token_budget:
-            logger.warning(f"Agent {agent_id} exceeded token budget: {health.token_used}/{health.token_budget}")
+            logger.warning(
+                f"Agent {agent_id} exceeded token budget: {health.token_used}/{health.token_budget}"
+            )
             old_status = health.status
             health.status = AgentStatus.BUDGET_EXCEEDED
             self._notify_status_change(agent_id, old_status, AgentStatus.BUDGET_EXCEEDED)
@@ -177,7 +186,7 @@ class AgentSupervisor:
             return {
                 "used": health.token_used,
                 "budget": health.token_budget,
-                "remaining": health.token_budget - health.token_used
+                "remaining": health.token_budget - health.token_used,
             }
         return {"used": 0, "budget": 0, "remaining": 0}
 
@@ -270,7 +279,7 @@ class AgentSupervisor:
         """Get health status of all agents."""
         return dict(self._agents)
 
-    def get_stuck_agents(self, threshold: float = None) -> list[str]:
+    def get_stuck_agents(self, threshold: float | None = None) -> list[str]:
         """Get list of agents that appear stuck (no activity)."""
         threshold = threshold or self.DEFAULT_TIMEOUT
         now = time.time()
@@ -299,7 +308,7 @@ class AgentSupervisor:
             try:
                 callback(agent_id, old_status, new_status)
             except Exception as e:
-                logger.error(f"Callback error: {e}")
+                logger.exception(f"Callback error: {e}")
 
     async def start_monitoring(self) -> None:
         """Start the monitoring loop."""
@@ -315,10 +324,8 @@ class AgentSupervisor:
         self._running = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Agent monitoring stopped")
 
     async def _monitoring_loop(self) -> None:
@@ -330,7 +337,7 @@ class AgentSupervisor:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Monitoring error: {e}")
+                logger.exception(f"Monitoring error: {e}")
                 await asyncio.sleep(1)
 
     async def _check_agent_health(self) -> None:
@@ -361,7 +368,7 @@ class AgentSupervisor:
                     try:
                         callback(agent_id, health)
                     except Exception as e:
-                        logger.error(f"Timeout callback error: {e}")
+                        logger.exception(f"Timeout callback error: {e}")
 
                 # Attempt recovery
                 await self._attempt_recovery(agent_id, health)
@@ -369,16 +376,14 @@ class AgentSupervisor:
     async def _attempt_recovery(self, agent_id: str, health: AgentHealth) -> bool:
         """Attempt to recover a timed-out agent."""
         if health.recovery_attempts >= self.MAX_RECOVERY_ATTEMPTS:
-            logger.error(
-                f"Agent {health.agent_name} ({agent_id}) exceeded max recovery attempts"
-            )
+            logger.error(f"Agent {health.agent_name} ({agent_id}) exceeded max recovery attempts")
             health.status = AgentStatus.FAILED
 
             for callback in self._callbacks.get("on_failure", []):
                 try:
                     callback(agent_id, health)
                 except Exception as e:
-                    logger.error(f"Failure callback error: {e}")
+                    logger.exception(f"Failure callback error: {e}")
 
             return False
 
@@ -402,11 +407,11 @@ class AgentSupervisor:
                         try:
                             callback(agent_id, health)
                         except Exception as e:
-                            logger.error(f"Recovery callback error: {e}")
+                            logger.exception(f"Recovery callback error: {e}")
 
                     return True
             except Exception as e:
-                logger.error(f"Recovery failed for {agent_id}: {e}")
+                logger.exception(f"Recovery failed for {agent_id}: {e}")
                 health.last_error = str(e)
 
         return False
@@ -452,7 +457,7 @@ class MonitoredAgent:
         agent_id: str,
         agent_name: str,
         timeout: float = AgentSupervisor.DEFAULT_TIMEOUT,
-        on_timeout: Callable | None = None
+        on_timeout: Callable | None = None,
     ):
         self.agent_id = agent_id
         self.agent_name = agent_name
@@ -461,17 +466,12 @@ class MonitoredAgent:
         self._supervisor = get_supervisor()
 
     async def __aenter__(self):
-        self._supervisor.register_agent(
-            self.agent_id,
-            self.agent_name,
-            timeout=self.timeout
-        )
+        self._supervisor.register_agent(self.agent_id, self.agent_name, timeout=self.timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._supervisor.update_status(
-            self.agent_id,
-            AgentStatus.COMPLETED if exc_type is None else AgentStatus.FAILED
+            self.agent_id, AgentStatus.COMPLETED if exc_type is None else AgentStatus.FAILED
         )
         self._supervisor.unregister_agent(self.agent_id)
 

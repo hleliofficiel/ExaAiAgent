@@ -140,7 +140,6 @@ class Tracer:
         self._next_message_id += 1
 
         # Ensure imports if missing
-        import time
 
         message_data = {
             "message_id": message_id,
@@ -161,10 +160,14 @@ class Tracer:
             "agents": self.agents,
             "vulnerabilities": self.vulnerability_reports,
             "stats": {
-                "active_agents": sum(1 for a in self.agents.values() if a.get("status") == "running"),
-                "total_requests": sum(1 for msg in self.chat_messages if msg["role"] == "assistant"),
-                "total_vulns": len(self.vulnerability_reports)
-            }
+                "active_agents": sum(
+                    1 for a in self.agents.values() if a.get("status") == "running"
+                ),
+                "total_requests": sum(
+                    1 for msg in self.chat_messages if msg["role"] == "assistant"
+                ),
+                "total_vulns": len(self.vulnerability_reports),
+            },
         }
 
     def log_tool_execution_start(self, agent_id: str, tool_name: str, args: dict[str, Any]) -> int:
@@ -262,7 +265,9 @@ class Tracer:
                     f.write("## 📊 Executive Summary\n\n")
                     f.write("| Metric | Value |\n")
                     f.write("| :--- | :--- |\n")
-                    f.write(f"| **Overall Result** | {'✅ SECURE' if not self.vulnerability_reports else '⚠️ VULNERABLE'} |\n")
+                    f.write(
+                        f"| **Overall Result** | {'✅ SECURE' if not self.vulnerability_reports else '⚠️ VULNERABLE'} |\n"
+                    )
                     f.write(f"| **Total Vulnerabilities** | {len(self.vulnerability_reports)} |\n")
 
                     sev_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
@@ -271,8 +276,12 @@ class Tracer:
                         if s in sev_counts:
                             sev_counts[s] += 1
 
-                    f.write(f"| **Critical / High** | {sev_counts['critical']} / {sev_counts['high']} |\n")
-                    f.write(f"| **Medium / Low** | {sev_counts['medium']} / {sev_counts['low']} |\n")
+                    f.write(
+                        f"| **Critical / High** | {sev_counts['critical']} / {sev_counts['high']} |\n"
+                    )
+                    f.write(
+                        f"| **Medium / Low** | {sev_counts['medium']} / {sev_counts['low']} |\n"
+                    )
                     f.write(f"| **Total Agents** | {len(self.agents)} |\n")
                     f.write(f"| **Tool Invocations** | {self.get_real_tool_count()} |\n")
                     f.write(f"| **Scan Duration** | {self._calculate_duration():.1f}s |\n\n")

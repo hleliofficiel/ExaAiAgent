@@ -283,7 +283,7 @@ class APISecurityTester:
         self.headers = headers or {}
         self.session = requests.Session()
         self.session.headers.update(self.headers)
-    
+
     def test_idor(self, endpoint, id_range=(1, 100)):
         """Test for IDOR vulnerabilities."""
         results = []
@@ -293,7 +293,7 @@ class APISecurityTester:
             if r.status_code == 200:
                 results.append((i, r.json()))
         return results
-    
+
     def test_mass_assignment(self, endpoint, base_data, extra_fields):
         """Test for mass assignment."""
         for field, value in extra_fields.items():
@@ -302,7 +302,7 @@ class APISecurityTester:
             if r.status_code in [200, 201]:
                 if field in r.text:
                     print(f"VULNERABLE: {field} accepted!")
-    
+
     def test_injection(self, endpoint, param, payloads):
         """Test for injection vulnerabilities."""
         for payload in payloads:
@@ -310,16 +310,16 @@ class APISecurityTester:
             r = self.session.get(url)
             if any(err in r.text.lower() for err in ['error', 'exception', 'sql']):
                 print(f"POTENTIAL INJECTION: {payload}")
-    
+
     def enumerate_endpoints(self, wordlist_path):
         """Discover API endpoints."""
         found = []
         with open(wordlist_path) as f:
             endpoints = [line.strip() for line in f]
-        
+
         with ThreadPoolExecutor(max_workers=20) as executor:
             futures = {
-                executor.submit(self._check_endpoint, ep): ep 
+                executor.submit(self._check_endpoint, ep): ep
                 for ep in endpoints
             }
             for future in futures:
@@ -327,7 +327,7 @@ class APISecurityTester:
                 if result:
                     found.append(result)
         return found
-    
+
     def _check_endpoint(self, endpoint):
         url = f"{self.base_url}/{endpoint}"
         try:
@@ -344,10 +344,10 @@ if __name__ == "__main__":
         "https://api.target.com",
         headers={"Authorization": "Bearer TOKEN"}
     )
-    
+
     # Test IDOR
     idor_results = tester.test_idor("/api/users/{id}")
-    
+
     # Test mass assignment
     tester.test_mass_assignment(
         "/api/users",

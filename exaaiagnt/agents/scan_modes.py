@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class ScanMode(Enum):
     """Available scanning modes."""
+
     STEALTH = "stealth"
     STANDARD = "standard"
     AGGRESSIVE = "aggressive"
@@ -23,6 +24,7 @@ class ScanMode(Enum):
 @dataclass
 class ModeConfig:
     """Configuration for a scan mode."""
+
     name: str
     description: str
 
@@ -71,7 +73,6 @@ MODE_CONFIGS: dict[ScanMode, ModeConfig] = {
         allowed_tools=["browser_action", "terminal_execute", "web_search"],
         blocked_tools=["nuclei", "sqlmap", "ffuf"],
     ),
-
     ScanMode.STANDARD: ModeConfig(
         name="Standard",
         description="Moderate fuzzing, safe for bug bounty programs",
@@ -90,7 +91,6 @@ MODE_CONFIGS: dict[ScanMode, ModeConfig] = {
         allowed_tools=[],  # All allowed
         blocked_tools=[],
     ),
-
     ScanMode.AGGRESSIVE: ModeConfig(
         name="Aggressive",
         description="Deep exploitation, full PoC development, maximum coverage",
@@ -174,9 +174,7 @@ class ScanModeManager:
         """Check if a tool is allowed in current mode."""
         if self._config.blocked_tools and tool_name in self._config.blocked_tools:
             return False
-        if self._config.allowed_tools and tool_name not in self._config.allowed_tools:
-            return False
-        return True
+        return not (self._config.allowed_tools and tool_name not in self._config.allowed_tools)
 
     def get_request_delay(self) -> float:
         """Get delay between requests in seconds."""

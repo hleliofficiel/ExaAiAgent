@@ -80,7 +80,7 @@ def run_az(cmd: list) -> dict:
 
 def audit_azure():
     findings = []
-    
+
     # Check public storage containers
     accounts = run_az(["storage", "account", "list"])
     for acc in accounts:
@@ -93,7 +93,7 @@ def audit_azure():
                     "resource": f"{acc['name']}/{container['name']}",
                     "remediation": "Set publicAccess to None"
                 })
-    
+
     # Check privileged role assignments
     assignments = run_az(["role", "assignment", "list", "--all"])
     for assignment in assignments:
@@ -104,7 +104,7 @@ def audit_azure():
                 "resource": assignment.get("principalName"),
                 "remediation": "Review and apply least privilege"
             })
-    
+
     return findings
 
 if __name__ == "__main__":

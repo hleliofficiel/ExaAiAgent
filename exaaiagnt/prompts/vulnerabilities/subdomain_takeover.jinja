@@ -201,7 +201,7 @@ def check_takeover(subdomain):
         # Get CNAME
         answers = dns.resolver.resolve(subdomain, 'CNAME')
         cname = str(answers[0].target).rstrip('.')
-        
+
         # Check if CNAME points to vulnerable service
         for service, signature in vulnerable_signatures.items():
             if service in cname:
@@ -327,11 +327,11 @@ async def scan_subdomain(subdomain, session, resolver):
         # Resolve CNAME
         result = await resolver.query(subdomain, 'CNAME')
         cname = str(result.cname).rstrip('.')
-        
+
         # Check HTTP response
         async with session.get(f"http://{subdomain}", timeout=10) as resp:
             text = await resp.text()
-            
+
             # Check for vulnerable signatures
             signatures = [
                 ("NoSuchBucket", "AWS S3"),
@@ -339,7 +339,7 @@ async def scan_subdomain(subdomain, session, resolver):
                 ("No such app", "Heroku"),
                 ("DEPLOYMENT_NOT_FOUND", "Vercel"),
             ]
-            
+
             for sig, service in signatures:
                 if sig in text:
                     return (subdomain, cname, service)
@@ -365,7 +365,7 @@ async def main(subdomains):
 **Service:** [AWS S3 / GitHub Pages / Heroku / etc.]
 
 ### Impact
-An attacker can claim the unconfigured resource and serve malicious content 
+An attacker can claim the unconfigured resource and serve malicious content
 on the victim's subdomain. This enables:
 - Phishing attacks using trusted domain
 - Cookie theft (if domain shares cookies)

@@ -65,7 +65,10 @@ async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: A
     async with httpx.AsyncClient(trust_env=False) as client:
         try:
             response = await client.post(
-                request_url, json=request_data, headers=headers, timeout=600.0  # 10 min max
+                request_url,
+                json=request_data,
+                headers=headers,
+                timeout=600.0,  # 10 min max
             )
             response.raise_for_status()
             response_data = response.json()
@@ -96,6 +99,7 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
         else:
             # Run synchronous blocking tools in a separate thread
             import asyncio
+
             result = await asyncio.to_thread(tool_func, agent_state=agent_state, **converted_kwargs)
     # Check if the tool function is a coroutine (async)
     elif inspect.iscoroutinefunction(tool_func):
@@ -103,6 +107,7 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
     else:
         # Run synchronous blocking tools in a separate thread
         import asyncio
+
         result = await asyncio.to_thread(tool_func, **converted_kwargs)
 
     return result
@@ -197,6 +202,7 @@ def _format_tool_result(tool_name: str, result: Any) -> tuple[str, list[dict[str
         # Use output processor to reduce token consumption
         try:
             from exaaiagnt.llm.output_processor import process_tool_output
+
             final_result_str = process_tool_output(tool_name, result_str)
         except ImportError:
             # Fallback to basic truncation
@@ -204,7 +210,9 @@ def _format_tool_result(tool_name: str, result: Any) -> tuple[str, list[dict[str
             if len(final_result_str) > 10000:
                 start_part = final_result_str[:4000]
                 end_part = final_result_str[-4000:]
-                final_result_str = start_part + "\n\n... [middle content truncated] ...\n\n" + end_part
+                final_result_str = (
+                    start_part + "\n\n... [middle content truncated] ...\n\n" + end_part
+                )
 
     observation_xml = (
         f"<tool_result>\n<tool_name>{tool_name}</tool_name>\n"

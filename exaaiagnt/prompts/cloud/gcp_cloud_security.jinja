@@ -92,11 +92,11 @@ def run_gcloud(cmd: list) -> dict:
 
 def audit_gcp(project: str):
     findings = []
-    
+
     # Check for service account keys (should be 0 or 1)
     sas = run_gcloud(["iam", "service-accounts", "list", f"--project={project}"])
     for sa in sas:
-        keys = run_gcloud(["iam", "service-accounts", "keys", "list", 
+        keys = run_gcloud(["iam", "service-accounts", "keys", "list",
                           f"--iam-account={sa['email']}", f"--project={project}"])
         user_keys = [k for k in keys if k.get("keyType") == "USER_MANAGED"]
         if len(user_keys) > 0:
@@ -107,7 +107,7 @@ def audit_gcp(project: str):
                 "details": f"{len(user_keys)} user-managed keys found",
                 "remediation": "Use Workload Identity or VM Service Accounts instead of keys"
             })
-    
+
     # Check IAM for overly permissive roles
     policy = run_gcloud(["projects", "get-iam-policy", project])
     for binding in policy.get("bindings", []):
@@ -120,7 +120,7 @@ def audit_gcp(project: str):
                         "resource": member,
                         "remediation": "Replace with fine-grained roles"
                     })
-    
+
     # Check for public firewall rules
     rules = run_gcloud(["compute", "firewall-rules", "list", f"--project={project}"])
     for rule in rules:
@@ -133,7 +133,7 @@ def audit_gcp(project: str):
                     "details": f"Allows: {rule['allowed']}",
                     "remediation": "Restrict source ranges to known IPs"
                 })
-    
+
     return findings
 
 if __name__ == "__main__":

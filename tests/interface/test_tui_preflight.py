@@ -16,12 +16,16 @@ def _make_app() -> ExaaiTUIApp:
 
 def test_start_scan_if_ready_reports_docker_unavailable(monkeypatch) -> None:
     app = _make_app()
-    app.scan_config["targets"] = [{"type": "web_application", "details": {}, "original": "https://example.com"}]
+    app.scan_config["targets"] = [
+        {"type": "web_application", "details": {}, "original": "https://example.com"}
+    ]
 
     def fake_check_docker_connection():
         raise RuntimeError("Docker not available")
 
-    monkeypatch.setattr("exaaiagnt.interface.utils.check_docker_connection", fake_check_docker_connection)
+    monkeypatch.setattr(
+        "exaaiagnt.interface.utils.check_docker_connection", fake_check_docker_connection
+    )
 
     app._start_scan_if_ready()
 
