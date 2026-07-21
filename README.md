@@ -41,7 +41,7 @@
 This release focuses on making ExaAiAgent much more predictable to operate and easier to integrate into agent-driven workflows:
 
 - **CI on Pull Requests**: lint, type-check, unit tests, and smoke tests now run automatically
-- **Legacy Cleanup**: removed stale `strix` references that broke tests and dev tooling
+- **Legacy Cleanup**: removed stale `ExaAiAgnet` references that broke tests and dev tooling
 - **Import-Safe Tool Server**: sandbox tool server no longer parses CLI arguments at import time
 - **Dependency Compatibility Fixes**: resolved `websockets` compatibility issues affecting installs
 
