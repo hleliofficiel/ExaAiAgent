@@ -18,7 +18,7 @@
 <br>
 
 > [!TIP]
-> **🚀 v3.0.1 Released!** Grounding, security hardening, and reporting overhaul. Focused on formatting Released standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
+> **🚀 v3.0.1 Released!** Evidence-grounded findings, pinned CVE intelligence, independent verification, scoped execution, token budgets, and reproducible reporting.
 >
 > 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```
@@ -26,6 +26,13 @@
 > ```
 
 ---
+
+## 🔥 What's New in v3.0.1
+
+- Target scope is enforced before tool execution when `EXAAI_TARGETS` is set.
+- Agents have token, tool-call, and spawn budgets to prevent unbounded consumption.
+- CVE intelligence joins EPSS, CISA KEV, and OSV with provenance; findings require independent verification.
+- Unified reports and the deterministic benchmark harness are included.
 
 ## 🔥 What's New in v3.0.0
 

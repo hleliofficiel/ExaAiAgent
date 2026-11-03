@@ -10,7 +10,7 @@
 - Benchmark harness (benchmark/): deterministic Juice Shop smoke task + runner
 - Tool wrappers: nuclei (MIT, invoke-only, argv-only) + license tiers + slim-image policy (docs/tools.md)
 - Docs: intelligence, verification, benchmark, tools, token-reduction, roadmap, contributing-strategy
-- Tests: +9 (intelligence/verification/wrappers) -> 28 passing
+- Tests: 30 passing (grounding, knowledge, safety, planning, validation, reporting, intelligence, verification, wrappers)
 
 
 ## [3.0.0] - 2026-11-03
