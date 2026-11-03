@@ -513,6 +513,15 @@ class LLM:
             self._last_request_stats.cache_creation_tokens = cache_creation_tokens
             self._last_request_stats.cost = cost
 
+            # v3.0.1: feed supervisor token budget (LLM10 hard-stop reads this)
+            try:
+                from exaaiagnt.agents.agent_supervisor import get_supervisor
+                _sup = get_supervisor()
+                if self.agent_id:
+                    _sup.record_tokens(self.agent_id, int(input_tokens or 0) + int(output_tokens or 0))
+            except Exception:
+                pass
+
             if cached_tokens > 0:
                 logger.info(f"Cache hit: {cached_tokens} cached tokens, {input_tokens} new tokens")
             if cache_creation_tokens > 0:

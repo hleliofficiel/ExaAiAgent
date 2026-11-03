@@ -78,6 +78,21 @@ def create_vulnerability_report(
                 content=content,
                 severity=severity,
             )
+            # v3.0.1: also persist unified report.json (build_report) next to legacy file
+            try:
+                from exaaiagnt.reporting import build_report
+                target = os.getenv("EXAAI_TARGET", "")
+                unified = build_report(target=target, findings=[report_data], run_name=getattr(tracer, "run_name", "") or "")
+                run_dir = None
+                try:
+                    run_dir = tracer.get_run_dir()  # type: ignore[attr-defined]
+                except Exception:
+                    run_dir = None
+                if run_dir is not None:
+                    import json as _json
+                    (run_dir / "report.json").write_text(_json.dumps(unified, indent=2))
+            except Exception:
+                pass
 
             return {
                 "success": True,

@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-3.0.1-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v3.0.0 Released!** Grounding, security hardening, and reporting overhaul. Focused on formatting Released standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
+> **🚀 v3.0.1 Released!** Grounding, security hardening, and reporting overhaul. Focused on formatting Released standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
 >
 > 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```

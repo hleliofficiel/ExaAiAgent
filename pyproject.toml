@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "exaai-agent"
-version = "3.0.0"
+version = "3.0.1"
 description = "ExaAi - Advanced AI Security Agent for Comprehensive Penetration Testing"
 authors = ["ExaAi Team <mahmedhleli@gmail.com>"]
 readme = "README.md"
