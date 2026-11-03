@@ -105,13 +105,9 @@ class DockerRuntime(AbstractRuntime):
                 self._tool_server_port = tool_server_port
                 self._tool_server_token = tool_server_token
 
-                # Mount kubeconfig if available
+                # v3 SEC: do NOT mount host ~/.kube into sandbox (cluster creds must not cross trust boundary).
+                # K8s scanning must run with scoped, expiring creds injected per-run, not host creds.
                 volumes = {}
-                kube_config = os.path.expanduser("~/.kube")
-                if os.path.exists(kube_config):
-                    volumes[kube_config] = {"bind": "/root/.kube", "mode": "ro"}
-                    # Also mount for pentester user
-                    volumes[kube_config] = {"bind": "/home/pentester/.kube", "mode": "ro"}
 
                 container = self.client.containers.run(
                     EXAAI_IMAGE,
@@ -120,11 +116,13 @@ class DockerRuntime(AbstractRuntime):
                     name=container_name,
                     hostname=f"exaai-scan-{scan_id}",
                     ports={
-                        f"{caido_port}/tcp": caido_port,
-                        f"{tool_server_port}/tcp": tool_server_port,
+                        f"127.0.0.1:{caido_port}/tcp": caido_port,
+                        f"127.0.0.1:{tool_server_port}/tcp": tool_server_port,
                     },
                     volumes=volumes,
-                    cap_add=["NET_ADMIN", "NET_RAW"],
+                    cap_add=["NET_ADMIN"],  # v3: NET_RAW dropped (raw sockets not needed by default tools)
+                    security_opt=["no-new-privileges:true"],
+                    pids_limit=512,
                     labels={"exaai-scan-id": scan_id},
                     environment={
                         "PYTHONUNBUFFERED": "1",

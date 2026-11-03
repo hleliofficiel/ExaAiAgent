@@ -246,7 +246,7 @@ class ProxyManager:
                 data=body or None,
                 proxies=self.proxies,
                 timeout=timeout,
-                verify=False,
+                verify=os.getenv('EXAAI_CA_BUNDLE') or os.getenv('REQUESTS_CA_BUNDLE') or True,  # v3: verify by default; set EXAAI_CA_BUNDLE for Caido CA
             )
             response_time = int((time.time() - start_time) * 1000)
 
@@ -383,7 +383,7 @@ class ProxyManager:
                 data=request_data["body"] or None,
                 proxies=self.proxies,
                 timeout=30,
-                verify=False,
+                verify=os.getenv('EXAAI_CA_BUNDLE') or os.getenv('REQUESTS_CA_BUNDLE') or True,  # v3: verify by default; set EXAAI_CA_BUNDLE for Caido CA
             )
             response_time = int((time.time() - start_time) * 1000)
 

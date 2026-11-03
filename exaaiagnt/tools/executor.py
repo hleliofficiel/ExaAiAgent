@@ -17,14 +17,28 @@ from .registry import (
 )
 
 
+async def _record_evidence(tool_name, result, agent_state, kwargs):
+    try:
+        from exaaiagnt.grounding import EvidenceStore
+        agent_id = getattr(agent_state, "agent_id", "unknown") if agent_state else "unknown"
+        iteration = getattr(agent_state, "iteration", 0) if agent_state else 0
+        rec = EvidenceStore.instance().record(tool_name, result, agent_id=agent_id, iteration=iteration, args=kwargs)
+        if agent_state is not None and hasattr(agent_state, "add_observation"):
+            agent_state.add_observation({"tool": tool_name, "evidence_id": rec.evidence_id})
+        return rec.evidence_id
+    except Exception:
+        return None
+
 async def execute_tool(tool_name: str, agent_state: Any | None = None, **kwargs: Any) -> Any:
     execute_in_sandbox = should_execute_in_sandbox(tool_name)
     sandbox_mode = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
 
     if execute_in_sandbox and not sandbox_mode:
-        return await _execute_tool_in_sandbox(tool_name, agent_state, **kwargs)
-
-    return await _execute_tool_locally(tool_name, agent_state, **kwargs)
+        result = await _execute_tool_in_sandbox(tool_name, agent_state, **kwargs)
+    else:
+        result = await _execute_tool_locally(tool_name, agent_state, **kwargs)
+    await _record_evidence(tool_name, result, agent_state, kwargs)
+    return result
 
 
 async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: Any) -> Any:

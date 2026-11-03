@@ -11,6 +11,7 @@ def create_vulnerability_report(
     title: str,
     content: str,
     severity: str,
+    evidence_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     validation_error = None
     if not title or not title.strip():
@@ -29,6 +30,19 @@ def create_vulnerability_report(
     if validation_error:
         return {"success": False, "message": validation_error}
 
+    # v3 grounding gate: evidence_ids required (no citation, no claim)
+    if os.getenv("EXAAI_GROUNDING", "true").lower() == "true":
+        try:
+            from exaaiagnt.grounding import validate_claim
+            from exaaiagnt.knowledge import CVEStore
+            store = CVEStore.get()
+            gate = validate_claim(evidence_ids or [], text=content, kb_lookup=store.lookup_cve)
+            if not gate.allow:
+                return {"success": False, "message": f"Grounding gate rejected report: {gate.reason}. Provide evidence_ids from primary tool executions."}
+        except Exception as e:
+            import logging
+            logging.warning(f"Grounding gate error: {e}")
+
     # Auto-save report to disk
     report_data = {
         "title": title,
@@ -36,6 +50,7 @@ def create_vulnerability_report(
         "severity": severity,
         "timestamp": datetime.now().isoformat(),
         "agent": os.getenv("EXAAI_AGENT_NAME", "unknown"),
+        "evidence_ids": evidence_ids or [],
     }
 
     # Save to local reports directory

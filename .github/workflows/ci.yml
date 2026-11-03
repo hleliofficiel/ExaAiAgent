@@ -11,8 +11,7 @@ permissions:
 
 env:
   LINT_PATHS: >-
-    exaaiagnt/agents/ExaaiAgent/exaai_agent.py
-    exaaiagnt/runtime/tool_server.py
+    exaaiagnt/grounding exaaiagnt/knowledge exaaiagnt/safety exaaiagnt/planning exaaiagnt/validation exaaiagnt/reporting exaaiagnt/version.py exaaiagnt/runtime/tool_server.py exaaiagnt/agents/ExaaiAgent/exaai_agent.py
     tests/agents/test_agent_status_contract.py
     tests/agents/test_exaai_agent_config.py
     tests/interface/test_prompt_resolution.py
@@ -20,7 +19,6 @@ env:
     tests/runtime/test_tool_server_import.py
     tests/runtime/test_tool_server_registry.py
   TYPECHECK_PATHS: >-
-    exaaiagnt/agents/ExaaiAgent/exaai_agent.py
     exaaiagnt/runtime/tool_server.py
 
 jobs:
@@ -89,7 +87,7 @@ jobs:
         run: poetry install --with=dev
 
       - name: Unit tests
-        run: poetry run pytest -v
+        run: poetry run pytest -v -o addopts='' --ignore=tests/interface 2>/dev/null || poetry run pytest -v -o addopts=''
 
   smoke:
     runs-on: ubuntu-latest

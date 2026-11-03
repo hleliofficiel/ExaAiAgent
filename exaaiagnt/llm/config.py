@@ -66,6 +66,12 @@ class LLMConfig:
             os.getenv("LLM_RATE_LIMIT_CONCURRENT", "5")
         )
 
+        # v3 grounding / safety
+        self.grounding_enabled = os.getenv("EXAAI_GROUNDING", "true").lower() == "true"
+        self.confidence_threshold = float(os.getenv("EXAAI_CONFIDENCE_THRESHOLD", "0.85"))
+        self.strict_scope = os.getenv("EXAAI_STRICT_SCOPE", "true").lower() == "true"
+        self.kb_version = os.getenv("EXAAI_KB_VERSION", "2026.11.03+seed")
+
         # Fallback models for resilience
         fallback_env = os.getenv("EXAAI_FALLBACK_MODELS", "")
         self.fallback_models = [m.strip() for m in fallback_env.split(",") if m.strip()]

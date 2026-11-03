@@ -293,8 +293,8 @@ class LLM:
         if identity_message:
             messages.append(identity_message)
 
-        compressed_history = list(self.memory_compressor.compress_history(conversation_history))
-
+        compressed_history = list(self.memory_compressor.compress_history(list(conversation_history)))
+        # v3: do not mutate caller history in-place on retry path; keep a copy for fallback
         conversation_history.clear()
         conversation_history.extend(compressed_history)
         messages.extend(compressed_history)

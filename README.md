@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.6-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-3.0.0-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **🚀 v2.3.2 Released!** Focused on formatting Released standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
+> **🚀 v3.0.0 Released!** Grounding, security hardening, and reporting overhaul. Focused on formatting Released standards, K8s scanner tooling execution enhancements, telemetry data persistence checks, and more accurate agent operation documentation.
 >
 > 🤖 **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
 > ```
@@ -26,6 +26,16 @@
 > ```
 
 ---
+
+## 🔥 What's New in v3.0.0
+
+- **Anti-hallucination grounding:** every tool result gets an `evidence_id` (EvidenceStore); `create_vulnerability_report` requires `evidence_ids` — no citation, no claim. Invented CVEs are rejected against the pinned CVE KB (`cve_lookup`, `cve_match`, `cve_exposure_check`).
+- **Safety:** target scope enforced in code (`TargetScope`), argv allowlist command guard, no host `~/.kube` mount into sandbox, tool-server ports bound to `127.0.0.1`, `no-new-privileges`, dropped `NET_RAW`, compare_digest token check, 630s tool timeout, async-tool support.
+- **Planning:** persisted attack graph (`AttackGraph`) with prerequisite tracking and deterministic chain suggestions.
+- **Validation:** deterministic confidence scoring (`conf-v1`) + false-positive rules (dedup key, XSS/version-disclosure caps).
+- **Reporting v3:** unified `report.json` + SARIF/CSV, dedup, severity normalization, CWE/OWASP fields (`--output-format`, `--output-dir`).
+- **Version single-sourced** from package metadata (`exaaiagnt/version.py`); OWASP Top 10:2025 mapping docs.
+- 31 registered tools + 58 prompt modules (prompt-only modules marked as such).
 
 ## 🔥 What's New in v2.3.2
 
@@ -141,7 +151,7 @@ export EXAAI_LLM="anthropic/claude-sonnet-4-5"
 export LLM_API_KEY="your-anthropic-key"
 
 # Option 3: OpenRouter (access multiple models)
-export EXAAI_LLM="openIntelligence
+export EXAAI_LLM="openrouter/openai/gpt-5"
 export LLM_API_KEY="your-openrouter-key"
 export LLM_API_BASE="https://openrouter.ai/api/v1"
 
