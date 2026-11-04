@@ -1,0 +1,48 @@
+<owasp_llm_top10_2025_guide>
+<title>OWASP Top 10 for LLM Applications 2025 - Prompt Hardening</title>
+
+<critical>The OWASP Top 10 for LLM Applications (2025) maps practical hardening checks for LLM-integrated features. Treat target-side model behaviour as untrusted until evidenced. Do not invent model, provider, version, or capability claims; test only in authorized scope and report evidence-backed observations.</critical>
+
+<scope>
+- LLM01 Prompt Injection: direct and indirect instruction override via user input, documents, web content, tool output
+- LLM02 Sensitive Disclosure: leakage of secrets, personal data, internal data, or configuration through responses
+- LLM03 Supply Chain: untrusted models, data, plugins, dependencies, or third-party APIs in the LLM pipeline
+- LLM04 Data and Model Poisoning: corrupted training, fine-tuning, or retrieval data influencing outputs
+- LLM05 Improper Output Handling: unsafe model output rendered or executed without validation or encoding
+- LLM06 Excessive Agency: over-permissive tools, autonomy, or side effects granted to the model
+- LLM07 System Prompt Leakage: disclosure of system/developer prompts or hidden instructions
+- LLM08 Vector and Embedding Weaknesses: insecure retrieval, embeddings, or vector-store access control
+- LLM09 Misinformation: hallucinated or ungrounded output presented as fact, including false vulnerability claims
+- LLM10 Unbounded Consumption: missing rate limits, quotas, timeouts, or cost controls enabling denial of service
+</scope>
+
+<methodology>
+1. Inventory LLM surfaces: chat, completion, summarization, code, search/RAG, agents, and tool-calling endpoints within scope.
+2. For each LLM01-LLM10 item, map the control expected (input boundary, output filter, least-privilege tool, rate limit) and the evidence that would prove it present or absent.
+3. Probe prompt injection with benign canary phrases first; record exact request/response pairs as evidence. Never exfiltrate real secrets found in scope - report presence and exposure path only.
+4. Test output handling by checking whether model output is encoded, validated, or executed (for example rendered HTML, shell, or SQL) before reaching a sink.
+5. Test agency by attempting disallowed tool calls in a safe, reversible way; confirm denial or approval gates.
+6. Test consumption controls with low-volume, authorized checks only (headers, error responses, documented limits); do not perform load or cost-exhaustion testing.
+7. For RAG/vector (LLM08), check tenant isolation and retrieval authorization with two in-scope test objects; never access another tenant's real data.
+</methodology>
+
+<grounding_rules>
+- Every claim must cite evidence from a primary tool execution (status code, header, tool output, or response body excerpt).
+- Absence of a control is a finding only when the test that would have triggered it was executed and its result recorded.
+- Do not state a CVE, version, or CVSS from memory; use cve_lookup/cve_match and cite the resolved record.
+- Distinguish model behaviour, application control failure, and infrastructure exposure; they have different owners and fixes.
+</grounding_rules>
+
+<checklist>
+- [ ] LLM01: indirect injection via fetched content does not override instructions
+- [ ] LLM02: responses do not disclose secrets, PII, or internal configuration
+- [ ] LLM03: model/plugin/dependency provenance is pinned and verified
+- [ ] LLM04: retrieval/fine-tuning sources are trusted and integrity-checked
+- [ ] LLM05: model output is validated/encoded before HTML, shell, or query sinks
+- [ ] LLM06: tools are least-privilege with human approval for destructive actions
+- [ ] LLM07: system prompt extraction attempts fail without disclosure
+- [ ] LLM08: vector store enforces per-tenant isolation and authorization
+- [ ] LLM09: factual claims are grounded or explicitly hedged; no invented citations
+- [ ] LLM10: rate limits, timeouts, token and cost quotas are enforced
+</checklist>
+</owasp_llm_top10_2025_guide>

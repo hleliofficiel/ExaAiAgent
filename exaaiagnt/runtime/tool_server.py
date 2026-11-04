@@ -6,7 +6,6 @@ import inspect
 import logging
 import os
 import secrets
-import queue as queue_module
 import signal
 import sys
 from multiprocessing import Process, Queue
@@ -78,11 +77,14 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
     root_logger.handlers = [null_handler]
     root_logger.setLevel(logging.CRITICAL)
 
-    import exaaiagnt.tools as _registered_tools  # Force tool registration in sandbox workers
+    import exaaiagnt.tools as _registered_tools  # noqa: PLC0415  # Force tool registration
 
     _ = _registered_tools
-    from exaaiagnt.tools.argument_parser import ArgumentConversionError, convert_arguments
-    from exaaiagnt.tools.registry import get_tool_by_name, get_tool_names
+    from exaaiagnt.tools.argument_parser import (  # noqa: PLC0415
+        ArgumentConversionError,
+        convert_arguments,
+    )
+    from exaaiagnt.tools.registry import get_tool_by_name, get_tool_names  # noqa: PLC0415
 
     while True:
         try:
@@ -111,7 +113,8 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
                 converted_kwargs = convert_arguments(tool_func, kwargs)
                 result = tool_func(**converted_kwargs)
                 if inspect.isawaitable(result):
-                    import asyncio as _asyncio
+                    import asyncio as _asyncio  # noqa: PLC0415
+
                     try:
                         _asyncio.get_running_loop()
                         result = _asyncio.new_event_loop().run_until_complete(result)
@@ -158,9 +161,11 @@ async def execute_tool(
     try:
         loop = asyncio.get_running_loop()
         try:
-            response = await asyncio.wait_for(loop.run_in_executor(None, lambda: response_queue.get(timeout=620)), timeout=630)
-        except asyncio.TimeoutError:
-            return ToolExecutionResponse(error='Tool execution timed out (630s)')
+            response = await asyncio.wait_for(
+                loop.run_in_executor(None, lambda: response_queue.get(timeout=620)), timeout=630
+            )
+        except TimeoutError:
+            return ToolExecutionResponse(error="Tool execution timed out (630s)")
 
         if "error" in response:
             return ToolExecutionResponse(error=response["error"])

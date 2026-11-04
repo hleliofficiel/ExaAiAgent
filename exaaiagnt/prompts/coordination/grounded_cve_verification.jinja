@@ -1,0 +1,38 @@
+<grounded_cve_verification_guide>
+<title>Grounded CVE Verification</title>
+
+<critical>A CVE claim without evidence is a hallucination risk, not a finding. Verify every CVE against the fingerprinted version of the target using the pinned knowledge base. No invented CVE IDs, versions, or CVSS scores - ever.</critical>
+
+<scope>
+- Version fingerprinting: headers, banners, error pages, JS bundles, and package metadata that reveal component and version
+- CVE matching: resolving a fingerprint to CVE records via cve_lookup / cve_match against the pinned KB
+- Applicability: whether the vulnerable version range includes the fingerprinted version and the component is reachable
+</scope>
+
+<methodology>
+1. Fingerprint first: collect version evidence from primary sources only (HTTP headers, body content, tool output). Record the exact evidence_id and the observed string.
+2. Match second: call cve_match (or cve_lookup) with the fingerprinted component and version. Never state a CVE ID from memory or from web search alone.
+3. Verify applicability: confirm the fingerprinted version falls in the CVE's affected range, and check whether the component is actually present/reachable in the target.
+4. Record the full grounding tuple per CVE claim:
+   - evidence_id: the primary evidence record supporting the fingerprint
+   - fingerprint: component name + observed version (exact string from evidence)
+   - references: CVE record references returned by the KB lookup (advisory URLs, IDs)
+5. If the KB has no matching record, report "no matching CVE in pinned KB" - do not substitute a CVE from memory or training data.
+6. Version disclosure alone is an informational observation, never a CVE finding. A CVE finding requires steps 1-4.
+</methodology>
+
+<grounding_rules>
+- Every CVE, version, and CVSS claim must resolve in the pinned KB via cve_lookup/cve_match.
+- Evidence chain per claim: evidence_id + fingerprint + references. Missing any element means the claim is unverified.
+- Web search and model memory cannot confirm a CVE; they can only suggest what to look up.
+- When evidence conflicts (for example a header vs a bundle version), report both evidence_ids and mark the claim disputed.
+</grounding_rules>
+
+<checklist>
+- [ ] Version obtained from primary evidence with evidence_id recorded
+- [ ] CVE resolved via cve_match/cve_lookup, not memory
+- [ ] Affected version range includes the fingerprinted version
+- [ ] Component reachability assessed
+- [ ] Grounding tuple complete: evidence_id + fingerprint + references
+</checklist>
+</grounded_cve_verification_guide>

@@ -28,6 +28,7 @@ class SmartFuzzer:
 ```python
 import threading
 
+
 class SmartFuzzer:
     _instance = None
     _lock = threading.Lock()

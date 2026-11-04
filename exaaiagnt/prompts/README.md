@@ -17,7 +17,7 @@ When an agent is created, it can load up to 5 specialized prompt modules relevan
 create_agent(
     task="Test authentication mechanisms in API",
     name="Auth Specialist",
-    prompt_modules="authentication_jwt,business_logic,api_security"
+    prompt_modules="authentication_jwt,business_logic,api_security",
 )
 ```
 
@@ -50,6 +50,10 @@ The modules are dynamically injected into the agent's system prompt, allowing it
 | `api_security` | REST, GraphQL, gRPC API security testing |
 | `cloud_security` | AWS, Azure, GCP security assessment |
 | `kubernetes_security` | **NEW!** K8s RBAC, Pod Security, Network Policy audit |
+| `owasp_llm_top10_2025` | OWASP Top 10 for LLM Applications 2025 - prompt hardening (LLM01-LLM10) |
+| `supply_chain_sbom_triage` | SBOM / dependency triage with reachability and integrity checks |
+| `exceptional_conditions_fail_open` | Exceptional conditions and fail-open vs fail-closed error handling |
+| `grounded_cve_verification` | Grounded CVE verification requiring evidence_id + fingerprint + references |
 | `prompt_injection` | **NEW!** AI/LLM prompt injection & jailbreaking |
 | `reconnaissance_osint` | Reconnaissance and OSINT techniques |
 | `privilege_escalation` | Linux/Windows privilege escalation |
@@ -68,6 +72,7 @@ The modules are dynamically injected into the agent's system prompt, allowing it
 | **`/protocols`** | Protocol testing (GraphQL, WebSocket, OAuth) |
 | **`/cloud`** | Cloud security (AWS, Azure, GCP, Kubernetes) |
 | **`/reconnaissance`** | Information gathering and enumeration |
+| **`/coordination`** | Coordination and recovery modules (planner, reporting, runtime recovery, exceptional conditions, grounded CVE verification) |
 | **`/custom`** | Community-contributed modules |
 
 ---

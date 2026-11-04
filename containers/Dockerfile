@@ -49,8 +49,8 @@ RUN apt-get update && \
     iproute2 iputils-ping netcat-traditional socat proxychains4 \
     # Kubernetes tools
     kubectl \
-    # Node.js
-    nodejs npm pipx \
+    # Node.js (pinned to LTS 22 - see .nvmrc)
+    pipx \
     # System
     libcap2-bin gdb tmux \
     # Browser dependencies
@@ -166,6 +166,11 @@ RUN pipx install arjun && \
     pipx install bandit && \
     pipx install mitmproxy && \
     pipx install xsstrike || true
+
+# Node.js LTS 22 (pinned - see .nvmrc)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    node --version && npm --version
 
 # ============================================
 # NPM TOOLS

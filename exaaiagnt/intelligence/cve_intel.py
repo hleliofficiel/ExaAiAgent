@@ -1,11 +1,14 @@
 """CVE Intelligence Pipeline: join pinned KB with EPSS + CISA KEV + OSV, provenance-stamped. No invented data: unknown stays unknown."""
+
 from __future__ import annotations
 from datetime import UTC, datetime
 from pydantic import BaseModel, Field
 from exaaiagnt.intelligence.feeds import fetch_epss, fetch_kev, fetch_osv
 
+
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
 
 class IntelRecord(BaseModel):
     cve_id: str
@@ -20,7 +23,10 @@ class IntelRecord(BaseModel):
     sources: dict = Field(default_factory=dict)
     fetched_at: str = Field(default_factory=_now)
 
-def combine_priority_score(epss: float | None, percentile: float | None, kev: bool, cvss: float | None) -> float:
+
+def combine_priority_score(
+    epss: float | None, percentile: float | None, kev: bool, cvss: float | None
+) -> float:
     """KEV overrides (patch-now, like BOD), else EPSS percentile dominates, CVSS breaks ties. Scale 0-100, documented + tested."""
     if kev:
         return 100.0
@@ -29,8 +35,10 @@ def combine_priority_score(epss: float | None, percentile: float | None, kev: bo
         p += max(0.0, min(10.0, cvss)) * 0.5
     return round(max(0.0, min(100.0, p)), 2)
 
+
 class CVEIntelPipeline:
     """Offline-safe: every network call is best-effort; on failure fields stay None/False with sources noting the error. Never invents."""
+
     def __init__(self, kev_cache: dict | None = None):
         self._kev: dict | None = kev_cache
 
@@ -39,7 +47,9 @@ class CVEIntelPipeline:
             self._kev = fetch_kev()
         return self._kev
 
-    def enrich(self, cve_ids: list[str], cvss_by_cve: dict[str, float | None] | None = None) -> dict[str, IntelRecord]:
+    def enrich(
+        self, cve_ids: list[str], cvss_by_cve: dict[str, float | None] | None = None
+    ) -> dict[str, IntelRecord]:
         cvss_by_cve = cvss_by_cve or {}
         ep = fetch_epss(cve_ids)
         kev = self.kev()
@@ -50,10 +60,21 @@ class CVEIntelPipeline:
             epss = e.get("epss") if isinstance(e, dict) else None
             pct = e.get("percentile") if isinstance(e, dict) else None
             kev_hit = bool(k)
-            out[cid] = IntelRecord(cve_id=cid, epss_score=epss, epss_percentile=pct, kev_listed=kev_hit,
-                kev_date_added=k.get("date_added", ""), kev_ransomware_use=k.get("ransomware_use", ""),
+            out[cid] = IntelRecord(
+                cve_id=cid,
+                epss_score=epss,
+                epss_percentile=pct,
+                kev_listed=kev_hit,
+                kev_date_added=k.get("date_added", ""),
+                kev_ransomware_use=k.get("ransomware_use", ""),
                 priority_score=combine_priority_score(epss, pct, kev_hit, cvss_by_cve.get(cid)),
-                sources={"epss": "FIRST EPSS API" + (f" ({e.get('date','')})" if isinstance(e, dict) and e.get("date") else ""), "kev": "CISA KEV" + (f" v{kev.get('catalogVersion','')}" if kev_hit else ""), "kev_error": kev.get("error", "") if isinstance(kev, dict) else ""})
+                sources={
+                    "epss": "FIRST EPSS API"
+                    + (f" ({e.get('date', '')})" if isinstance(e, dict) and e.get("date") else ""),
+                    "kev": "CISA KEV" + (f" v{kev.get('catalogVersion', '')}" if kev_hit else ""),
+                    "kev_error": kev.get("error", "") if isinstance(kev, dict) else "",
+                },
+            )
         return out
 
     def osv_for_package(self, package: str, ecosystem: str, version: str) -> list[dict]:

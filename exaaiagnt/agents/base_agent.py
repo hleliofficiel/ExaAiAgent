@@ -229,12 +229,15 @@ class BaseAgent(metaclass=AgentMeta):
                 # v3.0.1: global token budget hard-stop (LLM10)
                 try:
                     from exaaiagnt.agents.agent_supervisor import get_supervisor as _gs
+
                     _sup = _gs()
                     _usage = _sup.get_token_usage(self.state.agent_id)
                     _budget = int(getattr(self.llm_config, "max_scan_tokens", 2000000) or 2000000)
                     if _usage.get("used", 0) >= _budget:
                         logger.warning("Token budget exceeded; stopping agent")
-                        self.state.set_completed({"success": False, "error": "token_budget_exceeded"})
+                        self.state.set_completed(
+                            {"success": False, "error": "token_budget_exceeded"}
+                        )
                         return self.state.final_result or {}
                 except Exception:
                     pass

@@ -1,0 +1,37 @@
+<exceptional_conditions_fail_open_guide>
+<title>Exceptional Conditions and Fail-Open Error Handling</title>
+
+<critical>Security controls must fail closed. When a guard, verifier, or dependency errors, times out, or returns malformed data, the safe default is deny, not allow. Test exceptional paths deliberately - they are where authorization and validation are most often bypassed.</critical>
+
+<scope>
+- Fail-open vs fail-closed: auth checks, scope checks, WAF/guard decisions, schema validation, and rate limiters under error conditions
+- Error handling: stack traces, SQL errors, and internal details leaked in 5xx responses or logs
+- Timeout and partial failure: downstream or tool timeouts that silently skip a check
+- Malformed input: wrong types, oversized payloads, null/empty values, and encoding edge cases reaching security checks
+- Degraded mode: feature flags, caches, or fallback providers that relax controls when a dependency is down
+</scope>
+
+<methodology>
+1. Identify security decisions in the flow: authentication, authorization, input validation, and guardrail checks. Note the expected deny behaviour for each.
+2. Trigger exceptional conditions safely in scope: malformed types, oversized or empty payloads, missing optional fields, and expired tokens/sessions.
+3. Observe and record the response: status code, error body, and whether the protected action was allowed or denied. Capture exact request/response pairs as evidence.
+4. Where a dependency timeout is testable, use the lowest-impact trigger available (for example a slow in-scope endpoint) and never induce outages against shared infrastructure.
+5. Check 5xx responses for internal detail leakage (paths, queries, library versions); record excerpts, redacting secrets.
+6. Classify each result: fail-closed (pass), fail-open (finding), information leakage (finding), or untestable (state why).
+</methodology>
+
+<grounding_rules>
+- A fail-open claim requires the exact exceptional input and the observed allow result as evidence.
+- Do not assume a control exists because it is documented; only executed tests count.
+- Distinguish application fail-open from proxy/WAF fail-open; cite which layer allowed the request.
+- Rate-limit or availability testing must stay low-volume and within authorized scope.
+</grounding_rules>
+
+<checklist>
+- [ ] Malformed/oversized/empty inputs are rejected, not bypassed
+- [ ] Expired or missing credentials fail closed
+- [ ] 5xx responses leak no internal paths, queries, or secrets
+- [ ] Dependency timeout does not skip authorization or validation
+- [ ] Degraded/fallback mode preserves security controls
+</checklist>
+</exceptional_conditions_fail_open_guide>

@@ -358,15 +358,31 @@ Examples:
         choices=["json", "sarif", "csv", "html", "md"],
         help="Unified report format (v3).",
     )
-    parser.add_argument("--output-dir", type=str, default="exaai_runs", help="Directory for unified report.")
-    parser.add_argument("--severity-threshold", type=str, default="info", choices=["critical","high","medium","low","info"])
-    parser.add_argument("--timeout", type=int, default=0, help="Scan timeout seconds (0 = default).")
+    parser.add_argument(
+        "--output-dir", type=str, default="exaai_runs", help="Directory for unified report."
+    )
+    parser.add_argument(
+        "--severity-threshold",
+        type=str,
+        default="info",
+        choices=["critical", "high", "medium", "low", "info"],
+    )
+    parser.add_argument(
+        "--timeout", type=int, default=0, help="Scan timeout seconds (0 = default)."
+    )
     parser.add_argument("--max-agents", type=int, default=0)
     parser.add_argument("--list-modules", action="store_true", help="List prompt modules and exit.")
-    parser.add_argument("--dry-run", action="store_true", help="Validate config and exit without scanning.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate config and exit without scanning."
+    )
     parser.add_argument("--resume", type=str, default=None, help="Resume a previous run directory.")
-    parser.add_argument("--legacy-report", action="store_true", help="Use legacy per-finding ./reports/*.json (deprecated in v3).")
-    parser.add_argument("--run-name",
+    parser.add_argument(
+        "--legacy-report",
+        action="store_true",
+        help="Use legacy per-finding ./reports/*.json (deprecated in v3).",
+    )
+    parser.add_argument(
+        "--run-name",
         type=str,
         help="Custom name for this penetration test run",
     )

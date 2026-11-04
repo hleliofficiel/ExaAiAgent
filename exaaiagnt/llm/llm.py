@@ -293,7 +293,9 @@ class LLM:
         if identity_message:
             messages.append(identity_message)
 
-        compressed_history = list(self.memory_compressor.compress_history(list(conversation_history)))
+        compressed_history = list(
+            self.memory_compressor.compress_history(list(conversation_history))
+        )
         # v3: do not mutate caller history in-place on retry path; keep a copy for fallback
         conversation_history.clear()
         conversation_history.extend(compressed_history)
@@ -516,9 +518,12 @@ class LLM:
             # v3.0.1: feed supervisor token budget (LLM10 hard-stop reads this)
             try:
                 from exaaiagnt.agents.agent_supervisor import get_supervisor
+
                 _sup = get_supervisor()
                 if self.agent_id:
-                    _sup.record_tokens(self.agent_id, int(input_tokens or 0) + int(output_tokens or 0))
+                    _sup.record_tokens(
+                        self.agent_id, int(input_tokens or 0) + int(output_tokens or 0)
+                    )
             except Exception:
                 pass
 

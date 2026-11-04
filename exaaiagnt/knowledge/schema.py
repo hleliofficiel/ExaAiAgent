@@ -1,11 +1,16 @@
 from __future__ import annotations
+
 from pydantic import BaseModel, Field
+
+
 class ProductRange(BaseModel):
     vendor: str = ""
     product: str = ""
     version_start: str | None = None
     version_end: str | None = None
     fixed_in: str | None = None
+
+
 class CVERecord(BaseModel):
     cve_id: str
     aliases: list[str] = Field(default_factory=list)
@@ -26,6 +31,8 @@ class CVERecord(BaseModel):
     exploit_verified: bool = False
     record_hash: str = ""
     kb_snapshot_id: str = ""
+
+
 class KnowledgeManifest(BaseModel):
     kb_version: str = "2026.11.03+seed-v3.0.1"
     snapshot_date: str = "2026-11-03"

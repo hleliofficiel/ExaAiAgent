@@ -120,7 +120,9 @@ class DockerRuntime(AbstractRuntime):
                         f"127.0.0.1:{tool_server_port}/tcp": tool_server_port,
                     },
                     volumes=volumes,
-                    cap_add=["NET_ADMIN"],  # v3: NET_RAW dropped (raw sockets not needed by default tools)
+                    cap_add=[
+                        "NET_ADMIN"
+                    ],  # v3: NET_RAW dropped (raw sockets not needed by default tools)
                     security_opt=["no-new-privileges:true"],
                     pids_limit=512,
                     labels={"exaai-scan-id": scan_id},
