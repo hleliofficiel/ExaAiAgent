@@ -157,8 +157,11 @@ def test_wrapper_argv_allowlist_and_graceful_missing():
             pass
         else:  # pragma: no cover
             raise AssertionError("unknown flag must be rejected")
-    assert hk.run_httpx("https://example.com")["error"] in {
+    httpx_result = hk.run_httpx("https://example.com")
+    # httpx may be installed in some environments (CI) - success has error=None
+    assert httpx_result["error"] is None or httpx_result["error"] in {
         "httpx_not_installed",
         "timeout",
         "run_failed",
     }
+    assert "success" in httpx_result
