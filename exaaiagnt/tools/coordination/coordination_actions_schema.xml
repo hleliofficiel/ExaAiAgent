@@ -1,0 +1,97 @@
+<tools>
+  <tool name="coordination_save_state">
+    <description>Persist the multi-agent RunState to disk so a run can resume.</description>
+    <parameters>
+      <parameter name="run_id" type="string" required="false">
+        <description>Run identifier (default: default)</description>
+      </parameter>
+      <parameter name="task" type="string" required="false">
+        <description>Current task description stored on the state</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing success, run_id and path</description>
+    </returns>
+  </tool>
+  <tool name="coordination_load_state">
+    <description>Load persisted RunState: status, completed tasks, queue and depth.</description>
+    <parameters></parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing the stored state summary</description>
+    </returns>
+  </tool>
+  <tool name="coordination_enqueue_task">
+    <description>Enqueue a task; depth above 8 is rejected to bound decomposition.</description>
+    <parameters>
+      <parameter name="task_id" type="string" required="true">
+        <description>Task identifier</description>
+      </parameter>
+      <parameter name="title" type="string" required="false">
+        <description>Human readable title</description>
+      </parameter>
+      <parameter name="priority" type="integer" required="false">
+        <description>Priority, lower runs first</description>
+      </parameter>
+      <parameter name="depth" type="integer" required="false">
+        <description>Decomposition depth</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing success and queue size</description>
+    </returns>
+  </tool>
+  <tool name="coordination_mark_task_complete">
+    <description>Mark a task id as completed in the persistent RunState.</description>
+    <parameters>
+      <parameter name="task_id" type="string" required="true">
+        <description>Task identifier to complete</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing completed task ids</description>
+    </returns>
+  </tool>
+  <tool name="coordination_budget_check">
+    <description>Check token, cost and tool-call budgets against configured caps.</description>
+    <parameters>
+      <parameter name="tokens_used" type="integer" required="false">
+        <description>Tokens consumed so far</description>
+      </parameter>
+      <parameter name="cost_usd" type="number" required="false">
+        <description>Spend so far in USD</description>
+      </parameter>
+      <parameter name="tool_calls" type="integer" required="false">
+        <description>Tool calls made so far</description>
+      </parameter>
+      <parameter name="max_tokens" type="integer" required="false">
+        <description>Maximum tokens allowed</description>
+      </parameter>
+      <parameter name="max_cost_usd" type="number" required="false">
+        <description>Maximum spend allowed in USD</description>
+      </parameter>
+      <parameter name="max_tool_calls" type="integer" required="false">
+        <description>Maximum tool calls allowed</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing exhausted flag and remaining budget</description>
+    </returns>
+  </tool>
+  <tool name="coordination_stuck_check">
+    <description>Classify an agent from heartbeat vs activity age.</description>
+    <parameters>
+      <parameter name="agent_id" type="string" required="true">
+        <description>Agent identifier</description>
+      </parameter>
+      <parameter name="seconds_since_heartbeat" type="number" required="false">
+        <description>Seconds since last heartbeat</description>
+      </parameter>
+      <parameter name="seconds_since_activity" type="number" required="false">
+        <description>Seconds since last activity (iteration/tool call)</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing healthy/alive_but_stuck/dead/suspect status</description>
+    </returns>
+  </tool>
+</tools>

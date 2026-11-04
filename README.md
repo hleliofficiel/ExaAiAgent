@@ -127,13 +127,19 @@ exaai --target https://your-app.com
 
 ExaAiAgent agents come equipped with a comprehensive security testing toolkit:
 
-- **Full HTTP Proxy** - Request/response manipulation and analysis
+- **Full HTTP Proxy** - Request/response manipulation and analysis; captured traffic exports to HAR (`exaaiagnt/tools/har_io.py`: `import_har`/`export_har`) and records evidence for the grounding gate
+- **Proxy linkage** - Tools declare `proxy_required`/`allowed_prompt_modules`/`blocked` in the registry manifest; the executor enforces scope, blocklist, and proxy requirements before execution (`exaaiagnt/tools/registry.py`, `exaaiagnt/tools/proxy_env.py`, `exaaiagnt/tools/executor.py`)
+- **Blocklist enforcement** - Blocked paths, modules, and URL segments are denied with `ScopeDecision` evidence from the executor, command guard, and proxy manager (`exaaiagnt/safety/blocklist.py`)
+- **Tool manifest** - `get_tool_manifest` / `tools_for_prompt_module` expose per-tool manifest fields for prompt scoping and auditing
 - **Browser Automation** - Multi-tab browser for XSS, CSRF, auth flows
+- **Browser JS analysis** - Offline DOM XSS, postMessage origin, Service Worker, and JS bundle endpoint/secret extraction (`exaaiagnt/tools/browser_js_analysis.py`: `analyze_browser_js`, `analyze_js_bundle`)
 - **Terminal Environments** - Interactive shells for command execution
 - **Python Runtime** - Custom exploit development and validation
 - **Reconnaissance** - Automated OSINT and attack surface mapping
 - **Code Analysis** - Static and dynamic analysis capabilities
 - **API Fuzzing** - Advanced REST/GraphQL API testing
+- **Coordination** - Persistent `RunState` save/load/resume, task queue with bounded depth, token/cost budgets, and heartbeat-vs-activity stuck detection, exposed as `coordination_*` tools (`exaaiagnt/coordination/state.py`, `exaaiagnt/tools/coordination/`)
+- **LLM/MCP/RAG tests** - Offline OWASP LLM Top 10 (2025) checkers: prompt-injection detection, system-prompt/secret leak detection, MCP server manifest audit, RAG provenance and cross-tenant checks, exposed as `audit_mcp_manifest_tool`, `detect_prompt_injection_tool`, `evaluate_rag_corpus_tool`, `harden_finding_text_tool` (`exaaiagnt/llm_tests/mcp_rag.py`, `exaaiagnt/tools/llm_tests/`)
 
 ###  Comprehensive Vulnerability Detection
 
@@ -158,6 +164,9 @@ Advanced multi-agent orchestration for comprehensive security testing:
 - **Distributed Workflows** - Specialized agents for different attacks
 - **Scalable Testing** - Parallel execution for fast coverage
 - **Dynamic Coordination** - Agents collaborate and share discoveries
+- **Persistent coordination state** - `RunState` save/load/resume, bounded task queue, budget guard, and stuck detection via `coordination_*` tools (`exaaiagnt/coordination/state.py`)
+- **Verification hardening** - `verify_finding` downgrades a would-be `confirmed` finding to `suspected` on high-severity injection, secret leak, or cross-tenant RAG evidence; reports carry additive `hardening` metadata
+- **MCP manifest audit** - `audit_mcp_manifest_tool` audits an MCP server manifest for broad permissions, dangerous tools, injection, and missing auth/timeout
 
 ---
 

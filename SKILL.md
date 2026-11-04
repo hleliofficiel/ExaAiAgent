@@ -131,6 +131,10 @@ poetry run exaai --version
 - **Prompt modules (63):** including OWASP LLM Top 10 2025, supply-chain/SBOM triage, exceptional-conditions fail-open, grounded CVE verification.
 - **Data persistence:** `chat_messages.json`, `run_metadata.json`, `agents.json`, `tool_executions.json` in `exaai_runs/<run-name>`.
 - **Kubernetes scanner:** native K8s assessment with reporting; `@register_tool` only on tool functions, never on classes.
+- **Proxy linkage and blocklist:** tools declare `proxy_required`/`allowed_prompt_modules`/`blocked` in the registry manifest; the executor, command guard, and proxy manager enforce scope and blocklist denials with `ScopeDecision` evidence. `get_tool_manifest` / `tools_for_prompt_module` expose the manifest.
+- **HAR and browser JS:** captured proxy traffic imports/exports as HAR (`exaaiagnt/tools/har_io.py`) with evidence recording; offline browser/JS analysis covers DOM XSS, postMessage origin, Service Workers, and bundle endpoints/secrets (`exaaiagnt/tools/browser_js_analysis.py`).
+- **Coordination:** persistent `RunState` save/load/resume, bounded task queue, token/cost budgets, and heartbeat-vs-activity stuck detection via `coordination_*` tools (`exaaiagnt/coordination/state.py`).
+- **LLM/MCP/RAG tests:** OWASP LLM Top 10 (2025) offline checkers with an MCP manifest audit entrypoint (`audit_mcp_manifest_tool`), prompt-injection and leak detection, and RAG provenance/cross-tenant checks (`exaaiagnt/llm_tests/mcp_rag.py`). Verification hardening downgrades `confirmed` findings on high-severity injection, secret leak, or cross-tenant RAG evidence.
 
 
   ## Architecture Overview

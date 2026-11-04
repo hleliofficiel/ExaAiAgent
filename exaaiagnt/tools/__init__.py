@@ -79,13 +79,15 @@ HAS_PERPLEXITY_API = bool(os.getenv("PERPLEXITY_API_KEY"))
 if not SANDBOX_MODE:
     from .agents_graph import *  # noqa: F403
     from .browser import *  # noqa: F403
+    from .coordination import *  # noqa: F403
     from .file_edit import *  # noqa: F403
     from .finish import *  # noqa: F403
+    from .knowledge import *  # noqa: F403
+    from .llm_tests import *  # noqa: F403
     from .notes import *  # noqa: F403
     from .proxy import *  # noqa: F403
     from .python import *  # noqa: F403
     from .reporting import *  # noqa: F403
-    from .knowledge import *  # noqa: F403
     from .terminal import *  # noqa: F403
     from .thinking import *  # noqa: F403
 
@@ -96,8 +98,10 @@ else:
     # wait, report completion, and exchange messages with parents.
     from .agents_graph import *  # noqa: F403
     from .browser import *  # noqa: F403
+    from .coordination import *  # noqa: F403
     from .file_edit import *  # noqa: F403
     from .finish import *  # noqa: F403
+    from .llm_tests import *  # noqa: F403
     from .notes import *  # noqa: F403
     from .proxy import *  # noqa: F403
     from .python import *  # noqa: F403

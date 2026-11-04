@@ -1,8 +1,16 @@
-"""CVE Intelligence feeds: FIRST EPSS, CISA KEV, OSV.dev. All free, no API keys (GitHub token optional for GHSA)."""
+# ruff: noqa: S310 - fixed https feed URLs only, best-effort with timeout
+"""CVE Intelligence feeds: FIRST EPSS, CISA KEV, OSV.dev.
+
+All free, no API keys (GitHub token optional for GHSA).
+"""
 
 from __future__ import annotations
-import json, urllib.request, urllib.parse, urllib.error
-from datetime import UTC, datetime
+
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
+
 
 EPSS_URL = "https://api.first.org/data/v1/epss"
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
@@ -17,7 +25,10 @@ def _get_json(url: str, timeout: int = 15) -> dict:
 
 
 def fetch_epss(cve_ids: list[str], timeout: int = 15) -> dict[str, dict]:
-    """Return {CVE: {epss, percentile, date}} for the given CVEs (batched, <= 50 per call by EPSS docs practice)."""
+    """Return {CVE: {epss, percentile, date}} for the given CVEs.
+
+    Batched, <= 50 per call by EPSS docs practice.
+    """
     out: dict[str, dict] = {}
     cves = [c.strip().upper() for c in (cve_ids or []) if c and c.strip()]
     for i in range(0, len(cves), 50):
@@ -31,16 +42,16 @@ def fetch_epss(cve_ids: list[str], timeout: int = 15) -> dict[str, dict]:
                     "percentile": float(row.get("percentile", 0) or 0),
                     "date": row.get("date", ""),
                 }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - best-effort feed, error recorded in result
             out[f"_error_batch_{i}"] = {"error": str(e)}
     return out
 
 
 def fetch_kev(timeout: int = 15) -> dict:
-    """Return {'count': int, 'cves': {CVE: {...kev fields...}}, 'catalogVersion': str, 'dateReleased': str}."""
+    """Return count, cves dict, catalogVersion and dateReleased."""
     try:
         data = _get_json(KEV_URL, timeout=timeout)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - best-effort feed
         return {"count": 0, "cves": {}, "error": str(e)}
     cves: dict[str, dict] = {}
     for v in data.get("vulnerabilities", []):
@@ -63,7 +74,7 @@ def fetch_kev(timeout: int = 15) -> dict:
 
 
 def fetch_osv(package: str, ecosystem: str, version: str, timeout: int = 15) -> list[dict]:
-    """Query OSV.dev for a package/version. Returns vuln dicts (id, summary, aliases, severity...)."""
+    """Query OSV.dev for a package/version. Returns vuln dicts."""
     if not package or not ecosystem or not version:
         return []
     body = json.dumps(
@@ -77,7 +88,7 @@ def fetch_osv(package: str, ecosystem: str, version: str, timeout: int = 15) -> 
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
-    except Exception:
+    except Exception:  # noqa: BLE001 - best-effort feed
         return []
     return data.get("vulns", []) or []
 
@@ -96,5 +107,5 @@ def fetch_ghsa(ghsa_id: str, token: str | None = None, timeout: int = 15) -> dic
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8", "replace"))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - best-effort feed
         return {"error": str(e)}

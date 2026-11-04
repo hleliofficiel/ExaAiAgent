@@ -49,16 +49,43 @@ def create_vulnerability_report(
             logging.warning(f"Grounding gate error: {e}")
 
     # v3.0.1: confidence scoring + FP rules
-    confidence_val = 0.0; confidence_band = "suspected"
+    confidence_val = 0.0
+    confidence_band = "suspected"
     try:
         from exaaiagnt.validation import ConfidenceFeatures, score_confidence
         from exaaiagnt.validation import max_band_for
-        feats = ConfidenceFeatures(evidence_class="data_sample" if (evidence_ids or []) else "none", repeatable_runs=2 if (evidence_ids or []) else 0, total_runs=2 if (evidence_ids or []) else 1)
+
+        feats = ConfidenceFeatures(
+            evidence_class="data_sample" if (evidence_ids or []) else "none",
+            repeatable_runs=2 if (evidence_ids or []) else 0,
+            total_runs=2 if (evidence_ids or []) else 1,
+        )
         sc = score_confidence(feats)
         confidence_val, confidence_band = sc.score, sc.band
-        capped = max_band_for("xss", has_execution_context=False) if "xss" in title.lower() else "confirmed"
-        if capped == "suspected" and confidence_band == "confirmed": confidence_band = "suspected"
-    except Exception: pass
+        capped = (
+            max_band_for("xss", has_execution_context=False)
+            if "xss" in title.lower()
+            else "confirmed"
+        )
+        if capped == "suspected" and confidence_band == "confirmed":
+            confidence_band = "suspected"
+    except Exception:
+        pass
+
+    # v3.0.1: LLM hardening metadata (additive; never blocks the report)
+    hardening_meta: dict = {}
+    try:
+        from exaaiagnt.verification.hardening import harden_finding_text
+
+        _h = harden_finding_text(content or "")
+        hardening_meta = {
+            "clean": _h["clean"],
+            "injection": _h["injection"].is_injection,
+            "leak": _h["leak"].is_leak,
+            "manipulation": _h["manipulation"].is_suspicious,
+        }
+    except Exception:  # noqa: BLE001, S110 - hardening is best-effort metadata
+        pass
 
     # Auto-save report to disk
     report_data = {
@@ -70,6 +97,7 @@ def create_vulnerability_report(
         "evidence_ids": evidence_ids or [],
         "confidence": confidence_val,
         "confidence_band": confidence_band,
+        "hardening": hardening_meta,
     }
 
     # Save to local reports directory

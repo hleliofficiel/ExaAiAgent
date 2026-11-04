@@ -1,8 +1,14 @@
-"""CVE Intelligence Pipeline: join pinned KB with EPSS + CISA KEV + OSV, provenance-stamped. No invented data: unknown stays unknown."""
+"""CVE Intelligence Pipeline: join pinned KB with EPSS + CISA KEV + OSV.
+
+Provenance-stamped. No invented data: unknown stays unknown.
+"""
 
 from __future__ import annotations
+
 from datetime import UTC, datetime
+
 from pydantic import BaseModel, Field
+
 from exaaiagnt.intelligence.feeds import fetch_epss, fetch_kev, fetch_osv
 
 
@@ -27,7 +33,10 @@ class IntelRecord(BaseModel):
 def combine_priority_score(
     epss: float | None, percentile: float | None, kev: bool, cvss: float | None
 ) -> float:
-    """KEV overrides (patch-now, like BOD), else EPSS percentile dominates, CVSS breaks ties. Scale 0-100, documented + tested."""
+    """KEV overrides (patch-now, like BOD), else EPSS percentile dominates.
+
+    CVSS breaks ties. Scale 0-100, documented + tested.
+    """
     if kev:
         return 100.0
     p = (percentile or 0.0) * 100.0 * 0.7 + (epss or 0.0) * 30.0
@@ -37,7 +46,11 @@ def combine_priority_score(
 
 
 class CVEIntelPipeline:
-    """Offline-safe: every network call is best-effort; on failure fields stay None/False with sources noting the error. Never invents."""
+    """Offline-safe: every network call is best-effort.
+
+    On failure fields stay None/False with sources noting the error.
+    Never invents.
+    """
 
     def __init__(self, kev_cache: dict | None = None):
         self._kev: dict | None = kev_cache

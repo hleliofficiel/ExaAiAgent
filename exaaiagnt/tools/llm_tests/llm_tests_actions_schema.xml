@@ -1,0 +1,49 @@
+<tools>
+  <tool name="audit_mcp_manifest_tool">
+    <description>Audit an MCP server manifest for risky declarations.</description>
+    <parameters>
+      <parameter name="manifest" type="object" required="true">
+        <description>MCP manifest dict: name, version, permissions, tools, instructions, auth, timeout_s</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing pass flag and findings with OWASP LLM ids</description>
+    </returns>
+  </tool>
+  <tool name="detect_prompt_injection_tool">
+    <description>Detect prompt-injection markers in text (LLM01 heuristic).</description>
+    <parameters>
+      <parameter name="text" type="string" required="true">
+        <description>Text to scan</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing is_injection, markers, score and severity</description>
+    </returns>
+  </tool>
+  <tool name="evaluate_rag_corpus_tool">
+    <description>Check RAG corpus provenance and cross-tenant isolation.</description>
+    <parameters>
+      <parameter name="request_tenant" type="string" required="true">
+        <description>Tenant the request belongs to</description>
+      </parameter>
+      <parameter name="docs" type="array" required="false">
+        <description>Retrieved document dicts with source, tenant_id, content</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing clean flag, findings and leak count</description>
+    </returns>
+  </tool>
+  <tool name="harden_finding_text_tool">
+    <description>Run injection, leak and manipulation checks over finding text.</description>
+    <parameters>
+      <parameter name="text" type="string" required="true">
+        <description>Finding text to harden</description>
+      </parameter>
+    </parameters>
+    <returns type="Dict[str, Any]">
+      <description>Response containing clean flag and per-check booleans</description>
+    </returns>
+  </tool>
+</tools>
