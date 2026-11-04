@@ -1,0 +1,2 @@
+# Finding Verification Pipeline
+`exaaiagnt/verification/pipeline.py`: Hypothesis -> Evidence Collection (EvidenceStore `ev_*`) -> Independent Verification (named tool/agent check) -> Confidence Assessment (`conf-v1`) -> Final Finding (`confirmed`/`suspected`/`false_positive`). A finding can never be confirmed from language alone. `LLM_RISK_MAP` documents OWASP LLM Top 10:2025 controls (principal separation, least privilege, no secrets in prompts, immutable KB, bounded consumption).

@@ -30,6 +30,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Label, Static, TextArea, Tree
 from textual.widgets.tree import TreeNode
 
+from exaaiagnt.version import __version__
 from exaaiagnt.agents.ExaaiAgent import ExaaiAgent
 from exaaiagnt.interface.utils import build_live_stats_text
 from exaaiagnt.llm.config import LLMConfig
@@ -45,7 +46,7 @@ def get_package_version() -> str:
         return pkg_version("exaai-agent")
     except PackageNotFoundError:
         # Fallback version if package not installed
-        return "2.2.6"
+        return __version__
 
 
 class ChatTextArea(TextArea):  # type: ignore[misc]
@@ -80,7 +81,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
 
-    # Enhanced ASCII Logo - ExaAi v2.2.6
+    # Enhanced ASCII Logo - ExaAi v3.0.1
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
@@ -104,7 +105,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         self._animation_step = 0
         self._animation_timer: Timer | None = None
         self._panel_static: Static | None = None
-        self._version = "2.2.6"
+        self._version = __version__
 
     def compose(self) -> ComposeResult:
         self._version = get_package_version()
@@ -191,7 +192,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v2.2.6."""
+        """Build new features highlight for v3.0.1."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
         text.append("Recon Engine", style=Style(color=self.NEON_PINK))

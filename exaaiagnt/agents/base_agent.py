@@ -80,6 +80,8 @@ class BaseAgent(metaclass=AgentMeta):
         with contextlib.suppress(Exception):
             self.llm.set_agent_identity(self.agent_name, self.state.agent_id)
         self._current_task: asyncio.Task[Any] | None = None
+        self._consecutive_errors: int = 0
+        self._max_consecutive_errors: int = 5
 
         from exaaiagnt.telemetry.tracer import get_global_tracer
 
@@ -224,7 +226,23 @@ class BaseAgent(metaclass=AgentMeta):
                 self.state.add_message("user", final_warning_msg)
 
             try:
+                # v3.0.1: global token budget hard-stop (LLM10)
+                try:
+                    from exaaiagnt.agents.agent_supervisor import get_supervisor as _gs
+
+                    _sup = _gs()
+                    _usage = _sup.get_token_usage(self.state.agent_id)
+                    _budget = int(getattr(self.llm_config, "max_scan_tokens", 2000000) or 2000000)
+                    if _usage.get("used", 0) >= _budget:
+                        logger.warning("Token budget exceeded; stopping agent")
+                        self.state.set_completed(
+                            {"success": False, "error": "token_budget_exceeded"}
+                        )
+                        return self.state.final_result or {}
+                except Exception:
+                    pass
                 should_finish = await self._process_iteration(tracer)
+                self._consecutive_errors = 0
                 if should_finish:
                     if self.non_interactive:
                         self.state.set_completed({"success": True})
@@ -448,8 +466,15 @@ class BaseAgent(metaclass=AgentMeta):
         error_msg = f"Error in iteration {self.state.iteration}: {error!s}"
         logger.exception(error_msg)
         self.state.add_error(error_msg)
+        self._consecutive_errors += 1
         if tracer:
             tracer.update_agent_status(self.state.agent_id, "error")
+        # v3.0.1 circuit breaker: stop burning iterations on identical fatal failures
+        if self._consecutive_errors >= self._max_consecutive_errors:
+            self.state.set_completed({"success": False, "error": f"circuit_breaker: {error_msg}"})
+            if tracer:
+                tracer.update_agent_status(self.state.agent_id, "failed", "circuit_breaker")
+            return False
         return True
 
     def _check_agent_messages(self, state: AgentState) -> None:  # noqa: PLR0912

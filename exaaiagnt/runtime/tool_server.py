@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import inspect
 import logging
 import os
+import secrets
 import signal
 import sys
 from multiprocessing import Process, Queue
@@ -47,7 +49,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if credentials.credentials != EXPECTED_TOKEN:
+    if not EXPECTED_TOKEN or not secrets.compare_digest(credentials.credentials, EXPECTED_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
@@ -75,10 +77,13 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
     root_logger.handlers = [null_handler]
     root_logger.setLevel(logging.CRITICAL)
 
-    import exaaiagnt.tools as _registered_tools  # Force tool registration in sandbox workers
+    import exaaiagnt.tools as _registered_tools  # Force tool registration
 
     _ = _registered_tools
-    from exaaiagnt.tools.argument_parser import ArgumentConversionError, convert_arguments
+    from exaaiagnt.tools.argument_parser import (
+        ArgumentConversionError,
+        convert_arguments,
+    )
     from exaaiagnt.tools.registry import get_tool_by_name, get_tool_names
 
     while True:
@@ -107,6 +112,14 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
 
                 converted_kwargs = convert_arguments(tool_func, kwargs)
                 result = tool_func(**converted_kwargs)
+                if inspect.isawaitable(result):
+                    import asyncio as _asyncio
+
+                    try:
+                        _asyncio.get_running_loop()
+                        result = _asyncio.new_event_loop().run_until_complete(result)
+                    except RuntimeError:
+                        result = _asyncio.run(result)
 
                 response_queue.put({"result": result})
 
@@ -146,8 +159,13 @@ async def execute_tool(
     request_queue.put({"tool_name": request.tool_name, "kwargs": request.kwargs})
 
     try:
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(None, response_queue.get)
+        loop = asyncio.get_running_loop()
+        try:
+            response = await asyncio.wait_for(
+                loop.run_in_executor(None, lambda: response_queue.get(timeout=620)), timeout=630
+            )
+        except TimeoutError:
+            return ToolExecutionResponse(error="Tool execution timed out (630s)")
 
         if "error" in response:
             return ToolExecutionResponse(error=response["error"])

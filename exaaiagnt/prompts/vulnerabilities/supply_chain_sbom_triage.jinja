@@ -1,0 +1,36 @@
+<supply_chain_sbom_triage_guide>
+<title>Supply-Chain / SBOM Triage</title>
+
+<critical>Dependency and artifact risk is only as good as the inventory behind it. Triage from a real SBOM (CycloneDX, SPDX, or lockfile-derived) and pinned package metadata - never from memory of what a project "probably" uses. Flag reachable, exploitable paths over raw CVE counts.</critical>
+
+<scope>
+- SBOM completeness: manifests, lockfiles, containers, vendored code, and build-time tools
+- Dependency risk: known vulnerabilities, unmaintained packages, typosquatting, abandoned or single-maintainer critical paths
+- Artifact integrity: registry provenance, signed artifacts, reproducible builds, pinned versions vs floating ranges
+- Runtime exposure: which vulnerable components are actually shipped, loaded, or reachable in the target
+</scope>
+
+<methodology>
+1. Locate inventory sources in scope: lockfiles (poetry.lock, package-lock.json), image manifests, and any existing SBOM files. If none exist, record that as the first gap.
+2. Parse the SBOM/lockfile with a tool (for example `trivy`, `syft`, `pip-audit`, `npm audit`, or `osv-scanner`); capture tool name, version, and scan timestamp as evidence.
+3. For each flagged component, record: name, pinned version, source (registry/URL), and the CVE record resolved via cve_lookup/cve_match - never a CVE ID from memory.
+4. Score reachability: is the component imported/loaded at runtime, exposed in the container image, or only a build/dev dependency? Downgrade unreachable items, keep them listed.
+5. Check integrity signals: lockfile committed and in sync with manifest, hashes present, private registry or mirror pinning, signature verification where available.
+6. Prioritize remediation: exploitable + reachable + internet-facing first; then unmaintained critical dependencies; then hygiene (floating ranges, missing lockfile).
+</methodology>
+
+<grounding_rules>
+- Every CVE claim requires evidence_id, fingerprint (component name + pinned version), and references from the resolved KB record.
+- A scanner finding without a pinned version is a lead, not a finding.
+- Dev/build-only dependencies are lower priority than runtime-reachable ones; do not inflate severity.
+- If no SBOM or lockfile exists in scope, state that explicitly instead of inferring the dependency tree.
+</grounding_rules>
+
+<checklist>
+- [ ] SBOM or lockfile located and parsed; tool and timestamp recorded
+- [ ] Each CVE maps to a pinned component version via cve_match
+- [ ] Runtime reachability assessed per component
+- [ ] Integrity checks (hashes, signatures, lockfile sync) verified
+- [ ] Remediation order reflects exploitability and reachability
+</checklist>
+</supply_chain_sbom_triage_guide>

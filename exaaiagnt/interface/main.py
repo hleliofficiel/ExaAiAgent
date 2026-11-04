@@ -17,6 +17,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+from exaaiagnt.version import __version__
 from exaaiagnt.interface.cli import run_cli
 from exaaiagnt.interface.tui import run_tui
 from exaaiagnt.interface.utils import (
@@ -261,7 +262,7 @@ async def warm_up_llm() -> None:
 
 def get_version() -> str:
     """Get the current ExaAi version."""
-    return "2.2.6"
+    return __version__
 
 
 def resolve_prompt_modules(args: argparse.Namespace) -> list[str] | None:
@@ -346,6 +347,39 @@ Examples:
         type=str,
         help="Comma-separated list of prompt modules to load (e.g., 'kubernetes_security,prompt_injection'). "
         "Overrides auto-detection.",
+    )
+    parser.add_argument("--profile", type=str, default=None, help="v3: profile")
+    parser.add_argument("--mode", type=str, default=None, help="v3: mode")
+    parser.add_argument("--no-pull", type=str, default=None, help="v3: no pull")
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        default="json",
+        choices=["json", "sarif", "csv", "html", "md"],
+        help="Unified report format (v3).",
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default="exaai_runs", help="Directory for unified report."
+    )
+    parser.add_argument(
+        "--severity-threshold",
+        type=str,
+        default="info",
+        choices=["critical", "high", "medium", "low", "info"],
+    )
+    parser.add_argument(
+        "--timeout", type=int, default=0, help="Scan timeout seconds (0 = default)."
+    )
+    parser.add_argument("--max-agents", type=int, default=0)
+    parser.add_argument("--list-modules", action="store_true", help="List prompt modules and exit.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate config and exit without scanning."
+    )
+    parser.add_argument("--resume", type=str, default=None, help="Resume a previous run directory.")
+    parser.add_argument(
+        "--legacy-report",
+        action="store_true",
+        help="Use legacy per-finding ./reports/*.json (deprecated in v3).",
     )
     parser.add_argument(
         "--run-name",

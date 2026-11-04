@@ -1,0 +1,5 @@
+<tools>
+  <tool name="cve_lookup"><description>Lookup CVE in pinned KB; invented IDs return found=false.</description><parameters><parameter name="cve_id" type="string" required="true"><description>CVE ID</description></parameter></parameters></tool>
+  <tool name="cve_match"><description>Match product to CVEs in pinned KB (requires fingerprint).</description><parameters><parameter name="product" type="string" required="true"><description>Product name</description></parameter><parameter name="version" type="string" required="false"><description>Version</description></parameter></parameters></tool>
+  <tool name="cve_exposure_check"><description>Check exposure: KB record + version evidence join.</description><parameters><parameter name="product" type="string" required="true"><description>Product</description></parameter><parameter name="version" type="string" required="false"><description>Version</description></parameter><parameter name="evidence_id" type="string" required="false"><description>Evidence id</description></parameter></parameters></tool>
+</tools>

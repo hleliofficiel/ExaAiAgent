@@ -17,14 +17,72 @@ from .registry import (
 )
 
 
+async def _record_evidence(tool_name, result, agent_state, kwargs):
+    try:
+        from exaaiagnt.grounding import EvidenceStore
+
+        agent_id = getattr(agent_state, "agent_id", "unknown") if agent_state else "unknown"
+        iteration = getattr(agent_state, "iteration", 0) if agent_state else 0
+        rec = EvidenceStore.instance().record(
+            tool_name, result, agent_id=agent_id, iteration=iteration, args=kwargs
+        )
+        if agent_state is not None and hasattr(agent_state, "add_observation"):
+            agent_state.add_observation({"tool": tool_name, "evidence_id": rec.evidence_id})
+        return rec.evidence_id
+    except Exception:
+        return None
+
+
 async def execute_tool(tool_name: str, agent_state: Any | None = None, **kwargs: Any) -> Any:
+    _scope_check(tool_name, kwargs)
     execute_in_sandbox = should_execute_in_sandbox(tool_name)
     sandbox_mode = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
 
     if execute_in_sandbox and not sandbox_mode:
-        return await _execute_tool_in_sandbox(tool_name, agent_state, **kwargs)
+        result = await _execute_tool_in_sandbox(tool_name, agent_state, **kwargs)
+    else:
+        result = await _execute_tool_locally(tool_name, agent_state, **kwargs)
+    await _record_evidence(tool_name, result, agent_state, kwargs)
+    return result
 
-    return await _execute_tool_locally(tool_name, agent_state, **kwargs)
+
+def _scope_check(tool_name: str, kwargs: dict) -> None:
+    """Enforce TargetScope when configured (EXAAI_TARGETS). No-op in tests without env."""
+    import os
+
+    targets_env = os.getenv("EXAAI_TARGETS", "")
+    if not targets_env:
+        return
+    try:
+        from exaaiagnt.safety import TargetScope
+
+        scope = TargetScope.from_targets(
+            [t.strip() for t in targets_env.split(",") if t.strip()], strict=True
+        )
+        # URL-ish args
+        for k in ("url", "target", "host", "endpoint"):
+            v = kwargs.get(k)
+            if isinstance(v, str) and v:
+                if "://" in v:
+                    d = scope.check_url(v)
+                    if not d.allow:
+                        raise ValueError(f"SCOPE_DENY {k}: {d.reason}")
+                else:
+                    d = scope.check_host(v)
+                    if not d.allow:
+                        raise ValueError(f"SCOPE_DENY {k}: {d.reason}")
+        # command args
+        cmd = kwargs.get("command")
+        if isinstance(cmd, str) and cmd:
+            from exaaiagnt.safety import guard_command
+
+            d = guard_command(cmd, scope)
+            if not d.allow:
+                raise ValueError(f"COMMAND_DENY: {d.reason}")
+    except ValueError:
+        raise
+    except Exception:
+        return  # fail-open on guard errors is worse; but do not break tools if safety import fails in minimal envs
 
 
 async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: Any) -> Any:
@@ -62,25 +120,33 @@ async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: A
         "Content-Type": "application/json",
     }
 
-    async with httpx.AsyncClient(trust_env=False) as client:
+    import asyncio as _asyncio
+
+    last_exc: Exception | None = None
+    for attempt in range(3):
         try:
-            response = await client.post(
-                request_url,
-                json=request_data,
-                headers=headers,
-                timeout=600.0,  # 10 min max
-            )
-            response.raise_for_status()
-            response_data = response.json()
-            if response_data.get("error"):
-                raise RuntimeError(f"Sandbox execution error: {response_data['error']}")
-            return response_data.get("result")
+            async with httpx.AsyncClient(trust_env=False) as client:
+                response = await client.post(
+                    request_url, json=request_data, headers=headers, timeout=600.0
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                if response_data.get("error"):
+                    raise RuntimeError(f"Sandbox execution error: {response_data['error']}")
+                return response_data.get("result")
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 raise RuntimeError("Authentication failed: Invalid or missing sandbox token") from e
-            raise RuntimeError(f"HTTP error calling tool server: {e.response.status_code}") from e
+            last_exc = e
+            if e.response.status_code < 500:
+                raise RuntimeError(
+                    f"HTTP error calling tool server: {e.response.status_code}"
+                ) from e
         except httpx.RequestError as e:
-            raise RuntimeError(f"Request error calling tool server: {e}") from e
+            last_exc = e
+        if attempt < 2:
+            await _asyncio.sleep(2**attempt)
+    raise RuntimeError(f"Sandbox tool server unreachable after retries: {last_exc}") from last_exc
 
 
 async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwargs: Any) -> Any:
@@ -89,6 +155,9 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
         raise ValueError(f"Tool '{tool_name}' not found")
 
     converted_kwargs = convert_arguments(tool_func, kwargs)
+    import asyncio as _asyncio
+
+    _tool_timeout = float(os.getenv("EXAAI_TOOL_TIMEOUT", "120"))
 
     if needs_agent_state(tool_name):
         if agent_state is None:
@@ -100,7 +169,10 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
             # Run synchronous blocking tools in a separate thread
             import asyncio
 
-            result = await asyncio.to_thread(tool_func, agent_state=agent_state, **converted_kwargs)
+            result = await _asyncio.wait_for(
+                asyncio.to_thread(tool_func, agent_state=agent_state, **converted_kwargs),
+                timeout=_tool_timeout,
+            )
     # Check if the tool function is a coroutine (async)
     elif inspect.iscoroutinefunction(tool_func):
         result = await tool_func(**converted_kwargs)
@@ -108,7 +180,9 @@ async def _execute_tool_locally(tool_name: str, agent_state: Any | None, **kwarg
         # Run synchronous blocking tools in a separate thread
         import asyncio
 
-        result = await asyncio.to_thread(tool_func, **converted_kwargs)
+        result = await _asyncio.wait_for(
+            asyncio.to_thread(tool_func, **converted_kwargs), timeout=_tool_timeout
+        )
 
     return result
 

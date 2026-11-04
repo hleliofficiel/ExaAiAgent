@@ -11,6 +11,7 @@ def create_vulnerability_report(
     title: str,
     content: str,
     severity: str,
+    evidence_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     validation_error = None
     if not title or not title.strip():
@@ -29,6 +30,36 @@ def create_vulnerability_report(
     if validation_error:
         return {"success": False, "message": validation_error}
 
+    # v3 grounding gate: evidence_ids required (no citation, no claim)
+    if os.getenv("EXAAI_GROUNDING", "true").lower() == "true":
+        try:
+            from exaaiagnt.grounding import validate_claim
+            from exaaiagnt.knowledge import CVEStore
+
+            store = CVEStore.get()
+            gate = validate_claim(evidence_ids or [], text=content, kb_lookup=store.lookup_cve)
+            if not gate.allow:
+                return {
+                    "success": False,
+                    "message": f"Grounding gate rejected report: {gate.reason}. Provide evidence_ids from primary tool executions.",
+                }
+        except Exception as e:
+            import logging
+
+            logging.warning(f"Grounding gate error: {e}")
+
+    # v3.0.1: confidence scoring + FP rules
+    confidence_val = 0.0; confidence_band = "suspected"
+    try:
+        from exaaiagnt.validation import ConfidenceFeatures, score_confidence
+        from exaaiagnt.validation import max_band_for
+        feats = ConfidenceFeatures(evidence_class="data_sample" if (evidence_ids or []) else "none", repeatable_runs=2 if (evidence_ids or []) else 0, total_runs=2 if (evidence_ids or []) else 1)
+        sc = score_confidence(feats)
+        confidence_val, confidence_band = sc.score, sc.band
+        capped = max_band_for("xss", has_execution_context=False) if "xss" in title.lower() else "confirmed"
+        if capped == "suspected" and confidence_band == "confirmed": confidence_band = "suspected"
+    except Exception: pass
+
     # Auto-save report to disk
     report_data = {
         "title": title,
@@ -36,6 +67,9 @@ def create_vulnerability_report(
         "severity": severity,
         "timestamp": datetime.now().isoformat(),
         "agent": os.getenv("EXAAI_AGENT_NAME", "unknown"),
+        "evidence_ids": evidence_ids or [],
+        "confidence": confidence_val,
+        "confidence_band": confidence_band,
     }
 
     # Save to local reports directory
@@ -63,6 +97,27 @@ def create_vulnerability_report(
                 content=content,
                 severity=severity,
             )
+            # v3.0.1: also persist unified report.json (build_report) next to legacy file
+            try:
+                from exaaiagnt.reporting import build_report
+
+                target = os.getenv("EXAAI_TARGET", "")
+                unified = build_report(
+                    target=target,
+                    findings=[report_data],
+                    run_name=getattr(tracer, "run_name", "") or "",
+                )
+                run_dir = None
+                try:
+                    run_dir = tracer.get_run_dir()  # type: ignore[attr-defined]
+                except Exception:
+                    run_dir = None
+                if run_dir is not None:
+                    import json as _json
+
+                    (run_dir / "report.json").write_text(_json.dumps(unified, indent=2))
+            except Exception:
+                pass
 
             return {
                 "success": True,

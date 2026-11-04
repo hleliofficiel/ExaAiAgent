@@ -321,6 +321,72 @@ MODULE_PATTERNS = {
             "namespace",
         ],
     },
+    # OWASP Top 10 for LLM Applications 2025
+    "owasp_llm_top10_2025": {
+        "url_patterns": [
+            r"/chat",
+            r"/completions",
+            r"/generate",
+            r"/ask",
+            r"/ai",
+            r"/llm",
+            r"/v1/chat",
+            r"/v1/completions",
+            r"/assistant",
+        ],
+        "keywords": [
+            "owasp",
+            "llm",
+            "llm top 10",
+            "prompt injection",
+            "system prompt",
+            "rag",
+            "embedding",
+            "vector",
+        ],
+    },
+    # Supply-chain / SBOM triage
+    "supply_chain_sbom_triage": {
+        "url_patterns": [],
+        "keywords": [
+            "supply chain",
+            "supply-chain",
+            "sbom",
+            "cyclonedx",
+            "spdx",
+            "dependency",
+            "dependencies",
+            "lockfile",
+            "typosquatting",
+        ],
+    },
+    # Exceptional conditions / fail-open error handling
+    "exceptional_conditions_fail_open": {
+        "url_patterns": [],
+        "keywords": [
+            "fail open",
+            "fail-open",
+            "fail closed",
+            "fail-closed",
+            "exceptional",
+            "error handling",
+            "5xx",
+            "timeout",
+            "degraded",
+        ],
+    },
+    # Grounded CVE verification
+    "grounded_cve_verification": {
+        "url_patterns": [],
+        "keywords": [
+            "cve",
+            "verify cve",
+            "cve verification",
+            "grounded",
+            "fingerprint",
+            "evidence",
+        ],
+    },
     # AI/LLM Prompt Injection (NEW v2.1)
     "prompt_injection": {
         "url_patterns": [

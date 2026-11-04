@@ -58,7 +58,9 @@ htmlcov/
 .env.production.local
 
 # MongoDB
-data/
+/data/
+!exaaiagnt/knowledge/data/
+!exaaiagnt/knowledge/data/cves.jsonl
 mongod.log
 *.mongodb
 *.mongorc.js

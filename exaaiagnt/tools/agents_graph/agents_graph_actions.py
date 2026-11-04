@@ -189,11 +189,24 @@ def create_agent(
     agent_state: Any,
     task: str,
     name: str,
-    inherit_context: bool = True,
+    inherit_context: bool = False,
     prompt_modules: str | None = None,
 ) -> dict[str, Any]:
     try:
         parent_id = agent_state.agent_id
+        # v3.0.1: spawn cap (LLM10)
+        try:
+            import os as _os
+
+            _max_agents = int(_os.getenv("EXAAI_MAX_AGENTS", "8"))
+        except Exception:
+            _max_agents = 8
+        if len(_running_agents) >= _max_agents:
+            return {
+                "success": False,
+                "error": f"max_agents reached ({_max_agents}); wait or stop an agent first",
+                "agent_id": None,
+            }
 
         module_list = []
         if prompt_modules:

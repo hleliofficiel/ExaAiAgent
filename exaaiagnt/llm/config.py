@@ -66,6 +66,19 @@ class LLMConfig:
             os.getenv("LLM_RATE_LIMIT_CONCURRENT", "5")
         )
 
+        # v3 grounding / safety
+        self.grounding_enabled = os.getenv("EXAAI_GROUNDING", "true").lower() == "true"
+        self.confidence_threshold = float(os.getenv("EXAAI_CONFIDENCE_THRESHOLD", "0.85"))
+        self.strict_scope = os.getenv("EXAAI_STRICT_SCOPE", "true").lower() == "true"
+        self.kb_version = os.getenv("EXAAI_KB_VERSION", "2026.11.03+seed")
+        # v3.0.1 budgets (OWASP LLM10: Unbounded Consumption)
+        self.max_scan_tokens = int(os.getenv("EXAAI_MAX_SCAN_TOKENS", "2000000"))
+        self.max_tool_calls = int(os.getenv("EXAAI_MAX_TOOL_CALLS", "500"))
+        self.max_agents = int(os.getenv("EXAAI_MAX_AGENTS", "8"))
+        self.max_context_tokens = int(os.getenv("EXAAI_MAX_CONTEXT_TOKENS", "90000"))
+        self.summarizer_model = os.getenv("EXAAI_SUMMARIZER_MODEL", "")
+        self.tool_output_max_chars = int(os.getenv("EXAAI_TOOL_OUTPUT_MAX_CHARS", "8000"))
+
         # Fallback models for resilience
         fallback_env = os.getenv("EXAAI_FALLBACK_MODELS", "")
         self.fallback_models = [m.strip() for m in fallback_env.split(",") if m.strip()]

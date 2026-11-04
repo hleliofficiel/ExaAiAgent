@@ -1,0 +1,7 @@
+# Security
+
+## Supported versions
+
+Only the latest major release on `main` receives security fixes. Report a vulnerability via GitHub Security Advisories; maintainers aim to acknowledge reports within 7 days and coordinate disclosure before publication.
+
+Report vulnerabilities via GitHub Security Advisories. Scope: only test targets you own or have explicit authorization for. v3 sandbox: non-root intent, no-new-privileges, pids_limit, 127.0.0.1-bound tool-server ports, no host credential mounts, TLS verification on by default (set EXAAI_CA_BUNDLE for Caido CA).
