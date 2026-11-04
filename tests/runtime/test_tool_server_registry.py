@@ -2,7 +2,7 @@ from exaaiagnt.tools.registry import get_tool_names
 
 
 def test_tools_registry_is_populated_after_importing_tools() -> None:
-    import exaaiagnt.tools  # noqa: F401, PLC0415
+    import exaaiagnt.tools  # noqa: F401
 
     tool_names = get_tool_names()
 

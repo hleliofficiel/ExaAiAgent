@@ -86,7 +86,6 @@ def to_sarif(report: dict) -> dict:
 
 
 def to_csv(report: dict) -> str:
-
     buf = _io.StringIO()
     w = _csv.writer(buf)
     w.writerow(
