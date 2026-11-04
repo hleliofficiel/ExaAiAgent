@@ -104,6 +104,7 @@ def _run(binary: str, argv: list[str], timeout: int) -> dict[str, Any]:
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
     return {
         "success": r.returncode == 0,
+        "error": None,
         "count": len(lines),
         "lines": lines[:100],
         "stderr_tail": r.stderr[-1000:],
