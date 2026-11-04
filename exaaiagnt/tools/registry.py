@@ -96,14 +96,32 @@ def _get_module_name(func: Callable[..., Any]) -> str:
 
 
 def register_tool(
-    func: Callable[..., Any] | None = None, *, sandbox_execution: bool = True
+    func: Callable[..., Any] | None = None,
+    *,
+    sandbox_execution: bool = True,
+    allowed_prompt_modules: list[str] | tuple[str, ...] | None = None,
+    proxy_required: bool = False,
+    blocked: bool = False,
 ) -> Callable[..., Any]:
+    """Register a tool. Manifest fields are additive and backward compatible:
+
+    allowed_prompt_modules: prompt modules this tool may be used with
+        (None = unrestricted). proxy_required: tool must run via proxy env
+        (see exaaiagnt.tools.proxy_env). blocked: tool is deny-listed and
+        executor refuses it with ScopeDecision evidence.
+    """
+
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         func_dict = {
             "name": f.__name__,
             "function": f,
             "module": _get_module_name(f),
             "sandbox_execution": sandbox_execution,
+            "allowed_prompt_modules": (
+                list(allowed_prompt_modules) if allowed_prompt_modules else []
+            ),
+            "proxy_required": bool(proxy_required),
+            "blocked": bool(blocked),
         }
 
         sandbox_mode = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
@@ -166,6 +184,36 @@ def should_execute_in_sandbox(tool_name: str) -> bool:
         if tool.get("name") == tool_name:
             return bool(tool.get("sandbox_execution", True))
     return True
+
+
+def get_tool_manifest(tool_name: str) -> dict[str, Any] | None:
+    """Return the registry manifest entry for a tool (or None if unknown)."""
+    for tool in tools:
+        if tool.get("name") == tool_name:
+            return {
+                "name": tool.get("name"),
+                "module": tool.get("module"),
+                "sandbox_execution": bool(tool.get("sandbox_execution", True)),
+                "allowed_prompt_modules": list(tool.get("allowed_prompt_modules") or []),
+                "proxy_required": bool(tool.get("proxy_required", False)),
+                "blocked": bool(tool.get("blocked", False)),
+            }
+    return None
+
+
+def is_tool_blocked(tool_name: str) -> bool:
+    manifest = get_tool_manifest(tool_name)
+    return bool(manifest and manifest["blocked"])
+
+
+def tools_for_prompt_module(module_name: str) -> list[str]:
+    """Tools allowed under a prompt module (empty allowlist = unrestricted)."""
+    out = []
+    for tool in tools:
+        allowed = tool.get("allowed_prompt_modules") or []
+        if not allowed or module_name in allowed:
+            out.append(str(tool.get("name")))
+    return out
 
 
 def get_tools_prompt() -> str:

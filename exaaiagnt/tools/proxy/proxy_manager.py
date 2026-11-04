@@ -237,6 +237,27 @@ class ProxyManager:
     ) -> dict[str, Any]:
         if headers is None:
             headers = {}
+        # Blocked-path + scope enforcement with ScopeDecision evidence.
+        from exaaiagnt.safety.blocklist import check_blocked_url
+
+        blocked = check_blocked_url(url)
+        if not blocked.allow:
+            return {"error": "URL_DENY", "rule_id": blocked.rule_id, "detail": blocked.reason}
+        targets_env = os.getenv("EXAAI_TARGETS", "")
+        if targets_env:
+            from exaaiagnt.safety import TargetScope
+
+            scope = TargetScope.from_targets(
+                [t.strip() for t in targets_env.split(",") if t.strip()], strict=True
+            )
+            decision = scope.check_url(url)
+            if not decision.allow:
+                return {
+                    "error": "SCOPE_DENY",
+                    "rule_id": decision.rule_id,
+                    "detail": decision.reason,
+                    "host": decision.host,
+                }
         try:
             start_time = time.time()
             response = requests.request(

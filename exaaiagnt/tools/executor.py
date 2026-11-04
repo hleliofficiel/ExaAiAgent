@@ -47,9 +47,41 @@ async def execute_tool(tool_name: str, agent_state: Any | None = None, **kwargs:
 
 
 def _scope_check(tool_name: str, kwargs: dict) -> None:
-    """Enforce TargetScope when configured (EXAAI_TARGETS). No-op in tests without env."""
+    """Enforce TargetScope + blocked lists + tool manifest. No-op without env."""
     import os
 
+    from exaaiagnt.safety.blocklist import (
+        check_blocked_module,
+        check_blocked_path,
+        check_blocked_url,
+    )
+    from exaaiagnt.tools.registry import get_tool_manifest
+
+    manifest = get_tool_manifest(tool_name)
+    if manifest and manifest.get("blocked"):
+        raise ValueError(f"TOOL_BLOCKED {tool_name}: registry manifest blocked=true")
+    if manifest:
+        mod = check_blocked_module(manifest.get("module") or "")
+        if not mod.allow:
+            raise ValueError(f"MODULE_DENY {tool_name}: {mod.reason}")
+    # Blocked paths/urls apply regardless of TargetScope env.
+    for k in ("path", "file_path", "filename", "wordlist"):
+        v = kwargs.get(k)
+        if isinstance(v, str) and v:
+            d = check_blocked_path(v)
+            if not d.allow:
+                raise ValueError(f"PATH_DENY {k}: {d.reason}")
+    for k in ("url", "target", "host", "endpoint"):
+        v = kwargs.get(k)
+        if isinstance(v, str) and v and "://" in v:
+            d = check_blocked_url(v)
+            if not d.allow:
+                raise ValueError(f"URL_DENY {k}: {d.reason}")
+    if manifest and manifest.get("proxy_required"):
+        from exaaiagnt.tools.proxy_env import get_proxy_url
+
+        if not get_proxy_url():
+            raise ValueError(f"PROXY_REQUIRED {tool_name}: no proxy URL configured")
     targets_env = os.getenv("EXAAI_TARGETS", "")
     if not targets_env:
         return

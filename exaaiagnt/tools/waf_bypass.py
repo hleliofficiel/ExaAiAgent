@@ -306,6 +306,30 @@ class WAFBypass:
 
         return payloads
 
+    def strategy_signals(
+        self, detection: WAFDetectionResult
+    ) -> dict[str, Any]:
+        """Map WAF detection to fuzzer strategy switches (proxy-linked)."""
+        if not detection.detected:
+            return {
+                "boost_categories": [],
+                "prefer_encoding": [],
+                "waf_likely": False,
+                "proxy_recommended": False,
+                "waf_type": detection.waf_type.value,
+            }
+        encoding = ["double_url", "unicode", "case_variation"]
+        if detection.waf_type in (WAFType.AKAMAI, WAFType.IMPERVA):
+            encoding.append("json_smuggle")
+        return {
+            "boost_categories": ["sql_injection", "xss"],
+            "prefer_encoding": encoding,
+            "waf_likely": True,
+            "proxy_recommended": True,
+            "waf_type": detection.waf_type.value,
+            "confidence": detection.confidence,
+        }
+
     def get_bypass_headers(self, waf_type: WAFType = WAFType.UNKNOWN) -> dict[str, str]:
         """Get headers that may help bypass WAF."""
         headers = {

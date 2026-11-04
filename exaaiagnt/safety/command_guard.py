@@ -64,6 +64,7 @@ def guard_command(command: str, scope: TargetScope | None = None) -> ScopeDecisi
     cmd = (command or "").strip()
     if not cmd:
         return ScopeDecision(allow=False, rule_id="empty", reason="empty command")
+    # Central blocked-paths deny list via _deny_decision patterns.
     deny = _deny_decision(cmd, scope)
     if deny is not None:
         return deny
@@ -106,6 +107,11 @@ def guard_argv(argv: list[str], scope: TargetScope | None = None) -> ScopeDecisi
             allow=False, rule_id="unknown_binary", reason=f"binary {binary} not in argv allowlist"
         )
     joined = " ".join(argv)
+    from exaaiagnt.safety.blocklist import check_blocked_text
+
+    blocked = check_blocked_text(joined)
+    if not blocked.allow:
+        return blocked
     for pat in DENY_PATTERNS:
         if re.search(pat, joined):
             return ScopeDecision(allow=False, rule_id="denylist", reason=f"denied pattern {pat}")

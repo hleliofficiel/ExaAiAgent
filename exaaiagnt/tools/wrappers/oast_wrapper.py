@@ -13,6 +13,8 @@ import subprocess
 import uuid
 from typing import Any
 
+from exaaiagnt.tools.proxy_env import merge_env, proxy_env
+
 
 _TOKEN_RE = re.compile(r"^[a-zA-Z0-9-]{8,128}$")
 
@@ -60,7 +62,11 @@ def parse_interactsh_json(text: str) -> list[dict[str, Any]]:
 
 
 def poll_interactsh(
-    token: str | None = None, timeout: int = 30, oast_domain: str | None = None
+    token: str | None = None,
+    timeout: int = 30,
+    oast_domain: str | None = None,
+    proxy_url: str | None = None,
+    ca_bundle: str | None = None,
 ) -> dict[str, Any]:
     """Poll local interactsh-client once. Graceful when binary is absent."""
     if shutil.which("interactsh-client") is None:
@@ -71,7 +77,10 @@ def poll_interactsh(
         }
     argv = build_interactsh_argv(token=token, timeout=timeout, oast_domain=oast_domain)
     try:
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout + 30, check=False)  # noqa: S603
+        env = merge_env(proxy_env(proxy_url, ca_bundle))
+        r = subprocess.run(  # noqa: S603
+            argv, capture_output=True, text=True, timeout=timeout + 30, check=False, env=env
+        )
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "timeout", "argv": argv}
     except OSError as exc:
