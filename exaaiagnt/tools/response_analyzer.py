@@ -16,6 +16,8 @@ from difflib import SequenceMatcher
 from enum import Enum
 from typing import Any, Optional
 
+from exaaiagnt.tools.registry import register_tool
+
 
 logger = logging.getLogger(__name__)
 
@@ -300,3 +302,52 @@ def analyze_response(
     """Convenience function to analyze a response."""
     analyzer = get_response_analyzer()
     return analyzer.analyze(response_body, status_code, response_time_ms, headers)
+
+
+@register_tool(sandbox_execution=True)
+def analyze_http_response_tool(
+    response_body: str,
+    status_code: int = 200,
+    response_time_ms: float = 0.0,
+    headers_json: str | None = None,
+) -> dict[str, Any]:
+    """Analyze an HTTP response body for leakage/error patterns (no network I/O)."""
+    import json as _json
+
+    if response_body is None or len(response_body) > 200_000:
+        return {"success": False, "error": "invalid_response_body"}
+    if not isinstance(status_code, int) or not 100 <= status_code <= 599:
+        return {"success": False, "error": "invalid_status_code"}
+    headers: dict[str, str] | None = None
+    if headers_json:
+        try:
+            parsed_h = _json.loads(headers_json)
+            if not isinstance(parsed_h, dict):
+                return {"success": False, "error": "invalid_headers"}
+            headers = {str(k): str(v)[:2000] for k, v in parsed_h.items()}
+        except (ValueError, TypeError):
+            return {"success": False, "error": "invalid_headers"}
+    try:
+        result = get_response_analyzer().analyze(
+            response_body, status_code, float(response_time_ms or 0.0), headers
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": "internal_error", "detail": str(exc)[:500]}
+    return {
+        "success": True,
+        "status_code": result.status_code,
+        "is_error": result.is_error,
+        "response_hash": result.response_hash,
+        "response_length": result.response_length,
+        "detection_count": len(result.detections),
+        "detections": [
+            {
+                "type": d.detection_type.value,
+                "confidence": d.confidence,
+                "evidence": d.evidence[:500],
+                "severity": d.severity,
+                "location": d.location,
+            }
+            for d in result.detections[:100]
+        ],
+    }

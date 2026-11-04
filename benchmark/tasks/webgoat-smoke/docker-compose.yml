@@ -1,0 +1,4 @@
+services:
+  webgoat:
+    image: webgoat/webgoat:8.2
+    ports: ["8080:8080"]

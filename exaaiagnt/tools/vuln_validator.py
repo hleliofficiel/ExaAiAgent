@@ -15,6 +15,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
+from exaaiagnt.tools.registry import register_tool
+
 
 logger = logging.getLogger(__name__)
 
@@ -411,3 +413,34 @@ def create_vuln_report(
     """Convenience function to create a vulnerability report."""
     validator = get_vuln_validator()
     return validator.create_report(vuln_type, url, parameter, payload, evidence)
+
+
+@register_tool(sandbox_execution=True)
+def create_vulnerability_report_tool(
+    vuln_type: str, url: str, parameter: str, payload: str, evidence: str
+) -> dict[str, Any]:
+    """Create a structured vulnerability report with PoC/remediation (no network I/O)."""
+    if not vuln_type or not url or not parameter:
+        return {"success": False, "error": "missing_required_field"}
+    if len(url) > 2000 or len(payload or "") > 5000 or len(evidence or "") > 10000:
+        return {"success": False, "error": "field_too_long"}
+    if not str(url).startswith(("http://", "https://")):
+        return {"success": False, "error": "invalid_url"}
+    try:
+        report = get_vuln_validator().create_report(
+            vuln_type, url, parameter, payload or "", evidence or ""
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": "internal_error", "detail": str(exc)[:500]}
+    return {
+        "success": True,
+        "vuln_id": report.vuln_id,
+        "vuln_type": report.vuln_type,
+        "status": report.status.value,
+        "severity": report.severity.value,
+        "cvss_score": report.cvss_score,
+        "url": report.url,
+        "parameter": report.parameter,
+        "poc_steps": report.poc_steps[:20],
+        "remediation": report.remediation[:2000],
+    }

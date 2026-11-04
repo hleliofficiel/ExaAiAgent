@@ -10,6 +10,9 @@ import re
 import urllib.parse
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
+
+from exaaiagnt.tools.registry import register_tool
 
 
 logger = logging.getLogger(__name__)
@@ -342,3 +345,45 @@ def detect_waf(status_code: int, headers: dict, body: str) -> WAFDetectionResult
 def generate_bypasses(payload: str) -> list[tuple[str, str]]:
     """Convenience function to generate bypass payloads."""
     return get_waf_bypass().generate_bypass_payloads(payload)
+
+
+@register_tool(sandbox_execution=True)
+def detect_waf_and_bypass_tool(
+    status_code: int,
+    body: str,
+    payload: str,
+    headers_json: str | None = None,
+) -> dict[str, Any]:
+    """Detect WAF from a response and generate bypass payload variants (no network I/O)."""
+    import json as _json
+
+    if not isinstance(status_code, int) or not 100 <= status_code <= 599:
+        return {"success": False, "error": "invalid_status_code"}
+    if body is None or len(body) > 200_000 or len(payload or "") > 5000:
+        return {"success": False, "error": "invalid_input_size"}
+    headers: dict[str, str] = {}
+    if headers_json:
+        try:
+            parsed_h = _json.loads(headers_json)
+            if not isinstance(parsed_h, dict):
+                return {"success": False, "error": "invalid_headers"}
+            headers = {str(k): str(v)[:2000] for k, v in parsed_h.items()}
+        except (ValueError, TypeError):
+            return {"success": False, "error": "invalid_headers"}
+    try:
+        bypass = get_waf_bypass()
+        detection = bypass.detect_waf(status_code, headers, body)
+        variants = bypass.generate_bypass_payloads(payload or "", detection.waf_type)
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": "internal_error", "detail": str(exc)[:500]}
+    return {
+        "success": True,
+        "detected": detection.detected,
+        "waf_type": detection.waf_type.value,
+        "confidence": detection.confidence,
+        "indicators": detection.indicators[:20],
+        "bypass_suggestions": detection.bypass_suggestions[:20],
+        "bypass_count": len(variants),
+        "bypasses": [{"payload": p[:1000], "technique": t} for p, t in variants[:50]],
+        "bypass_headers": bypass.get_bypass_headers(detection.waf_type),
+    }

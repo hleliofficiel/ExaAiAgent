@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional
 
+from exaaiagnt.tools.registry import register_tool
+
 
 logger = logging.getLogger(__name__)
 
@@ -345,3 +347,43 @@ def fuzz_parameter(
     """Convenience function to get payloads for a parameter."""
     fuzzer = get_smart_fuzzer()
     return fuzzer.get_payloads_for_param(param_name, param_value, categories)
+
+
+@register_tool(sandbox_execution=True)
+def smart_fuzz_parameter_tool(
+    param_name: str, param_value: str, categories: str | None = None
+) -> dict[str, Any]:
+    """Generate context-aware fuzz payloads for a parameter (no network I/O)."""
+    if not param_name or not param_name.strip() or len(param_name) > 200:
+        return {"success": False, "error": "invalid_param_name"}
+    if param_value is None or len(str(param_value)) > 5000:
+        return {"success": False, "error": "invalid_param_value"}
+    parsed: list[VulnCategory] | None = None
+    if categories:
+        try:
+            parsed = [VulnCategory(c.strip()) for c in categories.split(",") if c.strip()]
+        except ValueError:
+            return {"success": False, "error": "invalid_categories"}
+        if not parsed:
+            parsed = None
+    try:
+        fuzzer = get_smart_fuzzer()
+        param_type = fuzzer.detect_param_type(param_name, str(param_value))
+        payloads = fuzzer.get_payloads_for_param(param_name, str(param_value), parsed)
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": "internal_error", "detail": str(exc)[:500]}
+    return {
+        "success": True,
+        "param_name": param_name,
+        "param_type": param_type.value,
+        "count": len(payloads),
+        "payloads": [
+            {
+                "payload": p.payload[:1000],
+                "category": p.category.value,
+                "description": p.description,
+                "risk_level": p.risk_level,
+            }
+            for p in payloads[:100]
+        ],
+    }
