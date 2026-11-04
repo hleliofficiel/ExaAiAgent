@@ -120,13 +120,19 @@ poetry run python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/
 poetry run exaai --version
 ```
 
+## Capabilities (v3.0.1 - latest)
 
-## Enhanced Capabilities (v2.3.2+) "This is the latest verison"
+- **Evidence grounding:** every tool result gets an `evidence_id`; vulnerability reports require evidence, invented CVE/version claims are rejected against the pinned CVE KB.
+- **CVE intelligence:** EPSS, CISA KEV, OSV, GitHub Advisories with provenance; version-range matching.
+- **Independent verification:** hypothesis -> evidence -> independent check -> conf-v1 confidence -> confirmed/suspected/false_positive.
+- **Scoped execution:** `TargetScope` + command guard enforce `EXAAI_TARGETS` before tool execution; token/tool/spawn budgets and circuit breaker stop runaway agents.
+- **Sandbox hardening:** tool server on 127.0.0.1, no host `~/.kube` mount, no-new-privileges, dropped NET_RAW.
+- **Reporting:** unified `report.json` + SARIF/CSV/HTML/Markdown via `build_report`/`to_sarif`.
+- **Prompt modules (63):** including OWASP LLM Top 10 2025, supply-chain/SBOM triage, exceptional-conditions fail-open, grounded CVE verification.
+- **Data persistence:** `chat_messages.json`, `run_metadata.json`, `agents.json`, `tool_executions.json` in `exaai_runs/<run-name>`.
+- **Kubernetes scanner:** native K8s assessment with reporting; `@register_tool` only on tool functions, never on classes.
 
-- **Data Persistence**: Accurately saves `chat_messages.json`, `run_metadata.json`, `agents.json`, and `tool_executions.json` inside the `exaai_runs/<run-name>` directory.
-- **Robust Tool Registration**: `@register_tool` should only be used on tool functions, never on classes (e.g. `K8sScanner`), ensuring proper API and schema generation.
-- **Improved Code Quality**: Consistent formatting and rigorous linting across all security modules, including `smart_fuzzer` and `waf_bypass`.
-- **Kubernetes Scanner Capabilities**: Now natively supporting K8s assessments with improved reporting structures and execution flows directly linked to tool functions.
+
   ## Architecture Overview
 
 ExaAiAgent consists of:
@@ -176,6 +182,4 @@ If you are maintaining ExaAiAgent:
 - Avoid introducing breaking changes.
 
 
-
-  
 
