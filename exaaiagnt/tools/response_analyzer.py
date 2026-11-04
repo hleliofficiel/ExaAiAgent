@@ -272,6 +272,34 @@ class ResponseAnalyzer:
         }
         return severity_map.get(detection_type, 5)
 
+    def strategy_signals(self, result: "AnalysisResult") -> dict[str, Any]:
+        """Map analysis detections to fuzzer strategy switches (proxy-linked).
+
+        Returns e.g. {"prefer_encoding": [...], "boost_categories": [...],
+        "waf_likely": bool, "proxy_recommended": bool}. Pure/offline.
+        """
+        types = {d.detection_type for d in result.detections}
+        boost: list[str] = []
+        encoding: list[str] = []
+        if DetectionType.SQL_ERROR in types:
+            boost += ["sql_injection"]
+        if DetectionType.REFLECTION in types:
+            boost += ["xss"]
+            encoding += ["unicode", "html_entity"]
+        if DetectionType.SENSITIVE_DATA in types or DetectionType.CONFIG_LEAK in types:
+            boost += ["path_traversal"]
+            encoding += ["double_url"]
+        waf_likely = result.status_code in (403, 406, 429) and not types
+        if waf_likely:
+            encoding += ["double_url", "unicode", "case_variation"]
+        return {
+            "boost_categories": boost,
+            "prefer_encoding": encoding,
+            "waf_likely": waf_likely,
+            "proxy_recommended": bool(waf_likely or encoding),
+            "detection_types": sorted(x.value for x in types),
+        }
+
     def get_stats(self) -> dict[str, Any]:
         """Get analyzer statistics."""
         return {

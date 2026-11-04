@@ -207,4 +207,45 @@ def get_all_tool_prompts() -> dict[str, str]:
         "validator": get_validator_prompt(),
         "waf_bypass": get_waf_bypass_prompt(),
         "security_testing": get_security_testing_prompt(),
+        "proxy_strategy": get_proxy_strategy_prompt(),
+        "browser_js": get_browser_js_prompt(),
     }
+
+
+# Proxy / tool manifest prompts (manifest fields: allowed_prompt_modules,
+# proxy_required, blocked). Tools with proxy_required=True must run through
+# exaaiagnt.tools.proxy_env (proxy URL + CA bundle); blocked tools are
+# refused by the executor with a ScopeDecision.
+
+PROXY_STRATEGY_PROMPT = """
+When WAF or response-analyzer signals fire (strategy_signals):
+1. Switch fuzzer strategy via SmartFuzzer.apply_strategy(signals).
+2. Route through proxy (proxy_env.proxy_env) so traffic is captured
+   in list_requests / HAR export.
+3. On waf_likely, prefer double_url/unicode/case_variation encodings.
+"""
+
+BROWSER_JS_PROMPT = """
+Offline browser/JS checks (exaaiagnt.tools.browser_js_analysis):
+DOM XSS sinks/sources, postMessage origin checks, Service Worker
+registration/fetch/cache, JS bundle endpoint + secret extraction.
+"""
+
+from exaaiagnt.tools.registry import get_tool_manifest, tools_for_prompt_module  # noqa: E402
+
+
+def get_proxy_strategy_prompt() -> str:
+    return PROXY_STRATEGY_PROMPT.strip()
+
+
+def get_browser_js_prompt() -> str:
+    return BROWSER_JS_PROMPT.strip()
+
+
+def get_tool_manifest_prompt(tool_name: str) -> dict:
+    """Prompt-manifest view for one tool (allowed_prompt_modules etc.)."""
+    return get_tool_manifest(tool_name) or {"name": tool_name, "error": "unknown_tool"}
+
+
+def list_tools_for_prompt_module(module_name: str) -> list[str]:
+    return tools_for_prompt_module(module_name)

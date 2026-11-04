@@ -302,6 +302,50 @@ class SmartFuzzer:
 
         return payloads
 
+    def apply_strategy(
+        self,
+        payloads: list[FuzzPayload],
+        signals: dict[str, Any] | None = None,
+    ) -> list[FuzzPayload]:
+        """Reorder/encode payloads from WAF/analyzer signals (offline)."""
+        signals = signals or {}
+        boost = set(signals.get("boost_categories") or [])
+        encoding = list(signals.get("prefer_encoding") or [])
+        if not boost and not encoding:
+            return payloads
+        encoder_cls = None
+        try:
+            from exaaiagnt.tools.waf_bypass import PayloadEncoder
+
+            encoder_cls = PayloadEncoder
+        except ImportError:
+            pass
+        boosted = [p for p in payloads if p.category.value in boost]
+        rest = [p for p in payloads if p.category.value not in boost]
+        ordered = boosted + rest
+        if encoder_cls is None:
+            return ordered
+        encoded: list[FuzzPayload] = []
+        for p in ordered[:50]:
+            for enc in encoding:
+                if enc == "double_url":
+                    txt = encoder_cls.url_encode(p.payload, double=True)
+                elif enc == "unicode":
+                    txt = encoder_cls.unicode_normalize(p.payload)
+                elif enc == "case_variation":
+                    txt = encoder_cls.case_variation(p.payload)
+                elif enc == "html_entity":
+                    txt = p.payload.replace("<", "&lt;").replace(">", "&gt;")
+                elif enc == "json_smuggle":
+                    txt = encoder_cls.json_smuggle(p.payload)
+                else:
+                    continue
+                encoded.append(
+                    FuzzPayload(txt, p.category, f"{p.description} [{enc}]", p.detection_pattern,
+                                p.risk_level)
+                )
+        return encoded + ordered
+
     def get_all_payloads(self, category: VulnCategory) -> list[FuzzPayload]:
         """Get all payloads for a specific category."""
         return self._payloads.get(category, [])
@@ -349,7 +393,9 @@ def fuzz_parameter(
     return fuzzer.get_payloads_for_param(param_name, param_value, categories)
 
 
-@register_tool(sandbox_execution=True)
+@register_tool(
+    sandbox_execution=True, allowed_prompt_modules=["vulnerabilities"], proxy_required=False
+)
 def smart_fuzz_parameter_tool(
     param_name: str, param_value: str, categories: str | None = None
 ) -> dict[str, Any]:

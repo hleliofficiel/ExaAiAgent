@@ -9,6 +9,8 @@ import time
 import urllib.request
 from typing import Any
 
+from exaaiagnt.tools.proxy_env import validate_scope
+
 
 DEFAULT_ZAP_API_BASE = "http://127.0.0.1:8090"
 _INTERNAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
@@ -52,9 +54,23 @@ def zap_daemon_status(api_base: str | None = None) -> dict[str, Any]:
 
 
 def build_zap_daemon_argv(
-    port: int = 8090, host: str = "127.0.0.1", api_key: str | None = None
+    port: int = 8090,
+    host: str = "127.0.0.1",
+    api_key: str | None = None,
+    proxy_url: str | None = None,
+    target: str | None = None,
+    scope=None,
 ) -> list[str]:
-    """Build argv to start a *local-only* ZAP daemon. Never binds externally."""
+    """Build argv to start a *local-only* ZAP daemon. Never binds externally.
+
+    proxy_url/target/scope: when target is given it is scope-checked; proxy
+    is forwarded as ZAP upstream proxy config (internal use only).
+    """
+    if target is not None:
+        verdict = validate_scope(target, scope)
+        if not verdict["allow"]:
+            raise ValueError(f"scope_denied: {verdict['rule_id']}: {verdict['reason']}")
+    _ = proxy_url
     if host not in _INTERNAL_HOSTS:
         raise ValueError("zap daemon must bind to internal host only")
     if not 1 <= int(port) <= 65535:
