@@ -1,0 +1,62 @@
+<tool name="parse_openapi_spec">
+    <description>
+        Parse an OpenAPI 3 / Swagger 2 spec supplied as JSON and list its
+        endpoints with methods, parameters, and auth requirements.
+    </description>
+    <parameters>
+        <parameter name="spec_json" type="string">
+            OpenAPI/Swagger spec as a JSON string.
+        </parameter>
+    </parameters>
+</tool>
+
+<tool name="analyze_api_auth">
+    <description>
+        Run BOLA (two-account diff), BFLA (role diff), and JWT hygiene
+        checks on supplied response fixtures. No network access.
+    </description>
+    <parameters>
+        <parameter name="own_response_json" type="string">
+            Response dict JSON for account A.
+        </parameter>
+        <parameter name="other_response_json" type="string">
+            Response dict JSON for account B.
+        </parameter>
+        <parameter name="jwt_token" type="string" optional="true">
+            Optional JWT to inspect.
+        </parameter>
+        <parameter name="low_priv_status" type="integer" optional="true">
+            HTTP status for the low-privilege BFLA probe.
+        </parameter>
+    </parameters>
+</tool>
+
+<tool name="scan_secrets_text">
+    <description>
+        Scan text for hardcoded secrets (AWS keys, private keys, tokens)
+        and return redacted findings. Secrets are never echoed in full.
+    </description>
+    <parameters>
+        <parameter name="text" type="string">
+            Text content to scan.
+        </parameter>
+        <parameter name="source" type="string" optional="true">
+            Label recorded with each finding.
+        </parameter>
+    </parameters>
+</tool>
+
+<tool name="check_container_config">
+    <description>
+        Audit Dockerfile content (exposed ports, secrets, root user) and a
+        TLS config fixture (min version, cert expiry). No network access.
+    </description>
+    <parameters>
+        <parameter name="dockerfile_text" type="string" optional="true">
+            Dockerfile content to audit.
+        </parameter>
+        <parameter name="tls_config_json" type="string" optional="true">
+            TLS config dict as JSON.
+        </parameter>
+    </parameters>
+</tool>

@@ -1,4 +1,6 @@
-import importlib.util, pathlib
+import importlib.util
+import pathlib
+
 
 _spec = importlib.util.spec_from_file_location(
     "nuclei_wrapper",
@@ -12,7 +14,9 @@ parse_nuclei_jsonl = _mod.parse_nuclei_jsonl
 
 def test_argv():
     a = build_nuclei_argv("https://example.com")
-    assert a[0] == "nuclei" and "-jsonl" in a and "https://example.com" in a
+    assert a[0] == "nuclei"
+    assert "-jsonl" in a
+    assert "https://example.com" in a
 
 
 def test_parse():

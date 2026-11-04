@@ -1,7 +1,15 @@
-"""nuclei wrapper (Tier-A MIT, invoke-only). Argv-only, scope-checked, SARIF-ready output -> evidence."""
+"""nuclei wrapper (Tier-A MIT, invoke-only).
+
+Argv-only, scope-checked, SARIF-ready output -> evidence.
+Templates: update via ``nuclei -update-templates`` (pinned release);
+record the template version in scan evidence (see docs/tools.md).
+"""
 
 from __future__ import annotations
-import json, shutil, subprocess
+
+import json
+import shutil
+import subprocess
 from typing import Any
 
 
@@ -10,7 +18,7 @@ def build_nuclei_argv(
 ) -> list[str]:
     if not target:
         raise ValueError("target required")
-    argv = [
+    return [
         "nuclei",
         "-u",
         target,
@@ -21,18 +29,17 @@ def build_nuclei_argv(
         "-timeout",
         str(timeout),
     ]
-    return argv
 
 
 def parse_nuclei_jsonl(text: str) -> list[dict[str, Any]]:
     out = []
-    for line in (text or "").splitlines():
-        line = line.strip()
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
         if not line:
             continue
         try:
             out.append(json.loads(line))
-        except Exception:
+        except ValueError:
             continue
     return out
 
@@ -48,7 +55,7 @@ def run_nuclei(
         }
     argv = build_nuclei_argv(target, severity, timeout)
     try:
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout + 30)
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout + 30, check=False)  # noqa: S603
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "timeout", "argv": argv}
     findings = parse_nuclei_jsonl(r.stdout)
