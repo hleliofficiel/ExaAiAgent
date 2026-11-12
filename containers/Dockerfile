@@ -13,7 +13,9 @@ RUN apt-get update && \
 # Create pentester user
 RUN useradd -m -s /bin/bash pentester && \
     usermod -aG sudo pentester && \
-    echo "pentester ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    printf '%s\n' \
+      "pentester ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/profile.d/proxy.sh, /usr/bin/tee /etc/environment, /usr/bin/tee /etc/wgetrc, /usr/bin/chmod 600 /etc/profile.d/proxy.sh, /usr/bin/chmod 600 /etc/environment, /usr/bin/chmod 600 /etc/wgetrc, /usr/bin/mkdir, /usr/bin/certutil" \
+      > /etc/sudoers.d/pentester && chmod 440 /etc/sudoers.d/pentester
 
 # Create directories
 RUN mkdir -p /home/pentester/configs \

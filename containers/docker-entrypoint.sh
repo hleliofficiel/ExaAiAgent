@@ -106,12 +106,14 @@ echo "source /etc/profile.d/proxy.sh" >> ~/.zshrc
 
 source /etc/profile.d/proxy.sh
 
+sudo chmod 600 /etc/profile.d/proxy.sh /etc/environment /etc/wgetrc
+
 echo "✅ System-wide proxy configuration complete"
 
 echo "Adding CA to browser trust store..."
-sudo -u pentester mkdir -p /home/pentester/.pki/nssdb
-sudo -u pentester certutil -N -d sql:/home/pentester/.pki/nssdb --empty-password
-sudo -u pentester certutil -A -n "Testing Root CA" -t "C,," -i /app/certs/ca.crt -d sql:/home/pentester/.pki/nssdb
+mkdir -p /home/pentester/.pki/nssdb
+certutil -N -d sql:/home/pentester/.pki/nssdb --empty-password
+certutil -A -n "Testing Root CA" -t "C,," -i /app/certs/ca.crt -d sql:/home/pentester/.pki/nssdb
 echo "✅ CA added to browser trust store"
 
 echo "Container initialization complete - agents will start their own tool servers as needed"

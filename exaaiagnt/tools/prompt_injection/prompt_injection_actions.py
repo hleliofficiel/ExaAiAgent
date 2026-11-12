@@ -556,6 +556,12 @@ def scan_llm_endpoint(
     """
     import requests
 
+    from exaaiagnt.safety.blocklist import check_blocked_url
+
+    denied = check_blocked_url(target_url)
+    if not denied.allow:
+        return {"error": f"URL_DENY: {denied.reason}"}
+
     def target_function(prompt: str) -> str:
         try:
             # Replace placeholder with payload

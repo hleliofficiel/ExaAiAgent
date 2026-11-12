@@ -69,6 +69,10 @@ class Tracer:
             run_dir_name = re.sub(r"[^A-Za-z0-9_.-]", "_", str(run_dir_name)).lstrip(".") or "run"
             self._run_dir = runs_dir / run_dir_name
             self._run_dir.mkdir(exist_ok=True)
+            try:
+                self._run_dir.chmod(0o700)
+            except OSError:
+                pass  # best-effort on filesystems without POSIX perms
 
         return self._run_dir
 
