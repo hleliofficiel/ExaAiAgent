@@ -5,7 +5,7 @@ description: "Run, debug, maintain, or extend ExaAiAgent for AI-assisted penetra
 
 # ExaAiAgent Skill
 
-Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**. Current version: **v3.0.1**.
+Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**. Current version: **v3.1.1**.
 
 ## Core operating rules
 
@@ -85,7 +85,7 @@ Check in this order; each layer depends on the one above it.
 2. **Provider / LiteLLM:** verify `EXAAI_LLM`, `LLM_API_KEY`, `LLM_API_BASE`; modern models need a recent `litellm` (`pip install -U litellm`).
 3. **Tool / runtime:** sandbox startup, tool-server health, missing dependencies, rate limits. Check `exaai_runs/<run-name>/` for `chat_messages.json`, `run_metadata.json`, `agents.json`, `tool_executions.json`, and `report.json`.
 
-## Capabilities (v3.0.1 - latest)
+## Capabilities (v3.1.1 - latest)
 
 - **Evidence grounding:** every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected against the pinned CVE KB.
 - **CVE intelligence:** EPSS, CISA KEV, OSV, and GitHub Advisories with provenance and version-range matching.
@@ -124,4 +124,4 @@ poetry run python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/
 poetry run exaai --version
 ```
 
-Version is single-sourced in `exaaiagnt/version.py` (fallback `3.0.1`); `pyproject.toml` is the source of truth for packaging. Do not publish to PyPI until all features are verified and documented.
+Version is single-sourced in `exaaiagnt/version.py` (fallback `3.1.1`); `pyproject.toml` is the source of truth for packaging. Do not publish to PyPI until all features are verified and documented.
