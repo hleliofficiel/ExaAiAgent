@@ -239,7 +239,7 @@ class BaseAgent(metaclass=AgentMeta):
                             {"success": False, "error": "token_budget_exceeded"}
                         )
                         return self.state.final_result or {}
-                except Exception:
+                except Exception:  # nosec B110 - intentional best-effort: failure must not break the caller
                     pass
                 should_finish = await self._process_iteration(tracer)
                 self._consecutive_errors = 0

@@ -145,7 +145,7 @@ def _run(
             from exaaiagnt.grounding import EvidenceStore
 
             EvidenceStore.instance().record(binary, {"argv": argv, "lines": lines[:100]})
-        except Exception:  # noqa: BLE001, S110 - evidence is best-effort
+        except Exception:  # nosec B110 - noqa: BLE001, S110 - evidence is best-effort  # best-effort
             pass
     return {
         "success": r.returncode == 0,

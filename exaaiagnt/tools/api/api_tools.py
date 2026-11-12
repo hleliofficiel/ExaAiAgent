@@ -49,7 +49,7 @@ def parse_openapi_spec(spec_json: str) -> dict[str, Any]:
 def analyze_api_auth(
     own_response_json: str,
     other_response_json: str,
-    jwt_token: str = "",
+    jwt_token: str = "",  # nosec B107 - empty default means "no token supplied", not a password
     low_priv_status: int = 0,
 ) -> dict[str, Any]:
     """Run BOLA/BFLA/JWT checks on supplied response fixtures (no network).

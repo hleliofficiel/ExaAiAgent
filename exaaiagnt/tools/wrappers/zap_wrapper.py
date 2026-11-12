@@ -40,7 +40,7 @@ def zap_daemon_status(api_base: str | None = None) -> dict[str, Any]:
             "api_base": base,
         }
     try:
-        with urllib.request.urlopen(f"{base}/JSON/core/view/version/", timeout=5) as resp:  # noqa: S310
+        with urllib.request.urlopen(f"{base}/JSON/core/view/version/", timeout=5) as resp:  # nosec B310 - noqa: S310  # base validated to 127.0.0.1/localhost by _validated_base()
             body = resp.read().decode(errors="replace")[:1000]
     except Exception as exc:  # noqa: BLE001
         return {

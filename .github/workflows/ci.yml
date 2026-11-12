@@ -89,6 +89,32 @@ jobs:
       - name: Unit tests
         run: poetry run pytest -v -o addopts='' --ignore=tests/interface 2>/dev/null || poetry run pytest -v -o addopts=''
 
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry poetry-plugin-export pip-audit
+
+      - name: Install dependencies
+        run: poetry install --with=dev
+
+      - name: Export lock to requirements.txt
+        run: poetry export -f requirements.txt --with=main --without-hashes -o /tmp/reqs.txt
+
+      - name: pip-audit
+        run: pip-audit -r /tmp/reqs.txt --progress-spinner off
+
+      - name: Bandit (medium+ severity)
+        run: poetry run bandit -r exaaiagnt -c pyproject.toml -ll
+
   smoke:
     runs-on: ubuntu-latest
     steps:

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class CheckStatus(Enum):
     """Status of a security check."""
 
-    PASS = "PASS"
+    PASS = "PASS"  # nosec B105 - enum member name, not a password
     FAIL = "FAIL"
     WARN = "WARN"
     ERROR = "ERROR"

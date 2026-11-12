@@ -221,7 +221,7 @@ class PayloadEncoder:
         """Apply random case variation."""
         import random
 
-        return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in payload)
+        return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in payload)  # nosec B311 - WAF-evasion payload fuzzing, not crypto
 
     @staticmethod
     def null_byte_inject(payload: str) -> str:
