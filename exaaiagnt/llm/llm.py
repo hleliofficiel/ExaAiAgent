@@ -524,7 +524,7 @@ class LLM:
                     _sup.record_tokens(
                         self.agent_id, int(input_tokens or 0) + int(output_tokens or 0)
                     )
-            except Exception:
+            except Exception:  # nosec B110 - intentional best-effort: failure must not break the caller
                 pass
 
             if cached_tokens > 0:

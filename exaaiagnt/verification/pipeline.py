@@ -109,7 +109,7 @@ def verify_finding(
             if downgrade:
                 final = "suspected"
                 reasons.append(f"hardening downgrade: {reason}")
-        except Exception:  # noqa: BLE001, S110 - hardening is best-effort, never breaks verify
+        except Exception:  # nosec B110 - noqa: BLE001, S110 - hardening is best-effort, never breaks verify  # best-effort
             pass
     return VerificationResult(
         hypothesis=hypothesis,

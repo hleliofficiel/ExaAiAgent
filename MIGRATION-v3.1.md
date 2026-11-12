@@ -1,0 +1,28 @@
+# Migration v3.0.1 -> v3.1.1
+
+v3.1.1 is a security maintenance release. The CLI, commands, and config keys are unchanged; a few defaults and dependencies changed.
+
+| Area | Change | Action needed |
+|---|---|---|
+| `litellm` | upgraded to >=1.101.3 (<1.102.0); proxy extras included | Recreate your virtual environment or `pip install -U litellm>=1.101.3`; old litellm releases are affected by multiple CVEs |
+| `openai` | requirement is now >=2.20.0,<4.0.0 | Automatic on fresh install; remove any local pin to 1.x |
+| `gql` / `graphql-core` | gql 3 -> 4 (graphql-core >=3.2.12); the old gql 3 cap on graphql-core made CVE fixes unresolvable | No code changes for standard `Client`/`gql`/`RequestsHTTPTransport` usage |
+| Python requirement | >=3.12,<3.14 | Use Python 3.12 or 3.13 |
+| Dashboard | binds `127.0.0.1:8000` by default (was 0.0.0.0) | If you accessed the dashboard from another host, pass `host="0.0.0.0"` explicitly, or set `EXAAI_DASHBOARD_TOKEN` and use a reverse proxy with Bearer auth |
+| Tool server `/health` | unauthenticated responses now return only `{"status":"healthy"}`; full detail requires the Bearer token | Internal callers passing the token are unaffected |
+| `tool_server` token | passed via `EXAAI_TOOL_SERVER_TOKEN` environment variable instead of `--token` argv | If you launched `tool_server.py` directly, set the env var instead of `--token` (argv still accepted for compatibility) |
+| `python_action` / terminal | unchanged behavior; outbound prompt-injection probe now passes through the URL blocklist | No action |
+| `_scope_check` | fails closed if the safety guard cannot load (was silently allowing) | Scans with `EXAAI_TARGETS` set now abort with `GUARD_ERROR` instead of running unscoped when the guard is broken — this is the safe direction |
+| Dependencies | multiple bumps (see CHANGELOG): starlette 1.10, fastapi 0.162, cryptography 50, urllib3 2.8, requests 2.33+, etc. | Fresh install recommended |
+
+Upgrade:
+
+```bash
+# pipx
+pipx install --force git+https://github.com/hleliofficiel/ExaAiAgent.git
+
+# or pip
+pip install --user --upgrade git+https://github.com/hleliofficiel/ExaAiAgent.git
+```
+
+Then `exaai --version` should print `ExaAi v3.1.1`.

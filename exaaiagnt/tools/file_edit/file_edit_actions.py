@@ -76,7 +76,9 @@ def list_files(
         if not path_obj.is_dir():
             return {"error": f"Path is not a directory: {path}"}
 
-        cmd = f"find '{path}' -type f -o -type d | head -500" if recursive else f"ls -1a '{path}'"
+        import shlex
+        qpath = shlex.quote(path)
+        cmd = f"find {qpath} -type f -o -type d | head -500" if recursive else f"ls -1a {qpath}"
 
         exit_code, stdout, stderr = run_shell_cmd(cmd)
 

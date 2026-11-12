@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "exaai-agent"
-version = "3.0.1"
+version = "3.1.1"
 description = "ExaAi - Advanced AI Security Agent for Comprehensive Penetration Testing"
 authors = ["ExaAi Team <mahmedhleli@gmail.com>"]
 readme = "README.md"
@@ -45,46 +45,70 @@ exaaiagent = "exaaiagnt.interface.main:main"
 ExaAiAgent = "exaaiagnt.interface.main:main"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.14"
 fastapi = "*"
 uvicorn = "*"
-litellm = { version = "~1.79.1", extras = ["proxy"] }
-openai = ">=1.99.5,<1.100.0"
+litellm = { version = ">=1.101.3,<1.102.0", extras = ["proxy"] }
+openai = ">=2.20.0,<4.0.0"
 tenacity = "^9.0.0"
 numpydoc = "^1.8.0"
 pydantic = {extras = ["email"], version = "^2.11.3"}
 ipython = "^9.3.0"
-openhands-aci = "^0.3.0"
+openhands-aci = "^0.3.3"
 playwright = "^1.48.0"
 rich = "*"
 docker = "^7.1.0"
-gql = {extras = ["requests"], version = "^3.5.3"}
+gql = {extras = ["requests"], version = "^4.4.0"}
+graphql-core = ">=3.2.12"
+azure-core = ">=1.38.0"
+python-dotenv = ">=1.2.2"
+pdfminer-six = ">=20251230"
+restrictedpython = ">=8.4"
 textual = "^4.0.0"
 xmltodict = "^0.13.0"
 pyte = "^0.8.1"
-requests = "^2.32.0"
+urllib3 = ">=2.8.0"
+aiohttp = ">=3.14.4"
+python-multipart = ">=0.0.31"
+cryptography = ">=50.0.0"
+pypdf = ">=6.21.4"
+filelock = ">=3.20.3"
+pillow = ">=13.0.0"
+gitpython = ">=3.1.59"
+requests = "^2.33.0"
+certifi = ">=2026.10.18"
+dnspython = ">=2.9.0"
+fsspec = ">=2026.6.0"
+anyio = ">=4.14.2"
+idna = ">=3.15"
+lxml = ">=6.1.0"
+oauthlib = ">=4.0.1"
+soupsieve = ">=2.9.0"
+setuptools = ">=84.1.0"
+pygments = ">=2.20.0"
 httpx = ">=0.27,<1"
 chardet = ">=5,<6"
-libtmux = "^0.46.2"
-websockets = ">=13.1,<14.0.0"
+libtmux = ">=0.62.0"
+websockets = ">=13.1"
 
 [tool.poetry.group.dev.dependencies]
 # Type checking and static analysis
 mypy = "^1.16.0"
 ruff = "^0.11.13"
 pyright = "^1.1.401"
-pylint = "^3.3.7"
+pylint = ">=4.0.9"
 bandit = "^1.8.3"
 
 # Testing
-pytest = "^8.4.0"
+pytest = "^9.0.3"
 pytest-asyncio = "^1.0.0"
 pytest-cov = "^6.1.1"
 pytest-mock = "^3.14.1"
 
 # Development tools
 pre-commit = "^4.2.0"
-black = "^25.1.0"
+black = ">=26.3.1"
+virtualenv = ">=21.14.9"
 isort = "^6.0.1"
 
 [build-system]

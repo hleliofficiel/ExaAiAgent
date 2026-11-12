@@ -151,7 +151,7 @@ class LLMFallbackManager:
 
         # Weighted random selection
         total_weight = sum(m.weight for m in available)
-        r = random.uniform(0, total_weight)
+        r = random.uniform(0, total_weight)  # nosec B311 - weighted load balancing, not crypto
 
         cumulative = 0
         for model in available:
@@ -298,7 +298,7 @@ class LLMLoadBalancer:
 
         # weighted (default)
         total_weight = sum(m.weight for m in available)
-        r = random.uniform(0, total_weight)
+        r = random.uniform(0, total_weight)  # nosec B311 - weighted load balancing, not crypto
         cumulative = 0
         for model in available:
             cumulative += model.weight

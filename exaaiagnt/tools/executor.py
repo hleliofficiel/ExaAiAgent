@@ -113,8 +113,9 @@ def _scope_check(tool_name: str, kwargs: dict) -> None:
                 raise ValueError(f"COMMAND_DENY: {d.reason}")
     except ValueError:
         raise
-    except Exception:
-        return  # fail-open on guard errors is worse; but do not break tools if safety import fails in minimal envs
+    except Exception as exc:
+        # fail-closed: a safety guard that cannot load must not silently allow
+        raise ValueError(f"GUARD_ERROR: scope enforcement unavailable, refusing: {exc}") from exc
 
 
 async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: Any) -> Any:

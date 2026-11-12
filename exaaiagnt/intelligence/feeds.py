@@ -18,9 +18,9 @@ KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulner
 
 def _get_json(url: str, timeout: int = 15) -> dict:
     req = urllib.request.Request(
-        url, headers={"User-Agent": "ExaAiAgent/3.0.1", "Accept": "application/json"}
+        url, headers={"User-Agent": "ExaAiAgent/3.1.1", "Accept": "application/json"}
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 - fixed https feed URLs (EPSS/KEV), no user input
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
@@ -83,10 +83,10 @@ def fetch_osv(package: str, ecosystem: str, version: str, timeout: int = 15) -> 
     req = urllib.request.Request(
         "https://api.osv.dev/v1/query",
         data=body,
-        headers={"User-Agent": "ExaAiAgent/3.0.1", "Content-Type": "application/json"},
+        headers={"User-Agent": "ExaAiAgent/3.1.1", "Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 - fixed https endpoint (api.osv.dev), no user-controlled scheme
             data = json.loads(r.read().decode("utf-8", "replace"))
     except Exception:  # noqa: BLE001 - best-effort feed
         return []
@@ -99,13 +99,13 @@ def fetch_ghsa(ghsa_id: str, token: str | None = None, timeout: int = 15) -> dic
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "ExaAiAgent/3.0.1",
+            "User-Agent": "ExaAiAgent/3.1.1",
             "Accept": "application/vnd.github+json",
             **({"Authorization": f"Bearer {token}"} if token else {}),
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 - fixed https endpoint (api.github.com), no user-controlled scheme
             return json.loads(r.read().decode("utf-8", "replace"))
     except Exception as e:  # noqa: BLE001 - best-effort feed
         return {"error": str(e)}

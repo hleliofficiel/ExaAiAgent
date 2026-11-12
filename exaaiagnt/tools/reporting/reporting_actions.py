@@ -69,7 +69,7 @@ def create_vulnerability_report(
         )
         if capped == "suspected" and confidence_band == "confirmed":
             confidence_band = "suspected"
-    except Exception:
+    except Exception:  # nosec B110 - intentional best-effort: failure must not break the caller
         pass
 
     # v3.0.1: LLM hardening metadata (additive; never blocks the report)
@@ -84,7 +84,7 @@ def create_vulnerability_report(
             "leak": _h["leak"].is_leak,
             "manipulation": _h["manipulation"].is_suspicious,
         }
-    except Exception:  # noqa: BLE001, S110 - hardening is best-effort metadata
+    except Exception:  # nosec B110 - noqa: BLE001, S110 - hardening is best-effort metadata  # best-effort
         pass
 
     # Auto-save report to disk
@@ -144,7 +144,7 @@ def create_vulnerability_report(
                     import json as _json
 
                     (run_dir / "report.json").write_text(_json.dumps(unified, indent=2))
-            except Exception:
+            except Exception:  # nosec B110 - intentional best-effort: failure must not break the caller
                 pass
 
             return {

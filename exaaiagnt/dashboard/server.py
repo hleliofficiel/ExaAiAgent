@@ -13,6 +13,27 @@ from exaaiagnt.telemetry.tracer import get_global_tracer
 
 app = FastAPI(title="ExaAi Live Dashboard")
 
+# Optional token gate: set EXAAI_DASHBOARD_TOKEN to require Bearer auth on /api/* and /ws.
+# Unset keeps the default local-only (127.0.0.1) UX.
+_DASHBOARD_TOKEN = os.getenv("EXAAI_DASHBOARD_TOKEN", "")
+
+from fastapi import Request  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+
+
+@app.middleware("http")
+async def _dashboard_auth(request: Request, call_next):
+    if _DASHBOARD_TOKEN and request.url.path.startswith("/api/"):
+        if request.headers.get("authorization", "") != f"Bearer {_DASHBOARD_TOKEN}":
+            return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+    return await call_next(request)
+
+
+def _ws_authorized(websocket) -> bool:
+    if not _DASHBOARD_TOKEN:
+        return True
+    return websocket.headers.get("authorization", "") == f"Bearer {_DASHBOARD_TOKEN}"
+
 # Serve static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -70,6 +91,9 @@ async def get_vulns():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    if not _ws_authorized(websocket):
+        await websocket.close(code=4401)
+        return
     await manager.connect(websocket)
     try:
         while True:
@@ -100,7 +124,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-def start_dashboard(host="0.0.0.0", port=8000):
+def start_dashboard(host="127.0.0.1", port=8000):
     """Start the dashboard server in a background thread or process."""
     config = uvicorn.Config(app, host=host, port=port, log_level="error")
     server = uvicorn.Server(config)

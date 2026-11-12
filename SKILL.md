@@ -5,114 +5,118 @@ description: "Run, debug, maintain, or extend ExaAiAgent for AI-assisted penetra
 
 # ExaAiAgent Skill
 
-Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**.
+Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**. Current version: **v3.1.1**.
 
 ## Core operating rules
 
 - Treat `EXAAI_LLM` as the active model selector; set `LLM_API_KEY` and `LLM_API_BASE` only when the chosen provider needs them.
 - The first run pulls the sandbox Docker image automatically.
 - Save results under `exaai_runs/<run-name>`.
+- Set `EXAAI_TARGETS` to enforce target scope before tool execution.
+- Every finding must be grounded in an `evidence_id`; reject invented CVE/version claims against the pinned CVE KB.
 - Use only on assets the operator is authorized to test.
 
 ## Installation and first scan
 
-Install ExaAiAgent with either method:
-
 ```bash
-# Method 1: pip
 pip install exaai-agent
-
-# Method 2: pipx
+# or
 pipx install exaai-agent
 ```
 
-Configure a LiteLLM-supported provider using the pattern `export EXAAI_LLM="provider/model-name"`. Set `LLM_API_KEY` and `LLM_API_BASE` when the provider requires them.
+Configure a LiteLLM-supported provider using `export EXAAI_LLM="provider/model-name"`.
 
 | Provider | `EXAAI_LLM` | `LLM_API_KEY` | `LLM_API_BASE` |
 |----------|-------------|---------------|-----------------|
-| OpenAI | `openai/gpt-5.5` | required | — |
-| Anthropic | `anthropic/claude-sonnet-5` | required | — |
+| OpenAI | `openai/gpt-5.5` | required | - |
+| Anthropic | `anthropic/claude-sonnet-5` | required | - |
 | OpenRouter | `openrouter/auto` | required | `https://openrouter.ai/api/v1` |
-| Ollama | `ollama/llama3` | — | `http://localhost:11434` |
+| Ollama | `ollama/llama3` | - | `http://localhost:11434` |
 | Other | `provider/model-name` | if needed | if needed |
 
-Verify the setup before scanning:
+Verify, then run the first scan:
 
 ```bash
 docker version && exaai --version
-```
-
-Run the first scan and verify results:
-
-```bash
 exaai --target https://your-app.com
-# Check results — if empty or errored, re-run with verbose output
 ls exaai_runs/*/  || exaai --target https://your-app.com --verbose
 ```
 
 ## Basic usage
 
 ```bash
-# Local codebase
 exaai --target ./app-directory
-
-# GitHub repository review
 exaai --target https://github.com/org/repo
-
-# Black-box web assessment
 exaai --target https://your-app.com
-
-# Headless mode
-exaai -n --target https://your-app.com
-
-# Interactive mode
-exaai tui
+exaai -n --target https://your-app.com    # headless
+exaai tui                                  # interactive
 ```
 
 ## Smart auto-loading
 
-ExaAiAgent auto-resolves prompt modules when `--prompt-modules` is not set.
+ExaAiAgent auto-resolves prompt modules when `--prompt-modules` is not set (GraphQL, WebSocket, OAuth/OIDC, recon, and others).
 
 ```bash
-exaai --target https://api.example.com/graphql          # GraphQL
-exaai --target wss://chat.example.com/socket             # WebSocket
-exaai --target https://auth.example.com/oauth/authorize  # OAuth/OIDC
-exaai --target example.com --instruction "enumerate subdomains"  # Recon
+exaai --target https://api.example.com/graphql
+exaai --target wss://chat.example.com/socket
+exaai --target https://auth.example.com/oauth/authorize
+exaai --target example.com --instruction "enumerate subdomains"
 ```
 
 ## Advanced usage
 
 ```bash
-# Authenticated or grey-box testing
+# Authenticated / grey-box testing
 exaai --target https://your-app.com --instruction "Perform authenticated testing using provided credentials and identify authorization flaws"
 
-# Multi-target testing
+# Multi-target, explicit modules, lightweight mode
 exaai -t https://github.com/org/app -t https://your-app.com
-
-# Explicit modules
 exaai --target https://api.example.com --prompt-modules graphql_security,waf_bypass
-
-# Lightweight mode
 EXAAI_LIGHTWEIGHT_MODE=true exaai --target https://example.com --instruction "quick security scan"
 ```
 
+Budget and safety knobs: `EXAAI_MAX_SCAN_TOKENS`, `EXAAI_MAX_TOOL_CALLS`, `EXAAI_MAX_AGENTS`, `EXAAI_TOOL_TIMEOUT=120`, and `EXAAI_TARGETS` for enforced scope.
+
 ## Diagnose common failures
 
-Follow this order — each layer depends on the one above it:
+Check in this order; each layer depends on the one above it.
 
-1. **Docker**: Run `docker version && docker info`. Fix Docker before debugging anything else.
-2. **Provider/LiteLLM**: Verify `EXAAI_LLM`, `LLM_API_KEY`, and `LLM_API_BASE` (when applicable). Confirm the provider/model pair is supported by LiteLLM.
-3. **Tool/runtime**: If startup succeeds but scan execution fails, inspect sandbox startup, tool-server health, missing system dependencies, and model/provider rate limits.
+1. **Docker:** `docker version && docker info`. Fix Docker first.
+2. **Provider / LiteLLM:** verify `EXAAI_LLM`, `LLM_API_KEY`, `LLM_API_BASE`; modern models need a recent `litellm` (`pip install -U litellm`).
+3. **Tool / runtime:** sandbox startup, tool-server health, missing dependencies, rate limits. Check `exaai_runs/<run-name>/` for `chat_messages.json`, `run_metadata.json`, `agents.json`, `tool_executions.json`, and `report.json`.
 
-## Maintain ExaAiAgent itself
+## Capabilities (v3.1.1 - latest)
 
-When editing ExaAiAgent:
+- **Evidence grounding:** every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected against the pinned CVE KB.
+- **CVE intelligence:** EPSS, CISA KEV, OSV, and GitHub Advisories with provenance and version-range matching.
+- **Independent verification:** hypothesis -> evidence -> independent check -> conf-v1 -> confirmed / suspected / false_positive, with hardening downgrades.
+- **Scoped execution:** `TargetScope` + command guard + blocklist + proxy linkage enforce `EXAAI_TARGETS`; token/tool/spawn budgets and a circuit breaker stop runaway agents.
+- **Sandbox hardening:** tool server on 127.0.0.1, no host `~/.kube` mount, `no-new-privileges`, no NET_RAW.
+- **Reporting:** unified `report.json` plus SARIF/CSV/HTML/Markdown via `build_report` / `to_sarif`.
+- **Prompt modules (64):** including OWASP LLM Top 10 2025, supply-chain/SBOM triage, exceptional-conditions fail-open, and grounded CVE verification.
+- **78 registered tools:** nuclei/ZAP/httpx-katana/OAST wrappers, HAR import/export, browser JS analysis, API auth/OpenAPI checks, secrets scanner, SBOM triage, cloud checks.
+- **Coordination:** `RunState` save/load/resume, bounded task queue, budget guard, stuck detection via `coordination_*` tools.
+- **LLM/MCP/RAG tests:** offline OWASP LLM Top 10 (2025) checkers, MCP manifest audit (`audit_mcp_manifest_tool`), prompt-injection and leak detection, RAG provenance/cross-tenant checks.
+- **Benchmark:** deterministic Juice Shop / DVWA / WebGoat smoke tasks in `benchmark/`.
+- **Kubernetes scanner:** native K8s assessment; `@register_tool` only on tool functions, never on classes.
 
-1. Fix runtime, CLI, TUI, and tool-server issues before adding new features.
-2. Keep LiteLLM as the model-provider abstraction layer.
-3. Prefer stronger error surfacing over silent failure.
+## Architecture overview
 
-Before release, confirm tests pass, CI is green, version strings are aligned, docs are updated, and at least one real startup path was exercised.
+Multi-agent orchestration, LiteLLM abstraction, Docker sandbox, browser automation, proxy capture, tool server/registry, scanners, CLI/TUI. Main package: `exaaiagnt/`.
+
+## Multi-agent guidelines
+
+Keep agents specialized, avoid overlapping responsibilities, prefer composition over duplication, share artifacts through the workspace, minimize unnecessary spawning.
+
+## Best practices
+
+Maintain backward compatibility, keep prompt modules focused, avoid unnecessary dependencies, write tests for every new feature, prefer readable code, keep interfaces stable.
+
+## Instructions for AI coding agents
+
+Understand the implementation before changing it, do not rewrite working components unnecessarily, preserve existing APIs, update tests when behavior changes, keep version strings synchronized, verify CI passes before finalizing, avoid breaking changes.
+
+## Maintenance checks
 
 ```bash
 poetry run pytest -q
@@ -120,70 +124,4 @@ poetry run python -m py_compile exaaiagnt/interface/main.py exaaiagnt/interface/
 poetry run exaai --version
 ```
 
-## Capabilities (v3.0.1 - latest)
-
-- **Evidence grounding:** every tool result gets an `evidence_id`; vulnerability reports require evidence, invented CVE/version claims are rejected against the pinned CVE KB.
-- **CVE intelligence:** EPSS, CISA KEV, OSV, GitHub Advisories with provenance; version-range matching.
-- **Independent verification:** hypothesis -> evidence -> independent check -> conf-v1 confidence -> confirmed/suspected/false_positive.
-- **Scoped execution:** `TargetScope` + command guard enforce `EXAAI_TARGETS` before tool execution; token/tool/spawn budgets and circuit breaker stop runaway agents.
-- **Sandbox hardening:** tool server on 127.0.0.1, no host `~/.kube` mount, no-new-privileges, dropped NET_RAW.
-- **Reporting:** unified `report.json` + SARIF/CSV/HTML/Markdown via `build_report`/`to_sarif`.
-- **Prompt modules (63):** including OWASP LLM Top 10 2025, supply-chain/SBOM triage, exceptional-conditions fail-open, grounded CVE verification.
-- **Data persistence:** `chat_messages.json`, `run_metadata.json`, `agents.json`, `tool_executions.json` in `exaai_runs/<run-name>`.
-- **Kubernetes scanner:** native K8s assessment with reporting; `@register_tool` only on tool functions, never on classes.
-- **Proxy linkage and blocklist:** tools declare `proxy_required`/`allowed_prompt_modules`/`blocked` in the registry manifest; the executor, command guard, and proxy manager enforce scope and blocklist denials with `ScopeDecision` evidence. `get_tool_manifest` / `tools_for_prompt_module` expose the manifest.
-- **HAR and browser JS:** captured proxy traffic imports/exports as HAR (`exaaiagnt/tools/har_io.py`) with evidence recording; offline browser/JS analysis covers DOM XSS, postMessage origin, Service Workers, and bundle endpoints/secrets (`exaaiagnt/tools/browser_js_analysis.py`).
-- **Coordination:** persistent `RunState` save/load/resume, bounded task queue, token/cost budgets, and heartbeat-vs-activity stuck detection via `coordination_*` tools (`exaaiagnt/coordination/state.py`).
-- **LLM/MCP/RAG tests:** OWASP LLM Top 10 (2025) offline checkers with an MCP manifest audit entrypoint (`audit_mcp_manifest_tool`), prompt-injection and leak detection, and RAG provenance/cross-tenant checks (`exaaiagnt/llm_tests/mcp_rag.py`). Verification hardening downgrades `confirmed` findings on high-severity injection, secret leak, or cross-tenant RAG evidence.
-
-
-  ## Architecture Overview
-
-ExaAiAgent consists of:
-
-- Multi-agent orchestration engine
-- LiteLLM provider abstraction
-- Docker sandbox runtime
-- Browser automation
-- Proxy traffic capture
-- Tool server and tool registry
-- Security scanners
-- CLI and TUI interfaces
-
-Main package:
-
-exaaiagnt/
-
-## Multi-Agent Guidelines
-
-When extending the agent system:
-
-- Keep agents specialized.
-- Avoid overlapping responsibilities.
-- Prefer composition over duplication.
-- Share artifacts through workspace.
-- Minimize unnecessary agent spawning.
-
-## Best Practices
-
-- Maintain backward compatibility.
-- Keep prompt modules focused.
-- Avoid unnecessary dependencies.
-- Write tests for every new feature.
-- Prefer readable code over clever code.
-- Keep interfaces stable
-
-## Instructions for AI Coding Agents
-
-If you are maintaining ExaAiAgent:
-
-- Understand the current implementation before making changes.
-- Do not rewrite working components unnecessarily.
-- Preserve existing APIs.
-- Update tests when behavior changes.
-- Keep version numbers synchronized where required.
-- Verify that CI passes before finalizing changes.
-- Avoid introducing breaking changes.
-
-
-
+Version is single-sourced in `exaaiagnt/version.py` (fallback `3.1.1`); `pyproject.toml` is the source of truth for packaging. Do not publish to PyPI until all features are verified and documented.

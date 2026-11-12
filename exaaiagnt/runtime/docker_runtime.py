@@ -252,7 +252,8 @@ class DockerRuntime(AbstractRuntime):
         container.exec_run(
             f"bash -c 'source /etc/profile.d/proxy.sh && cd /app && "
             f"EXAAI_SANDBOX_MODE=true CAIDO_API_TOKEN={caido_token} CAIDO_PORT={caido_port} "
-            f"poetry run python exaaiagnt/runtime/tool_server.py --token {tool_server_token} "
+            f"EXAAI_TOOL_SERVER_TOKEN={tool_server_token} "
+            f"poetry run python exaaiagnt/runtime/tool_server.py "
             f"--host 0.0.0.0 --port {tool_server_port} &'",
             detach=True,
             user="pentester",

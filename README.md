@@ -11,238 +11,156 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.1-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-3.1.1-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **v3.0.1 Released!** Evidence-grounded findings, pinned CVE intelligence, independent verification, scoped execution, token budgets, and reproducible reporting.
+> **v3.1.1 - latest.** Evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
 >
->  **Connect Your Agent:** You can onboard another AI agent by pointing it to the repository skill:
+> **Connect Your Agent:** Point another AI agent at the repository skill:
 > ```
 > Read https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/SKILL.md and follow the instructions to operate ExaAiAgent
 > ```
 
 ---
 
-## What's New in v3.0.1
+## v3.1.1 at a glance
 
-- Target scope enforced before tool execution when `EXAAI_TARGETS` is set.
-- Agents have token, tool-call, and spawn budgets to prevent unbounded consumption.
-- CVE intelligence joins EPSS, CISA KEV, and OSV with provenance; findings require independent verification.
-- Unified reports and the deterministic benchmark harness are included.
-- New prompt modules: OWASP LLM Top 10 2025, supply-chain/SBOM triage, exceptional-conditions fail-open, grounded CVE verification.
-- Node pinned to 22 LTS, CI lint/test/type-check/smoke all green.
+| Area | What changed |
+|---|---|
+| Grounding | Every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected. |
+| CVE intelligence | FIRST EPSS + CISA KEV + OSV + GitHub Advisories with provenance and version-range matching (`exaaiagnt/intelligence/`). |
+| Verification | `hypothesis -> evidence -> independent check -> conf-v1 -> confirmed / suspected / false_positive`, with hardening downgrades for high-severity injection, secret leak, and cross-tenant RAG evidence. |
+| Safety & scope | `TargetScope` enforced in the executor when `EXAAI_TARGETS` is set; command guard, blocklist, and proxy linkage deny out-of-scope execution with `ScopeDecision` evidence. Sandbox runs on 127.0.0.1, without host `~/.kube` mount, `no-new-privileges`, and without NET_RAW. |
+| Budgets | Per-scan token / tool-call / spawn caps (`EXAAI_MAX_SCAN_TOKENS`, `EXAAI_MAX_TOOL_CALLS`, `EXAAI_MAX_AGENTS`), token hard-stop, and a circuit breaker after 5 consecutive tool errors. `create_agent` defaults to `inherit_context=False` with a spawn cap of 8. |
+| Reporting | Unified `report.json` via `build_report`, plus SARIF / CSV / HTML / Markdown exports, persisted to `exaai_runs/<run-name>/`. |
+| Tools & wrappers | 78 registered tools. Nuclei (invoke-only, argv-only), ZAP, httpx/katana, and OAST wrappers with license tiers. HAR import/export, browser JS analysis (DOM XSS, postMessage, Service Worker, bundle secrets), API auth/OpenAPI checks, secrets scanning, SBOM triage, and cloud checks. |
+| Coordination | `RunState` save / load / resume, bounded task queue, budget guard, and stuck detection, exposed as `coordination_*` tools. |
+| LLM / MCP / RAG | Offline OWASP LLM Top 10 (2025) checkers: prompt-injection detection, secret-leak detection, MCP manifest audit, and RAG provenance / cross-tenant checks. |
+| Benchmark | Deterministic smoke harness for Juice Shop, DVWA, and WebGoat (`benchmark/`). |
+| Prompts | 64 prompt modules, including OWASP LLM Top 10 2025, supply-chain / SBOM triage, exceptional-conditions fail-open, and grounded CVE verification. |
+| CI | Lint, test, type-check, and smoke jobs green on `main`. Node pinned to 22 LTS in Docker. |
 
 ### Previous versions (brief history)
 
 | Version | Summary |
 |---|---|
-| v3.0.0 | Anti-hallucination grounding (`evidence_id` + EvidenceStore), pinned CVE KB, sandbox hardening (127.0.0.1, no ~/.kube mount, no-new-privileges), attack graph planning, conf-v1 validation, reporting v3 (SARIF/CSV/HTML), single-sourced version. |
-| v2.3.2 | K8s scanner tool registration fix, run persistence (`exaai_runs/<run>/`), code-quality/lint pass, SKILL.md expansion. |
-| v2.2.5 | CI on PRs, import-safe tool server, multi-tool LLM responses, prompt-module merging, TUI target queue, smarter prompt resolution. |
-| v2.2.2 - v2.0 | Recon modules (subdomain/port/fingerprint), K8s/Azure/GCP prompt injection, React2Shell CVE detection, auto-discovery, install.sh. |
+| v3.0.0 | Anti-hallucination grounding (`evidence_id` + EvidenceStore), pinned CVE KB, sandbox hardening, attack-graph planning, conf-v1 validation, reporting v3 (SARIF/CSV/HTML), single-sourced version. |
+| v2.3.2 | K8s scanner tool registration fix, run persistence (`exaai_runs/<run>/`), lint pass. |
+| v2.2.5 | CI on PRs, import-safe tool server, multi-tool LLM responses, prompt-module merging, TUI target queue. |
+| v2.2.2 - v2.0 | Recon modules (subdomain / port / fingerprint), K8s / Azure / GCP modules, React2Shell CVE detection, auto-discovery, install.sh. |
 
-Details: see CHANGELOG.md, MIGRATION-v3.md, docs/.
-
----
-
-##  ExaAiAgent Overview
-
-ExaAiAgent is an elite AI-powered cybersecurity agent that acts like a real penetration tester - running your code dynamically, finding vulnerabilities, and validating them through actual proof-of-concepts. Built for developers and security teams who need fast, accurate security testing.
-
-**Key Capabilities:**
-
--  **Full hacker toolkit** out of the box
--  **Teams of agents** that collaborate and scale
--  **Real validation** with PoCs, not false positives
--  **Developer‑first** CLI with actionable reports
--  **Auto‑fix & reporting** to accelerate remediation
--  **Multi-LLM Support** - OpenAI, Anthropic, Gemini, local models
--  **Cloud & Container Security** testing capabilities
--  **Smart Module Loading** - Auto-detects and loads relevant modules
-
-##  Use Cases
-
-- **Application Security Testing** - Detect and validate critical vulnerabilities
-- **Rapid Penetration Testing** - Get pentests done in hours, not weeks
-- **Bug Bounty Automation** - Automate research and generate PoCs
-- **CI/CD Integration** - Block vulnerabilities before production
-- **API Security Testing** - REST, GraphQL, gRPC security analysis
-- **Cloud Security** - AWS, Azure, GCP configuration review
+Details: see CHANGELOG.md, MIGRATION-v3.md, MIGRATION-v3.1.md, SECURITY.md, and docs/.
 
 ---
 
-##  Quick Start
+## Overview
 
-**Prerequisites:**
+ExaAiAgent is an AI-powered security testing framework that runs like a penetration tester: it executes code dynamically, finds vulnerabilities, and validates them with proof-of-concepts before reporting. It is built for developers and security teams who need fast, accurate testing with evidence behind every claim.
 
-- Docker (running)
-- Python 3.12+
-- An LLM provider (OpenAI, Anthropic, OpenRouter, Ollama, or any compatible provider)
+**Key capabilities:**
 
-### Installation & First Scan
+- Full security toolkit out of the box, across web, API, cloud, container, and LLM targets
+- Teams of specialized agents that collaborate and share discoveries
+- Real validation with PoCs, not ungrounded claims
+- Developer-first CLI with actionable, reproducible reports
+- Multi-LLM support through LiteLLM: OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and any compatible provider
+- Smart module loading that auto-detects GraphQL, WebSocket, OAuth, recon, and other attack surfaces
+
+**Use cases:** application security testing, rapid penetration testing, bug-bounty research, CI/CD gating, API security testing (REST, GraphQL, gRPC), and cloud configuration review.
+
+---
+
+## Quick Start
+
+**Prerequisites:** Docker (running), Python 3.12+, and an LLM provider (OpenAI, Anthropic, OpenRouter, Ollama, or any compatible provider).
 
 ```bash
-# Install ExaAiAgent
-
-# Method 1: Automated Script (Recommended)
 pip install exaai-agent
-# Method 2: pipx
-pipx install exaai-agent
+# or: pipx install exaai-agent
 
 # Configure your AI provider (choose one)
-
-# Option 1: OpenAI
 export EXAAI_LLM="openai/gpt-5"
 export LLM_API_KEY="your-openai-key"
 
-# Option 2: Anthropic
-export EXAAI_LLM="anthropic/claude-sonnet-4-5"
-export LLM_API_KEY="your-anthropic-key"
+# Option: Anthropic
+# export EXAAI_LLM="anthropic/claude-sonnet-4-5"
+# Option: OpenRouter
+# export EXAAI_LLM="openrouter/openai/gpt-5"
+# export LLM_API_KEY="your-openrouter-key"
+# export LLM_API_BASE="https://openrouter.ai/api/v1"
+# Option: Ollama (local models)
+# export EXAAI_LLM="ollama/llama3"
+# export LLM_API_BASE="http://localhost:11434"
 
-# Option 3: OpenRouter (access multiple models)
-export EXAAI_LLM="openrouter/openai/gpt-5"
-export LLM_API_KEY="your-openrouter-key"
-export LLM_API_BASE="https://openrouter.ai/api/v1"
-
-# Option 4: Ollama (local models)
-export EXAAI_LLM="ollama/llama3"
-export LLM_API_BASE="http://localhost:11434"
-
-# Run your first security assessment (auto-detects modules!)
+# Run your first assessment (prompt modules auto-detected)
 exaai --target https://your-app.com
 ```
 
-> [!NOTE]
-> First run automatically pulls the sandbox Docker image. Results are saved to `exaai_runs/<run-name>`
+The first run pulls the sandbox Docker image automatically. Results are saved to `exaai_runs/<run-name>`.
 
 ---
 
-##  Features
-
-###  Agentic Security Tools
-
-ExaAiAgent agents come equipped with a comprehensive security testing toolkit:
-
-- **Full HTTP Proxy** - Request/response manipulation and analysis; captured traffic exports to HAR (`exaaiagnt/tools/har_io.py`: `import_har`/`export_har`) and records evidence for the grounding gate
-- **Proxy linkage** - Tools declare `proxy_required`/`allowed_prompt_modules`/`blocked` in the registry manifest; the executor enforces scope, blocklist, and proxy requirements before execution (`exaaiagnt/tools/registry.py`, `exaaiagnt/tools/proxy_env.py`, `exaaiagnt/tools/executor.py`)
-- **Blocklist enforcement** - Blocked paths, modules, and URL segments are denied with `ScopeDecision` evidence from the executor, command guard, and proxy manager (`exaaiagnt/safety/blocklist.py`)
-- **Tool manifest** - `get_tool_manifest` / `tools_for_prompt_module` expose per-tool manifest fields for prompt scoping and auditing
-- **Browser Automation** - Multi-tab browser for XSS, CSRF, auth flows
-- **Browser JS analysis** - Offline DOM XSS, postMessage origin, Service Worker, and JS bundle endpoint/secret extraction (`exaaiagnt/tools/browser_js_analysis.py`: `analyze_browser_js`, `analyze_js_bundle`)
-- **Terminal Environments** - Interactive shells for command execution
-- **Python Runtime** - Custom exploit development and validation
-- **Reconnaissance** - Automated OSINT and attack surface mapping
-- **Code Analysis** - Static and dynamic analysis capabilities
-- **API Fuzzing** - Advanced REST/GraphQL API testing
-- **Coordination** - Persistent `RunState` save/load/resume, task queue with bounded depth, token/cost budgets, and heartbeat-vs-activity stuck detection, exposed as `coordination_*` tools (`exaaiagnt/coordination/state.py`, `exaaiagnt/tools/coordination/`)
-- **LLM/MCP/RAG tests** - Offline OWASP LLM Top 10 (2025) checkers: prompt-injection detection, system-prompt/secret leak detection, MCP server manifest audit, RAG provenance and cross-tenant checks, exposed as `audit_mcp_manifest_tool`, `detect_prompt_injection_tool`, `evaluate_rag_corpus_tool`, `harden_finding_text_tool` (`exaaiagnt/llm_tests/mcp_rag.py`, `exaaiagnt/tools/llm_tests/`)
-
-###  Comprehensive Vulnerability Detection
-
-ExaAiAgent identifies and validates a wide range of security vulnerabilities:
-
-| Category | Vulnerabilities |
-|----------|-----------------|
-| **Access Control** | IDOR, privilege escalation, auth bypass |
-| **Injection** | SQL, NoSQL, Command, GraphQL injection |
-| **Server-Side** | SSRF, XXE, deserialization flaws |
-| **Client-Side** | XSS, prototype pollution, DOM vulnerabilities |
-| **Business Logic** | Race conditions, workflow manipulation |
-| **Authentication** | JWT vulnerabilities, OAuth/OIDC flaws, session management |
-| **WebSocket** | CSWSH, message injection, DoS |
-| **Infrastructure** | Subdomain takeover, misconfigurations |
-| **WAF Bypass** | Encoding, smuggling, header manipulation |
-
-###  Graph of Agents
-
-Advanced multi-agent orchestration for comprehensive security testing:
-
-- **Distributed Workflows** - Specialized agents for different attacks
-- **Scalable Testing** - Parallel execution for fast coverage
-- **Dynamic Coordination** - Agents collaborate and share discoveries
-- **Persistent coordination state** - `RunState` save/load/resume, bounded task queue, budget guard, and stuck detection via `coordination_*` tools (`exaaiagnt/coordination/state.py`)
-- **Verification hardening** - `verify_finding` downgrades a would-be `confirmed` finding to `suspected` on high-severity injection, secret leak, or cross-tenant RAG evidence; reports carry additive `hardening` metadata
-- **MCP manifest audit** - `audit_mcp_manifest_tool` audits an MCP server manifest for broad permissions, dangerous tools, injection, and missing auth/timeout
-
----
-
-##  Usage Examples
-
-### Basic Usage
+## Usage
 
 ```bash
-# Scan a local codebase
+# Local codebase
 exaai --target ./app-directory
 
-# Security review of a GitHub repository
+# GitHub repository review
 exaai --target https://github.com/org/repo
 
-# Black-box web application assessment
+# Black-box web assessment
 exaai --target https://your-app.com
-```
 
-### Smart Auto-Loading (New in v2.0!)
-
-```bash
-# GraphQL endpoint - auto-loads graphql_security
-exaai --target https://api.example.com/graphql
-
-# WebSocket - auto-loads websocket_security
-exaai --target wss://chat.example.com/socket
-
-# OAuth endpoint - auto-loads oauth_oidc
-exaai --target https://auth.example.com/oauth/authorize
-
-# Subdomain recon - auto-loads subdomain_takeover
-exaai --target example.com --instruction "enumerate subdomains"
-```
-
-### Advanced Testing Scenarios
-
-```bash
-# Grey-box authenticated testing
-exaai --target https://your-app.com --instruction "Perform authenticated testing using credentials: user:pass"
-
-# Multi-target testing (source code + deployed app)
+# Multi-target
 exaai -t https://github.com/org/app -t https://your-app.com
 
-# With specific modules (overrides auto-detection)
+# Explicit modules (overrides auto-detection)
 exaai --target https://api.example.com --prompt-modules graphql_security,waf_bypass
 
-# Lightweight mode (reduced token consumption)
-export EXAAI_LIGHTWEIGHT_MODE=true
-exaai --target https://example.com --instruction "quick security scan"
+# Grey-box authenticated testing
+exaai --target https://your-app.com --instruction "Perform authenticated testing using provided credentials and identify authorization flaws"
+
+# Headless / CI mode
+exaai -n --target https://your-app.com
+
+# Interactive TUI
+exaai tui
 ```
 
-###  Headless Mode
+Smart auto-loading resolves modules from the target when `--prompt-modules` is not set, for example GraphQL endpoints, WebSocket endpoints, OAuth/OIDC flows, and subdomain enumeration.
 
-Run ExaAiAgent programmatically without interactive UI:
+### Configuration
 
 ```bash
-exaai -n --target https://your-app.com
+export EXAAI_LLM="openai/gpt-5"        # required
+export LLM_API_KEY="your-api-key"      # required for hosted providers
+export LLM_API_BASE="your-api-base"    # for local / compatible endpoints
+export EXAAI_LIGHTWEIGHT_MODE=true     # reduced token consumption
+export EXAAI_MAX_SCAN_TOKENS=2000000   # per-scan token budget
+export EXAAI_TOOL_TIMEOUT=120          # per-tool timeout (seconds)
+export EXAAI_TARGETS="https://your-app.com"  # enforced target scope
 ```
 
-###  CI/CD (GitHub Actions)
+Recommended models: OpenAI GPT-5 (`openai/gpt-5`), Anthropic Claude Sonnet 4.5 (`anthropic/claude-sonnet-4-5`), Google Gemini (`gemini/gemini-2.0-flash`).
+
+### CI/CD (GitHub Actions)
 
 ```yaml
 name: exaai-security-test
-
 on:
   pull_request:
-
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install ExaAiAgent
         run: curl -sSL https://raw.githubusercontent.com/hleliofficiel/ExaAiAgent/main/install.sh | bash
-
       - name: Run ExaAiAgent
         env:
           EXAAI_LLM: ${{ secrets.EXAAI_LLM }}
@@ -250,101 +168,77 @@ jobs:
         run: exaai -n -t ./
 ```
 
-###  Configuration
+---
 
-```bash
-# Required
-export EXAAI_LLM="openai/gpt-5"
-export LLM_API_KEY="your-api-key"
+## Security modules
 
-# Optional - Performance tuning
-export EXAAI_LIGHTWEIGHT_MODE=true    # Reduced token consumption
-export EXAAI_MAX_TOKENS=2048          # Max output tokens
-export LLM_API_BASE="your-api-base"   # For local models
-export PERPLEXITY_API_KEY="key"       # For search capabilities
-```
+| Module | Description |
+|---|---|
+| `sql_injection` | SQL / NoSQL injection |
+| `xss` | Cross-site scripting |
+| `ssrf` | Server-side request forgery |
+| `xxe` | XML external entity |
+| `rce` | Remote code execution |
+| `idor` | Insecure direct object reference |
+| `authentication_jwt` | Auth and JWT flaws |
+| `business_logic` | Business-logic flaws |
+| `csrf` | Cross-site request forgery |
+| `race_condition` | Race-condition exploits |
+| `graphql_security` | GraphQL-specific attacks |
+| `websocket_security` | WebSocket vulnerabilities |
+| `oauth_oidc` | OAuth2 / OIDC flaws |
+| `waf_bypass` | WAF bypass techniques |
+| `subdomain_takeover` | Subdomain takeover |
+| `prompt_injection` | AI / LLM prompt injection |
+| `kubernetes_security` | K8s RBAC and pod-security auditing |
+| `subdomain_enumeration` | OSINT subdomain discovery |
+| `port_scanning` | Service discovery and port auditing |
+| `technology_fingerprinting` | Web technology identification |
 
-**Recommended Models:**
-
-- OpenAI GPT-5 (`openai/gpt-5`)
-- Anthropic Claude Sonnet 4.5 (`anthropic/claude-sonnet-4-5`)
-- Google Gemini 3.0 (`gemini/gemini-2.0-flash`)
+Full vulnerability coverage also includes NoSQL and command injection, GraphQL injection, deserialization flaws, prototype pollution, DOM vulnerabilities, workflow manipulation, session management, CSWSH and WebSocket message injection, subdomain takeover, and misconfigurations. See docs/ for module details.
 
 ---
 
-##  Available Security Modules
+## Architecture
 
-### Vulnerability Modules
+ExaAiAgent combines a multi-agent orchestration engine, a LiteLLM provider abstraction, a Docker sandbox runtime, browser automation, proxy traffic capture, a tool server and registry, security scanners, and CLI/TUI interfaces in the main `exaaiagnt/` package.
 
-| Module | Description |
-|--------|-------------|
-| `sql_injection` | SQL/NoSQL injection testing |
-| `xss` | Cross-site scripting attacks |
-| `ssrf` | Server-side request forgery |
-| `xxe` | XML external entity attacks |
-| `rce` | Remote code execution |
-| `idor` | Insecure direct object reference |
-| `authentication_jwt` | Auth & JWT vulnerabilities |
-| `business_logic` | Business logic flaws |
-| `csrf` | Cross-site request forgery |
-| `race_condition` | Race condition exploits |
-| `graphql_security` | GraphQL-specific attacks |
-| `websocket_security` | WebSocket vulnerabilities |
-| `oauth_oidc` | OAuth2/OIDC flaws |
-| `waf_bypass` | WAF bypass techniques |
-| `subdomain_takeover` | Subdomain takeover |
-| `prompt_injection` | AI/LLM prompt injection attacks |
-| `kubernetes_security` | **NEW!** K8s RBAC & Pod Security auditing |
-| `subdomain_enumeration` | **NEW!** OSINT-based subdomain discovery |
-| `port_scanning` | **NEW!** Service discovery & port auditing |
-| `technology_fingerprinting` | **NEW!** Web tech stack identification |
+Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (EvidenceStore), `knowledge/` (pinned CVE KB), `intelligence/` (EPSS/KEV/OSV feeds), `verification/` (pipeline + hardening), `safety/` (TargetScope, command guard, blocklist), `coordination/` (RunState), `planning/` (attack graph), `validation/` (conf-v1), `reporting/` (SARIF/CSV/HTML), `tools/` (78 registered tools + wrappers), `prompts/` (64 modules), and `benchmark/` (Juice Shop / DVWA / WebGoat smoke tasks).
+
+---
+
+## Proposed next features
+
+The following are proposed, not implemented. They are tracked in ROADMAP.md and IMPROVEMENTS.md.
+
+- **v3.1.0 - orchestration:** LangGraph orchestrator with a dedicated Verifier agent; `exaai mcp` MCP shim; ZAP daemon wrapper; Trivy/Grype SARIF and Prowler JSON importers.
+- **E2E gate:** scheduled Juice Shop / DVWA / WebGoat end-to-end runs in CI with real LLM providers, with pass/fail thresholds on detection and false-positive rates.
+- **CVE sync:** scheduled `sync_cve` against a signed manifest so the pinned KB stays current without manual seed updates; EPSS/KEV refresh in the same job.
+- **Resume & persistence:** crash-safe run resume from `exaai_runs/<run>/` state, verified by a kill-and-resume test.
+- **Token reduction:** compressor over sliding windows instead of full history, cropped screenshots and page source, and per-module token accounting in reports.
+- **Secrets & SBOM depth:** Trivy/Grype SARIF ingestion, Prowler JSON for cloud posture, and SBOM diffing between scans.
+- **Dashboard & API auth:** authenticated dashboard and tool-server API (the current API authz module is a first step).
+- **Docs & community:** MkDocs site, good-first-issue backlog, and infra-only sponsorship (features are never gated).
+
+---
+
+## Troubleshooting
+
+**LLM connection failed / model not found:** modern models require a recent `litellm`. Update it with `pip install -U litellm`. On externally-managed Linux environments, use a virtual environment (`python3 -m venv venv && source venv/bin/activate`) or `pip install -U litellm --user --break-system-packages`.
 
 ---
 
 ## Changelog
 
-Full history is in CHANGELOG.md. Latest release: v3.0.1 (see "What's New in v3.0.1" above).
+Full history is in CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
 
----
+## Contributing
 
-##  Troubleshooting
+See CONTRIBUTING.md.
 
-###  Troubleshooting
+## Acknowledgements
 
-#### Problem: "LLM Connection Failed" or Model Not Found
-Modern models (like `gemini-3-pro-preview`) require the latest version of `litellm` to be recognized correctly.
-
-**Solution: Update LiteLLM**
-```bash
-pip install -U litellm
-```
-
-**Linux/Debian Users (Externally Managed Environment):**
-If you encounter permission errors or "externally-managed-environment", you may need to use a virtual environment (`venv`) or force a user install:
-
-```bash
-# Option 1: Virtual Environment (Recommended for Servers)
-python3 -m venv venv
-source venv/bin/activate
-pip install exaai-agent
-
-# Option 2: Force User Install
-pip install -U litellm --user --break-system-packages
-```
-
----
-
-##  Contributing
-
-We welcome contributions! Check out our [Contributing Guide](CONTRIBUTING.md).
-
-##  Support the Project
-
-**Love ExaAiAgent?** Give us a  on GitHub!
-
-##  Acknowledgements
-
-ExaAiAgent builds on incredible open-source projects like [LiteLLM](https://github.com/BerriAI/litellm), [Caido](https://github.com/caido/caido), [ProjectDiscovery](https://github.com/projectdiscovery), [Playwright](https://github.com/microsoft/playwright), and [Textual](https://github.com/Textualize/textual).
+ExaAiAgent builds on LiteLLM, Caido, ProjectDiscovery, Playwright, and Textual.
 
 > [!WARNING]
-> Only test apps you own or have permission to test. You are responsible for using ExaAiAgent ethically and legally.
+> Only test applications you own or have permission to test. You are responsible for using ExaAiAgent ethically and legally.

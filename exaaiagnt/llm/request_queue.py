@@ -108,7 +108,7 @@ class LLMRequestQueue:
 
     def _add_jitter(self, delay: float) -> float:
         """Add random jitter to delay to prevent thundering herd."""
-        jitter = random.uniform(0.1, 0.5) * delay
+        jitter = random.uniform(0.1, 0.5) * delay  # nosec B311 - retry jitter, not crypto
         return delay + jitter
 
     async def make_request(self, completion_args: dict[str, Any]) -> ModelResponse:

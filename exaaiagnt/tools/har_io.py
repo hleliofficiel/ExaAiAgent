@@ -53,7 +53,7 @@ def import_har(
 
             for e in out:
                 EvidenceStore.instance().record("har_import", e)
-        except Exception:  # noqa: BLE001, S110 - evidence is best-effort
+        except Exception:  # nosec B110 - noqa: BLE001, S110 - evidence is best-effort  # best-effort
             pass
     return out
 
@@ -98,7 +98,7 @@ def export_har(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "log": {
             "version": "1.2",
-            "creator": {"name": "exaaiagnt", "version": "3.0.1"},
+            "creator": {"name": "exaaiagnt", "version": "3.1.1"},
             "entries": har_entries,
         }
     }

@@ -87,7 +87,7 @@ def run_nuclei(
             from exaaiagnt.grounding import EvidenceStore
 
             EvidenceStore.instance().record("nuclei", {"argv": argv, "findings": findings[:50]})
-        except Exception:  # noqa: BLE001, S110 - evidence is best-effort
+        except Exception:  # nosec B110 - noqa: BLE001, S110 - evidence is best-effort  # best-effort
             pass
     return {
         "success": r.returncode == 0,
