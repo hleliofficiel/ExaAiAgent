@@ -3913,14 +3913,14 @@ voice-helpers = ["numpy (>=2.0.2)", "sounddevice (>=0.5.1)"]
 
 [[package]]
 name = "openhands-aci"
-version = "0.3.1"
+version = "0.3.3"
 description = "An Agent-Computer Interface (ACI) designed for software development agents OpenHands."
 optional = false
 python-versions = "<4.0,>=3.12"
 groups = ["main"]
 files = [
-    {file = "openhands_aci-0.3.1-py3-none-any.whl", hash = "sha256:d1d9d5379388bc0119c6722b8dacf63f7c747788ac5b6c26263601b2001d11c3"},
-    {file = "openhands_aci-0.3.1.tar.gz", hash = "sha256:125c4773b3fd2729ec0c74d005095dad21aa0f7a1e8733e5f33f3f71466f6df9"},
+    {file = "openhands_aci-0.3.3-py3-none-any.whl", hash = "sha256:35795a4d6f5939290f74b26190d5b4cd7477b06ffb7c7f0b505166739461d651"},
+    {file = "openhands_aci-0.3.3.tar.gz", hash = "sha256:567fc65bb881e3ea56c987f4251c8f703d3c88fae99402b46ea7dcc48d85adb2"},
 ]
 
 [package.dependencies]
@@ -3943,7 +3943,6 @@ puremagic = ">=1.28"
 pydantic = ">=2.11.3,<3.0.0"
 pydub = ">=0.25.1,<0.26.0"
 pypdf = ">=5.1.0"
-pypdf2 = ">=3.0.1,<4.0.0"
 python-pptx = ">=1.0.2,<2.0.0"
 rapidfuzz = ">=3.13.0,<4.0.0"
 requests = ">=2.32.3"
@@ -5023,25 +5022,6 @@ fonts = ["fonttools"]
 full = ["arabic-reshaper", "brotli (>=1.2.0)", "cryptography (>=43)", "fonttools", "pillow (>=8.0.0)", "python-bidi"]
 image = ["pillow (>=8.0.0)"]
 rtl-text = ["arabic-reshaper", "python-bidi"]
-
-[[package]]
-name = "pypdf2"
-version = "3.0.1"
-description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = [
-    {file = "PyPDF2-3.0.1.tar.gz", hash = "sha256:a74408f69ba6271f71b9352ef4ed03dc53a31aa404d29b5d31f53bfecfee1440"},
-    {file = "pypdf2-3.0.1-py3-none-any.whl", hash = "sha256:d16e4205cfee272fbdc0568b68d82be796540b1537508cef59388f839c191928"},
-]
-
-[package.extras]
-crypto = ["PyCryptodome"]
-dev = ["black", "flit", "pip-tools", "pre-commit (<2.18.0)", "pytest-cov", "wheel"]
-docs = ["myst_parser", "sphinx", "sphinx_rtd_theme"]
-full = ["Pillow", "PyCryptodome"]
-image = ["Pillow"]
 
 [[package]]
 name = "pyright"
@@ -7205,4 +7185,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "c4bd15213892cfdd1d14f79cbad8e641f4ee5fb2a307119ce9a2adc1e6e8f026"
+content-hash = "430b381317aaa812ef6f214e2efc46430ff209622edcbbcc78a7817ab0ec1f43"

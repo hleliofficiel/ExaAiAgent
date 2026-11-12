@@ -65,6 +65,8 @@ class Tracer:
             runs_dir.mkdir(exist_ok=True)
 
             run_dir_name = self.run_name if self.run_name else self.run_id
+            import re
+            run_dir_name = re.sub(r"[^A-Za-z0-9_.-]", "_", str(run_dir_name)).lstrip(".") or "run"
             self._run_dir = runs_dir / run_dir_name
             self._run_dir.mkdir(exist_ok=True)
 

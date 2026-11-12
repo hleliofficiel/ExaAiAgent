@@ -54,7 +54,7 @@ tenacity = "^9.0.0"
 numpydoc = "^1.8.0"
 pydantic = {extras = ["email"], version = "^2.11.3"}
 ipython = "^9.3.0"
-openhands-aci = "^0.3.0"
+openhands-aci = "^0.3.3"
 playwright = "^1.48.0"
 rich = "*"
 docker = "^7.1.0"

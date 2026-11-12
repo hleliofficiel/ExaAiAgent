@@ -21,21 +21,35 @@ SANDBOX_MODE = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
 if not SANDBOX_MODE:
     raise RuntimeError("Tool server should only run in sandbox mode (EXAAI_SANDBOX_MODE=true)")
 
+
 EXPECTED_TOKEN = os.getenv("EXAAI_TOOL_SERVER_TOKEN", "")
+
+
+def _expected_token() -> str:
+    return os.getenv("EXAAI_TOOL_SERVER_TOKEN", "")
 
 
 def parse_server_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Start ExaaiAgnt tool server")
-    parser.add_argument("--token", required=True, help="Authentication token")
+    parser.add_argument(
+        "--token", default="", help="Authentication token (defaults to EXAAI_TOOL_SERVER_TOKEN env)"
+    )
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")  # nosec
     parser.add_argument("--port", type=int, required=True, help="Port to bind to")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.token:
+        os.environ["EXAAI_TOOL_SERVER_TOKEN"] = args.token
+    elif not os.getenv("EXAAI_TOOL_SERVER_TOKEN"):
+        parser.error("--token or EXAAI_TOOL_SERVER_TOKEN env is required")
+    return args
 
 
 app = FastAPI()
 security = HTTPBearer()
 
 security_dependency = Depends(security)
+_OPTIONAL_BEARER = HTTPBearer(auto_error=False)
+_OPTIONAL_AUTH = Depends(_OPTIONAL_BEARER)
 
 agent_processes: dict[str, dict[str, Any]] = {}
 agent_queues: dict[str, dict[str, Queue[Any]]] = {}
@@ -49,7 +63,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if not EXPECTED_TOKEN or not secrets.compare_digest(credentials.credentials, EXPECTED_TOKEN):
+    expected = _expected_token()
+    if not expected or not secrets.compare_digest(credentials.credentials, expected):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
@@ -186,15 +201,25 @@ async def register_agent(
 
 
 @app.get("/health")
-async def health_check() -> dict[str, Any]:
-    return {
+async def health_check(
+    credentials: HTTPAuthorizationCredentials | None = _OPTIONAL_AUTH,
+) -> dict[str, Any]:
+    full = {
         "status": "healthy",
         "sandbox_mode": str(SANDBOX_MODE),
         "environment": "sandbox" if SANDBOX_MODE else "main",
-        "auth_configured": "true" if EXPECTED_TOKEN else "false",
+        "auth_configured": "true" if _expected_token() else "false",
         "active_agents": len(agent_processes),
         "agents": list(agent_processes.keys()),
     }
+    if (
+        credentials
+        and credentials.scheme == "Bearer"
+        and _expected_token()
+        and secrets.compare_digest(credentials.credentials, _expected_token())
+    ):
+        return full
+    return {"status": "healthy"}
 
 
 def cleanup_all_agents() -> None:
@@ -232,8 +257,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == "__main__":
     args = parse_server_args()
-    EXPECTED_TOKEN = args.token
-    os.environ["EXAAI_TOOL_SERVER_TOKEN"] = EXPECTED_TOKEN
+    os.environ["EXAAI_TOOL_SERVER_TOKEN"] = _expected_token()
     try:
         uvicorn.run(app, host=args.host, port=args.port, log_level="info")
     finally:

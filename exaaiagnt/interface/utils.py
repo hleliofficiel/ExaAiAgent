@@ -412,13 +412,19 @@ def clone_repository(repo_url: str, run_name: str, dest_name: str | None = None)
     if git_executable is None:
         raise FileNotFoundError("Git executable not found in PATH")
 
-    temp_dir = Path(tempfile.gettempdir()) / "exaai_repos" / run_name
+    import re as _re
+
+    def _slug(v: str) -> str:
+        return _re.sub(r"[^A-Za-z0-9_.-]", "_", str(v)).lstrip(".") or "repo"
+
+    temp_dir = Path(tempfile.gettempdir()) / "exaai_repos" / _slug(run_name)
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     if dest_name:
-        repo_name = dest_name
+        repo_name = _slug(dest_name)
     else:
         repo_name = Path(repo_url).stem if repo_url.endswith(".git") else Path(repo_url).name
+        repo_name = _slug(repo_name)
 
     clone_path = temp_dir / repo_name
 
