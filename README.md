@@ -53,7 +53,7 @@
 | v2.2.5 | CI on PRs, import-safe tool server, multi-tool LLM responses, prompt-module merging, TUI target queue. |
 | v2.2.2 - v2.0 | Recon modules (subdomain / port / fingerprint), K8s / Azure / GCP modules, React2Shell CVE detection, auto-discovery, install.sh. |
 
-Details: see CHANGELOG.md, MIGRATION-v3.md, SECURITY.md, and docs/.
+Details: see CHANGELOG.md, MIGRATION-v3.md, MIGRATION-v3.1.md, SECURITY.md, and docs/.
 
 ---
 

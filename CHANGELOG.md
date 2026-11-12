@@ -13,6 +13,8 @@
 - openai pin relaxed >=1.99.5,<1.100.0 -> >=2.20.0,<4.0.0 (required by litellm>=1.84); websockets pin upper bound dropped; python constraint narrowed to >=3.12,<3.14 (litellm requirement)
 - Dev: pytest ^8.4.0 -> ^9.0.3 (locked 9.2.0; closes PYSEC-2026-1845) with libtmux >=0.62.0 (pytest-9 plugin compatibility); gql 3 -> 4.4.0 major bump required for graphql-core >=3.2.12
 - Note: Socket reported additional non-CVE alert classes (shell/network/eval/native-code/filesystem/env-var access, unidentified licenses) inherent to a security-tooling dependency tree; not individually patchable — tracked for review
+- Install: friendly post-install experience - ASCII banner, welcome message, quick-start steps, explicit PATH check (install.sh)
+- Docs: MIGRATION-v3.1.md (upgrade notes: gql 3->4, dashboard loopback default, tool-server env token, fail-closed scope guard)
 - CI: new `security` job (pip-audit against exported lock + bandit `-ll` over exaaiagnt), blocking on findings
 - CI: Dependabot for weekly pip (grouped minor/patch) and github-actions updates, PRs against main
 - Docs: SECURITY.md rewritten as a disclosure policy (supported versions, private advisory reporting, 72h/7d timeline, safe harbor)
