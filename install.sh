@@ -89,7 +89,33 @@ fi
 
 echo "✅ Installation complete!"
 echo ""
-echo "🎉 To start using ExaAiAgent:"
-echo "   1. Restart your terminal OR run: source $RC_FILE"
-echo "   2. Run command: exaai --help"
+cat << 'BANNER'
+   ______  _  _   ____    ____   _____
+  |  ____|| || | / __ \  / __ \ |_   _|
+  | |__   | || || |  | || |  | |  | |
+  |  __|  |__   || |  | || |  | |  | |
+  | |____    | || |__| || |__| | _| |_
+  |______|   |_| \____/  \____/ |_____|
+
+   Advanced AI-Powered Cybersecurity Agent  ·  v3.1.1
+BANNER
+echo ""
+echo "🎉 Welcome to ExaAiAgent!"
+echo ""
+echo "Next steps:"
+echo "   1. Reload your shell:      source ${RC_FILE}   (or restart the terminal)"
+echo "   2. Verify it works:        exaai --version"
+echo "   3. Show all options:       exaai --help"
+echo "   4. Run your first scan:    exaai --target https://example.com"
+echo ""
+echo "📖 Full guide: https://github.com/hleliofficiel/ExaAiAgent"
+echo ""
+
+# Post-install sanity check (non-fatal)
+if command -v exaai &> /dev/null; then
+    echo "✅ exaai is on your PATH and ready to use."
+else
+    echo "ℹ️  exaai is installed but not yet on your PATH in this shell."
+    echo "   Open a new terminal or run: source ${RC_FILE}"
+fi
 echo ""
