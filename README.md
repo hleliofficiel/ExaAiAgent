@@ -106,21 +106,111 @@ The first run pulls the sandbox Docker image automatically. Results are saved to
 
 ## Troubleshooting
 
-**LLM connection failed / model not found:** modern models require a recent `litellm`. Update it with `pip install -U litellm`. On externally-managed Linux environments, use a virtual environment (`python3 -m venv venv && source venv/bin/activate`) or `pip install -U litellm --user --break-system-packages`.
+### LLM connection failed / model not found
 
-**`exaai: command not found` after install:** your shell has not picked up the new PATH entry. Open a fresh terminal, or run `source ~/.bashrc` (or `source ~/.zshrc` / `fish_add_path ~/.local/bin`). If you installed with `pipx`, run `pipx ensurepath` once and reopen the terminal.
+Modern models require a recent `litellm`. Update it:
 
-**`docker: command not found` or the sandbox fails to start:** ExaAiAgent runs tools inside a Docker sandbox. Install Docker Desktop (macOS/Windows) or Docker Engine (Linux), start the daemon, and verify with `docker info`. If you see permission errors on Linux, add your user to the `docker` group (`sudo usermod -aG docker $USER`, then re-login).
+```bash
+pip install -U litellm
+```
 
-**`LLM_API_KEY` missing / 401 / 403 from the provider:** export the key in the same shell you run `exaai`, verify the value has no trailing newline, and confirm the model id matches your provider (e.g. `openai/gpt-5`, `anthropic/claude-sonnet-4-5`). For OpenRouter also set `LLM_API_BASE=https://openrouter.ai/api/v1`.
+On externally-managed Linux environments, use a virtual environment:
 
-**Scan starts but tools return nothing / sandbox exits immediately:** check available disk space and RAM, and verify the sandbox image pulls: `docker pull ghcr.io/hleliofficiel/exaai-sandbox:1.0`. Look at `exaai_runs/<run>/run_metadata.json` for the failing tool and `exaai_runs/<run>/report.md` for what ran.
+```bash
+python3 -m venv venv && source venv/bin/activate
+```
 
-**Dashboard not reachable:** since v3.1.1 the dashboard binds `127.0.0.1:8000` by default. Open `http://127.0.0.1:8000`; to expose it on your LAN, pass `host="0.0.0.0"` or set `EXAAI_DASHBOARD_TOKEN` and authenticate with `Authorization: Bearer <token>`.
+or install with `--user`:
 
-**`MODULE_DENY` / `TOOL_BLOCKED` at scan time:** the security manifest blocked that tool or module for your invocation. Check your `--prompt-modules` list and the tool's license/usage policy in `docs/tools.md` — some wrappers are invoke-only and require explicit `--allow-tools` or equivalent configuration.
+```bash
+pip install -U litellm --user --break-system-packages
+```
 
-**`pip` dependency conflicts on upgrade:** the v3.1.x line requires `openai>=2.20,<4` and `python>=3.12,<3.14`. If your environment pins older versions, recreate it: `pipx install --force git+https://github.com/hleliofficiel/ExaAiAgent.git`.
+### `exaai: command not found` after install
+
+Your shell has not picked up the new PATH entry. Open a fresh terminal, or reload your shell config:
+
+```bash
+source ~/.bashrc
+```
+
+For zsh or fish:
+
+```bash
+source ~/.zshrc
+```
+
+```fish
+fish_add_path ~/.local/bin
+```
+
+If you installed with `pipx`, run once and reopen the terminal:
+
+```bash
+pipx ensurepath
+```
+
+### `docker: command not found` or the sandbox fails to start
+
+ExaAiAgent runs tools inside a Docker sandbox. Install Docker Desktop (macOS/Windows) or Docker Engine (Linux), start the daemon, and verify:
+
+```bash
+docker info
+```
+
+On Linux, if your user gets permission errors, add it to the `docker` group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+Then re-login.
+
+### `LLM_API_KEY` missing / 401 / 403 from the provider
+
+Export the key in the same shell you run `exaai`:
+
+```bash
+export LLM_API_KEY="your-api-key"
+```
+
+Verify the value has no trailing newline, and confirm the model id matches your provider (e.g. `openai/gpt-5`, `anthropic/claude-sonnet-4-5`). For OpenRouter also set:
+
+```bash
+export LLM_API_BASE="https://openrouter.ai/api/v1"
+```
+
+### Scan starts but tools return nothing / sandbox exits immediately
+
+Check available disk space and RAM, and verify the sandbox image pulls:
+
+```bash
+docker pull ghcr.io/hleliofficiel/exaai-sandbox:1.0
+```
+
+Look at `exaai_runs/<run>/run_metadata.json` for the failing tool and `exaai_runs/<run>/report.md` for what ran.
+
+### Dashboard not reachable
+
+Since v3.1.1 the dashboard binds `127.0.0.1:8000` by default. Open:
+
+```
+http://127.0.0.1:8000
+```
+
+To expose it on your LAN, pass `host="0.0.0.0"` or set `EXAAI_DASHBOARD_TOKEN` and authenticate with `Authorization: Bearer <token>`.
+
+### `MODULE_DENY` / `TOOL_BLOCKED` at scan time
+
+The security manifest blocked that tool or module for your invocation. Check your `--prompt-modules` list and the tool's license and usage policy in `docs/tools.md` — some wrappers are invoke-only and require explicit `--allow-tools` or equivalent configuration.
+
+### `pip` dependency conflicts on upgrade
+
+The v3.1.x line requires `openai>=2.20,<4` and `python>=3.12,<3.14`. If your environment pins older versions, recreate it:
+
+```bash
+pipx install --force git+https://github.com/hleliofficiel/ExaAiAgent.git
+```
 
 ---
 
