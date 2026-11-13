@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.2.0-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-3.1.1-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **v3.2.0 - latest.** Two additions: `exaai mcp` stdio server for any MCP client, and dashboard v2 with a live WebSocket event stream. v3.1.1 brought zero-CVE dependency remediation, hardened container/CI, friendly install experience. Evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
+> **v3.1.1 - latest.** `exaai mcp` stdio server for any MCP client, dashboard v2 with a live WebSocket event stream, zero-CVE dependency remediation, hardened container/CI, friendly install experience — plus evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
 >
 > **Connect Your Agent:** Point another AI agent at the repository skill:
 > ```
@@ -27,7 +27,7 @@
 
 ---
 
-## v3.2.0 at a glance
+## v3.1.1 at a glance
 
 | Area | What changed |
 |---|---|
@@ -325,7 +325,7 @@ Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (E
 
 ## Changelog
 
-Full history is in docs/CHANGELOG.md. Latest release: v3.2.0 (see the v3.2.0 table above).
+Full history is in docs/CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
 
 ## Contributing
 

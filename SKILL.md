@@ -5,7 +5,7 @@ description: "Use and contribute to ExaAiAgent — run AI-assisted penetration t
 
 # ExaAiAgent Skill
 
-Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**. Current version: **v3.2.0**.
+Use ExaAiAgent as a Docker-backed security testing framework powered by **LiteLLM-compatible providers**. Current version: **v3.1.1**.
 
 This skill has two audiences:
 
@@ -138,7 +138,7 @@ exaai --help
 
 Budget and safety knobs: `EXAAI_MAX_SCAN_TOKENS`, `EXAAI_MAX_TOOL_CALLS`, `EXAAI_MAX_AGENTS`, `EXAAI_TOOL_TIMEOUT=120`, `EXAAI_TARGETS` (enforced scope).
 
-## Capabilities (v3.2.0)
+## Capabilities (v3.1.1)
 
 - **Evidence grounding:** every tool result gets an `evidence_id`; reports require evidence; invented CVE/version claims are rejected against the pinned CVE KB.
 - **CVE intelligence:** EPSS, CISA KEV, OSV, GitHub Advisories, with provenance and version-range matching.
@@ -177,7 +177,7 @@ cd ExaAiAgent
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"        # or: poetry install --with=dev
 poetry run pytest -q           # 202 tests must pass
-poetry run exaai --version     # expect: ExaAi v3.2.0
+poetry run exaai --version     # expect: ExaAi v3.1.1
 ```
 
 ## How the project is organized

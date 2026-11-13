@@ -98,7 +98,7 @@ def export_har(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "log": {
             "version": "1.2",
-            "creator": {"name": "exaaiagnt", "version": "3.2.0"},
+            "creator": {"name": "exaaiagnt", "version": "3.1.1"},
             "entries": har_entries,
         }
     }

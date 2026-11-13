@@ -1,5 +1,12 @@
 # Migration v3.0.1 -> v3.1.1
 
+## New in this release (additive)
+
+- `exaai mcp` — MCP stdio server working identically as `exaai mcp`, `ExaAiAgent mcp`, `exaaiagent mcp`
+- Dashboard v2: WebSocket live events + `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`; no breaking changes
+
+Unchanged: all v3.1.1 security defaults (litellm 1.101.x, dashboard bound to 127.0.0.1 with optional `EXAAI_DASHBOARD_TOKEN`).
+
 v3.1.1 is a security maintenance release. The CLI, commands, and config keys are unchanged; a few defaults and dependencies changed.
 
 | Area | Change | Action needed |
