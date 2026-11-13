@@ -53,7 +53,7 @@
 | v2.2.5 | CI on PRs, import-safe tool server, multi-tool LLM responses, prompt-module merging, TUI target queue. |
 | v2.2.2 - v2.0 | Recon modules (subdomain / port / fingerprint), K8s / Azure / GCP modules, React2Shell CVE detection, auto-discovery, install.sh. |
 
-Details: see CHANGELOG.md, MIGRATION-v3.md, MIGRATION-v3.1.md, SECURITY.md, and docs/.
+Details: see docs/CHANGELOG.md, docs/MIGRATION-v3.md, docs/MIGRATION-v3.1.md, SECURITY.md, and docs/.
 
 ---
 
@@ -323,7 +323,7 @@ Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (E
 
 ## Changelog
 
-Full history is in CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
+Full history is in docs/CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
 
 ## Contributing
 
