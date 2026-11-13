@@ -65,7 +65,7 @@ python-dotenv = ">=1.2.2"
 pdfminer-six = ">=20251230"
 restrictedpython = ">=8.4"
 textual = "^4.0.0"
-xmltodict = "^0.13.0"
+xmltodict = ">=0.13,<1.1"
 pyte = "^0.8.1"
 urllib3 = ">=2.8.0"
 aiohttp = ">=3.14.4"
@@ -102,7 +102,7 @@ bandit = "^1.8.3"
 # Testing
 pytest = "^9.0.3"
 pytest-asyncio = "^1.0.0"
-pytest-cov = "^6.1.1"
+pytest-cov = ">=6.1.1,<8.0.0"
 pytest-mock = "^3.14.1"
 
 # Development tools
