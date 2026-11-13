@@ -12,6 +12,7 @@
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-3.1.1-00d4ff.svg)]()
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg)](#-contributors)
 
 </div>
 
@@ -326,6 +327,33 @@ Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (E
 ## Changelog
 
 Full history is in docs/CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
+
+
+## 🏆 Contributors
+
+Thanks to everyone who has contributed to ExaAiAgent — every emoji, every PR counts. 🧡
+New contributors are added automatically via [all-contributors](https://allcontributors.org) (maintainers: `npx all-contributors add <GitHub-user> <code|bug|doc|...>` then `npx all-contributors generate`).
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+
+<table>
+<tbody>
+<table>
+<tr><td align="center" valign="top" width="14.28%"><a href="https://github.com/hleliofficiel"><img src="https://github.com/hleliofficiel.png?v=4" width="100px;" alt="Mohammed Hleli Officiel"/><br /><sub><b>Mohammed Hleli Officiel</b></sub></a><br />📝 🐛 📖 🚧 🛡️ ⚠️ 🔧 🎨 👀</td></tr>
+</table>
+</tbody>
+</table>
+
+<!-- prettier-ignore-start -->
+
+<!-- markdownlint-disable -->
+
+**Emoji key:** 📝 code, 🐛 bug, 📖 doc, 🚧 maintenance, 🛡️ security, ⚠️ test, 🔧 infra, 🎨 design, 👀 review, 💡 example, 💬 question, 📓 userTesting
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## Contributing
 

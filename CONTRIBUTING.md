@@ -107,12 +107,18 @@ We welcome feature ideas! Please:
 
 - **GitHub Issues**: [GitHub Issues](https://github.com/hleliofficiel/ExaAiAgent/issues)
 
-## ✨ Recognition
+## ✨ Recognition & Achievements
 
-We value all contributions! Contributors will be:
+We value all contributions — code or not (docs, tests, ideas, triage, design)! Recognition is two-layered:
 
-- Listed in release notes
-- Added to contributors list
+1. **GitHub Achievements (automatic)**: GitHub grants profile badges to repo contributors automatically — Pull Shark (merged PRs), Pair Extraordinaire (co-authored PRs), Quickdraw, YOLO, Galaxy Brain and more. Just open PRs/issues here and they unlock on your profile when you meet the criteria.
+2. **All Contributors in this repo**: everyone who contributes in any form is listed in the [Contributors](../../#-contributors) table in the README. Maintainers add you with:
+   ```bash
+   npx all-contributors add <your-github-username> <code|bug|doc|test|infra|review|...>
+   ```
+   or by opening a PR with `.all-contributorsrc` updated. Every contribution type counts — not just code.
+
+Contributors are also listed in release notes.
 
 ---
 
