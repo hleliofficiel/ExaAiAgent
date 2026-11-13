@@ -11,14 +11,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/exaai-agent?color=3776AB)](https://pypi.org/project/exaai-agent/)
 [![PyPI](https://img.shields.io/pypi/v/exaai-agent?color=10b981)](https://pypi.org/project/exaai-agent/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.1.1-00d4ff.svg)]()
+[![Version](https://img.shields.io/badge/version-3.2.0-00d4ff.svg)]()
 
 </div>
 
 <br>
 
 > [!TIP]
-> **v3.1.1 - latest.** Evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
+> **v3.2.0 - latest.** Two additions: `exaai mcp` stdio server for any MCP client, and dashboard v2 with a live WebSocket event stream. v3.1.1 brought zero-CVE dependency remediation, hardened container/CI, friendly install experience. Evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
 >
 > **Connect Your Agent:** Point another AI agent at the repository skill:
 > ```
@@ -27,10 +27,12 @@
 
 ---
 
-## v3.1.1 at a glance
+## v3.2.0 at a glance
 
 | Area | What changed |
 |---|---|
+| MCP server | `exaai mcp` — MCP stdio server exposing `exaai_run_scan`, `exaai_cve_lookup`, `exaai_list_runs`, `exaai_get_report` to any MCP client (Claude Desktop, Cursor, Continue). Stdio-only, `EXAAI_TARGETS` enforced, stderr logs |
+| Dashboard v2 | WebSocket live event stream (findings/agents/tools), `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`, redesigned dark UI with auto-reconnect and severity filters |
 | Grounding | Every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected. |
 | CVE intelligence | FIRST EPSS + CISA KEV + OSV + GitHub Advisories with provenance and version-range matching (`exaaiagnt/intelligence/`). |
 | Verification | `hypothesis -> evidence -> independent check -> conf-v1 -> confirmed / suspected / false_positive`, with hardening downgrades for high-severity injection, secret leak, and cross-tenant RAG evidence. |
@@ -323,7 +325,7 @@ Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (E
 
 ## Changelog
 
-Full history is in docs/CHANGELOG.md. Latest release: v3.1.1 (see the v3.1.1 table above).
+Full history is in docs/CHANGELOG.md. Latest release: v3.2.0 (see the v3.2.0 table above).
 
 ## Contributing
 
