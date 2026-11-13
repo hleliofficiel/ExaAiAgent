@@ -8,9 +8,12 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
+from exaaiagnt import scan_control
+from exaaiagnt.dashboard import admin
 from exaaiagnt.telemetry.tracer import get_global_tracer
 
 
@@ -264,6 +267,29 @@ async def get_report():
     return FileResponse(report_path, media_type="application/json", filename="report.json")
 
 
+@app.get("/api/export/full")
+async def export_full():
+    tracer = get_global_tracer()
+    run_dir = _active_run_dir(tracer)
+    if run_dir is None:
+        return JSONResponse({"detail": "No active run or invalid run name"}, status_code=404)
+    run_name = getattr(tracer, "run_name", None)
+    try:
+        built = admin.build_full_export(run_dir, str(run_name))
+    except OSError:
+        logging.getLogger(__name__).exception("full export failed")
+        return JSONResponse({"detail": "export failed"}, status_code=500)
+    if built is None:
+        return JSONResponse({"detail": "No report files found for active run"}, status_code=404)
+    payload, _files = built
+    filename = f"exaai-run-{run_name}.zip"
+    return Response(
+        content=payload,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.get("/api/export/{fmt}")
 async def export_report(fmt: str):
     spec = _EXPORT_FILES.get(fmt)
@@ -280,6 +306,87 @@ async def export_report(fmt: str):
     from fastapi.responses import FileResponse
 
     return FileResponse(path, media_type=media_type, filename=filename)
+
+
+class ProviderTestIn(BaseModel):
+    provider: str
+
+
+class EnvVarIn(BaseModel):
+    key: str
+    value: str
+
+
+def _audit_safe(action: str, detail: str) -> None:
+    try:
+        admin.append_audit(action, detail)
+    except OSError:
+        logging.getLogger(__name__).warning("audit log append failed for action=%s", action)
+
+
+@app.get("/api/providers")
+async def get_providers():
+    try:
+        return admin.discover_providers()
+    except Exception:
+        logging.getLogger(__name__).exception("providers discovery failed")
+        return JSONResponse({"detail": "providers discovery failed"}, status_code=500)
+
+
+@app.post("/api/providers/test")
+async def test_provider_endpoint(body: ProviderTestIn):
+    try:
+        result = await asyncio.to_thread(admin.test_provider, body.provider)
+    except Exception:
+        logging.getLogger(__name__).exception("provider test failed")
+        return JSONResponse({"detail": "provider test failed"}, status_code=500)
+    _audit_safe(
+        "provider_tested",
+        f"provider={str(body.provider).strip().lower()} ok={bool(result.get('ok'))}",
+    )
+    return result
+
+
+@app.put("/api/providers/env")
+async def put_provider_env(body: EnvVarIn):
+    if body.key not in admin.ENV_ALLOWLIST:
+        return JSONResponse({"detail": f"key not in allowlist: {body.key}"}, status_code=400)
+    try:
+        admin.write_env_var(body.key, body.value)
+    except ValueError as exc:
+        return JSONResponse({"detail": str(exc)}, status_code=400)
+    except OSError:
+        logging.getLogger(__name__).exception(".env write failed")
+        return JSONResponse({"detail": ".env write failed"}, status_code=500)
+    os.environ[body.key] = body.value
+    _audit_safe("env_set", f"{body.key} updated")
+    return {"ok": True, "restart_required": True}
+
+
+@app.post("/api/scan/stop")
+async def request_scan_stop():
+    scan_control.request_stop()
+    _audit_safe("scan_stop_requested", "user requested scan stop")
+    return {"ok": True, "detail": "stop requested"}
+
+
+@app.get("/api/update")
+async def get_update():
+    try:
+        return await asyncio.to_thread(admin.get_update_status)
+    except Exception:
+        logging.getLogger(__name__).exception("update check failed")
+        return JSONResponse({"detail": "update check failed"}, status_code=500)
+
+
+@app.get("/api/audit")
+async def get_audit(limit: int = 20):
+    limit = max(1, min(int(limit), 100))
+    try:
+        return admin.read_audit(limit)
+    except Exception:
+        logging.getLogger(__name__).exception("audit read failed")
+        return JSONResponse({"detail": "audit read failed"}, status_code=500)
 
 
 def _diff_events(prev: dict, tracer) -> list[dict]:

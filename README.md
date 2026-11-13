@@ -32,7 +32,7 @@
 | Area | What changed |
 |---|---|
 | MCP server | `exaai mcp` — MCP stdio server exposing `exaai_run_scan`, `exaai_cve_lookup`, `exaai_list_runs`, `exaai_get_report` to any MCP client (Claude Desktop, Cursor, Continue). Stdio-only, `EXAAI_TARGETS` enforced, stderr logs |
-| Dashboard v2 | WebSocket live event stream (findings/agents/tools), `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`, redesigned dark UI with auto-reconnect and severity filters |
+| Dashboard v2 | WebSocket live event stream (findings/agents/tools), `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`, redesigned dark UI with auto-reconnect and severity filters. **v2.1 ops panel**: AI providers viewable/editable (masked, live Test), update badge from PyPI, Scan STOP control, critical/high alerts, audit log, Export All (.zip), print/PDF |
 | Grounding | Every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected. |
 | CVE intelligence | FIRST EPSS + CISA KEV + OSV + GitHub Advisories with provenance and version-range matching (`exaaiagnt/intelligence/`). |
 | Verification | `hypothesis -> evidence -> independent check -> conf-v1 -> confirmed / suspected / false_positive`, with hardening downgrades for high-severity injection, secret leak, and cross-tenant RAG evidence. |

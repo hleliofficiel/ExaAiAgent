@@ -20,6 +20,8 @@
         </div>
     </div>
     <div class="topbar-right">
+        <a class="update-badge update-unknown" id="update-badge" href="#" target="_blank" rel="noopener noreferrer" title="Checking for updates…">…</a>
+        <button class="icon-btn" id="mute-toggle" type="button" aria-label="Toggle alert sound and notifications" title="Mute alerts">🔔</button>
         <div class="metric-block">
             <span class="metric-label">UPTIME</span>
             <span class="metric-value" id="uptime">--:--:--</span>
@@ -78,6 +80,8 @@
                     <a class="btn" href="/api/export/csv">CSV</a>
                     <a class="btn" href="/api/export/html">HTML</a>
                     <a class="btn" href="/api/export/md">MD</a>
+                    <button class="btn" id="export-full" type="button">Export All (.zip)</button>
+                    <button class="btn" id="print-pdf" type="button">Print / PDF</button>
                 </div>
             </div>
         </div>
@@ -103,6 +107,89 @@
         </div>
     </aside>
 </main>
+
+<section class="ops-grid" aria-label="Operations">
+    <section class="panel panel-scan" aria-label="Scan control">
+        <div class="panel-header">
+            <h2>Scan Control</h2>
+            <span class="panel-hint" id="scan-status-hint">idle</span>
+        </div>
+        <div class="scan-body">
+            <div class="scan-meta">
+                <div class="scan-meta-row"><span class="scan-meta-label">Run</span><span class="scan-meta-value" id="scan-run-name">no active run</span></div>
+                <div class="scan-meta-row"><span class="scan-meta-label">Uptime</span><span class="scan-meta-value" id="scan-uptime">--:--:--</span></div>
+                <div class="scan-meta-row"><span class="scan-meta-label">Agents running</span><span class="scan-meta-value" id="scan-agents-running">0</span></div>
+            </div>
+            <button class="stop-btn" id="stop-scan-btn" type="button" disabled>■ STOP SCAN</button>
+            <p class="scan-note">Stops the current scan gracefully. Requires confirmation.</p>
+        </div>
+    </section>
+
+    <section class="panel panel-providers" aria-label="AI providers">
+        <div class="panel-header">
+            <h2>AI Providers</h2>
+            <span class="panel-hint" id="providers-hint">loading…</span>
+        </div>
+        <div class="providers-controls">
+            <label class="sr-only" for="active-provider">Set active provider</label>
+            <select id="active-provider" aria-label="Set active provider">
+                <option value="">Set active provider…</option>
+            </select>
+            <label class="sr-only" for="model-input">Model</label>
+            <input type="text" id="model-input" class="text-input" placeholder="model (current shown as placeholder)" autocomplete="off" spellcheck="false">
+            <button class="btn btn-accent" id="save-active-provider" type="button">Apply</button>
+        </div>
+        <div class="providers-list" id="providers-list">
+            <p class="empty-note">Loading providers…</p>
+        </div>
+    </section>
+
+    <section class="panel panel-audit" aria-label="Audit log">
+        <details class="audit-details" id="audit-details">
+            <summary>
+                <span class="audit-summary-title">Audit Log</span>
+                <span class="panel-hint">last 20 entries · refreshes while open</span>
+            </summary>
+            <div class="audit-body">
+                <table class="audit-table">
+                    <thead>
+                        <tr><th>Time</th><th>Action</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="audit-body">
+                        <tr class="empty-row"><td colspan="3">No audit entries</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </section>
+</section>
+
+<div class="modal-overlay" id="setkey-modal" hidden role="dialog" aria-modal="true" aria-labelledby="setkey-title">
+    <div class="modal">
+        <h3 id="setkey-title">Set key</h3>
+        <p class="modal-sub" id="setkey-sub">Provider</p>
+        <label class="modal-label" for="setkey-input">Value for <code id="setkey-envkey">ENV_KEY</code></label>
+        <input type="password" id="setkey-input" class="text-input modal-input" placeholder="Paste value…" autocomplete="off" spellcheck="false">
+        <p class="modal-hint">Stored server-side only. Never displayed after saving.</p>
+        <div class="modal-actions">
+            <button class="btn" id="setkey-cancel" type="button">Cancel</button>
+            <button class="btn btn-accent" id="setkey-save" type="button">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="stop-modal" hidden role="dialog" aria-modal="true" aria-labelledby="stop-title">
+    <div class="modal">
+        <h3 id="stop-title">إيقاف الفحص الحالي؟</h3>
+        <p class="modal-sub">This will request the running scan to stop. In-flight work may take a moment to wind down.</p>
+        <div class="modal-actions">
+            <button class="btn" id="stop-cancel" type="button">Cancel</button>
+            <button class="btn btn-danger" id="stop-confirm" type="button">Stop scan</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
 
 <script src="/static/dashboard-v2.js"></script>
 </body>
