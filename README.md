@@ -168,13 +168,14 @@ Then re-login.
 
 ### `LLM_API_KEY` missing / 401 / 403 from the provider
 
-Export the key in the same shell you run `exaai`:
+Export the required variables in the same shell you run `exaai`:
 
 ```bash
-export LLM_API_KEY="your-api-key"
+export EXAAI_LLM="your-model"               # required
+export LLM_API_KEY="your-api-key"           # required for hosted providers
 ```
 
-Verify the value has no trailing newline, and confirm the model id matches your provider (e.g. `openai/gpt-5`, `anthropic/claude-sonnet-4-5`). For OpenRouter also set:
+Verify the value has no trailing newline, and confirm the model id matches your provider (e.g. `openai/gpt-6-astra`, `anthropic/claude-opus-5-5`, `google/gemini-4-carbon` etc...). For OpenRouter also set:
 
 ```bash
 export LLM_API_BASE="https://openrouter.ai/api/v1"
