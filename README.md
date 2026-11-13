@@ -171,7 +171,7 @@ Then re-login.
 Export the required variables in the same shell you run `exaai`:
 
 ```bash
-export EXAAI_LLM="openai/gpt-6-astra"        # required
+export EXAAI_LLM="your-model"               # required
 export LLM_API_KEY="your-api-key"           # required for hosted providers
 ```
 
