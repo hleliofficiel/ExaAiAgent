@@ -42,7 +42,7 @@
 | LLM / MCP / RAG | Offline OWASP LLM Top 10 (2025) checkers: prompt-injection detection, secret-leak detection, MCP manifest audit, and RAG provenance / cross-tenant checks. |
 | Benchmark | Deterministic smoke harness for Juice Shop, DVWA, and WebGoat (`benchmark/`). |
 | Prompts | 64 prompt modules, including OWASP LLM Top 10 2025, supply-chain / SBOM triage, exceptional-conditions fail-open, and grounded CVE verification. |
-| CI | Lint, test, type-check, and smoke jobs green on `main`. Node pinned to 22 LTS in Docker. |
+| CI | Lint, test, type-check, security (pip-audit + bandit), and smoke jobs green. Node pinned to 22 LTS in Docker. |
 
 ### Previous versions (brief history)
 
@@ -101,6 +101,117 @@ exaai --target https://your-app.com
 ```
 
 The first run pulls the sandbox Docker image automatically. Results are saved to `exaai_runs/<run-name>`.
+
+---
+
+## Troubleshooting
+
+### LLM connection failed / model not found
+
+Modern models require a recent `litellm`. Update it:
+
+```bash
+pip install -U litellm
+```
+
+On externally-managed Linux environments, use a virtual environment:
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+```
+
+or install with `--user`:
+
+```bash
+pip install -U litellm --user --break-system-packages
+```
+
+### `exaai: command not found` after install
+
+Your shell has not picked up the new PATH entry. Open a fresh terminal, or reload your shell config:
+
+```bash
+source ~/.bashrc
+```
+
+For zsh or fish:
+
+```bash
+source ~/.zshrc
+```
+
+```fish
+fish_add_path ~/.local/bin
+```
+
+If you installed with `pipx`, run once and reopen the terminal:
+
+```bash
+pipx ensurepath
+```
+
+### `docker: command not found` or the sandbox fails to start
+
+ExaAiAgent runs tools inside a Docker sandbox. Install Docker Desktop (macOS/Windows) or Docker Engine (Linux), start the daemon, and verify:
+
+```bash
+docker info
+```
+
+On Linux, if your user gets permission errors, add it to the `docker` group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+Then re-login.
+
+### `LLM_API_KEY` missing / 401 / 403 from the provider
+
+Export the required variables in the same shell you run `exaai`:
+
+```bash
+export EXAAI_LLM="your-model"               # required
+export LLM_API_KEY="your-api-key"           # required for hosted providers
+```
+
+Verify the value has no trailing newline, and confirm the model id matches your provider (e.g. `openai/gpt-6-astra`, `anthropic/claude-opus-5-5`, `google/gemini-4-carbon` etc...). For OpenRouter also set:
+
+```bash
+export LLM_API_BASE="https://openrouter.ai/api/v1"
+```
+
+### Scan starts but tools return nothing / sandbox exits immediately
+
+Check available disk space and RAM, and verify the sandbox image pulls:
+
+```bash
+docker pull ghcr.io/hleliofficiel/exaai-sandbox:1.0
+```
+
+Look at `exaai_runs/<run>/run_metadata.json` for the failing tool and `exaai_runs/<run>/report.md` for what ran.
+
+### Dashboard not reachable
+
+Since v3.1.1 the dashboard binds `127.0.0.1:8000` by default. Open:
+
+```
+http://127.0.0.1:8000
+```
+
+To expose it on your LAN, pass `host="0.0.0.0"` or set `EXAAI_DASHBOARD_TOKEN` and authenticate with `Authorization: Bearer <token>`.
+
+### `MODULE_DENY` / `TOOL_BLOCKED` at scan time
+
+The security manifest blocked that tool or module for your invocation. Check your `--prompt-modules` list and the tool's license and usage policy in `docs/tools.md` — some wrappers are invoke-only and require explicit `--allow-tools` or equivalent configuration.
+
+### `pip` dependency conflicts on upgrade
+
+The v3.1.x line requires `openai>=2.20,<4` and `python>=3.12,<3.14`. If your environment pins older versions, recreate it:
+
+```bash
+pipx install --force git+https://github.com/hleliofficiel/ExaAiAgent.git
+```
 
 ---
 
@@ -207,24 +318,6 @@ Key packages: `agents/` (supervisor, scan modes, shared memory), `grounding/` (E
 
 ---
 
-## Proposed next features
-
-The following are proposed, not implemented. They are tracked in ROADMAP.md and IMPROVEMENTS.md.
-
-- **v3.1.0 - orchestration:** LangGraph orchestrator with a dedicated Verifier agent; `exaai mcp` MCP shim; ZAP daemon wrapper; Trivy/Grype SARIF and Prowler JSON importers.
-- **E2E gate:** scheduled Juice Shop / DVWA / WebGoat end-to-end runs in CI with real LLM providers, with pass/fail thresholds on detection and false-positive rates.
-- **CVE sync:** scheduled `sync_cve` against a signed manifest so the pinned KB stays current without manual seed updates; EPSS/KEV refresh in the same job.
-- **Resume & persistence:** crash-safe run resume from `exaai_runs/<run>/` state, verified by a kill-and-resume test.
-- **Token reduction:** compressor over sliding windows instead of full history, cropped screenshots and page source, and per-module token accounting in reports.
-- **Secrets & SBOM depth:** Trivy/Grype SARIF ingestion, Prowler JSON for cloud posture, and SBOM diffing between scans.
-- **Dashboard & API auth:** authenticated dashboard and tool-server API (the current API authz module is a first step).
-- **Docs & community:** MkDocs site, good-first-issue backlog, and infra-only sponsorship (features are never gated).
-
----
-
-## Troubleshooting
-
-**LLM connection failed / model not found:** modern models require a recent `litellm`. Update it with `pip install -U litellm`. On externally-managed Linux environments, use a virtual environment (`python3 -m venv venv && source venv/bin/activate`) or `pip install -U litellm --user --break-system-packages`.
 
 ---
 
@@ -238,7 +331,16 @@ See CONTRIBUTING.md.
 
 ## Acknowledgements
 
-ExaAiAgent builds on LiteLLM, Caido, ProjectDiscovery, Playwright, and Textual.
+ExaAiAgent builds on the following open-source projects:
+
+- [LiteLLM](https://github.com/BerriAI/litellm) — multi-provider LLM abstraction (MIT)
+- [Caido](https://caido.io/) — interactive web-proxy traffic capture for the sandbox
+- [ProjectDiscovery](https://github.com/projectdiscovery) — scanner tooling used by wrapper modules (nuclei, httpx, katana)
+- [Playwright](https://github.com/microsoft/playwright) — browser automation (Apache-2.0)
+- [Textual](https://github.com/Textualize/textual) — TUI framework (MIT)
+- [OpenHands ACI](https://github.com/OpenHands/ACI) — agent-computer interface primitives
+
+Security research and prompt-engineering work is informed by the wider open-source security community. ExaAiAgent itself is open source under the Apache License 2.0 — see LICENSE.
 
 > [!WARNING]
 > Only test applications you own or have permission to test. You are responsible for using ExaAiAgent ethically and legally.
