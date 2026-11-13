@@ -566,6 +566,13 @@ def main() -> None:
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+    # Light branch: `exaai mcp` starts the MCP stdio server. Kept before the
+    # scan path so `exaai --version` and all other flags behave identically.
+    if len(sys.argv) > 1 and sys.argv[1] == "mcp":
+        from exaaiagnt.mcp_server import run_mcp_command
+
+        sys.exit(run_mcp_command(sys.argv[2:]))
+
     args = parse_arguments()
 
     # Handle TUI-only mode (no target needed)

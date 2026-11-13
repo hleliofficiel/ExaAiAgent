@@ -1,6 +1,15 @@
 # Changelog
 
-## [3.1.1] - 2026-11-12
+## [3.1.1] - 2026-11-13
+- Features (this release):
+  - MCP: `exaai mcp` stdio server (also `ExaAiAgent mcp` / `exaaiagent mcp`) — exaai-agent exposes itself to any MCP client (Claude Desktop, Cursor, Continue, ...)
+    - Tools: `exaai_run_scan` (full scan, requires EXAAI_TARGETS match, returns concise summary — never raw report), `exaai_cve_lookup` (pinned KB), `exaai_list_runs`, `exaai_get_report`
+    - stdio-only, stderr logging, error-safe `isError` responses, run_name sanitized (`^[A-Za-z0-9_.-]+$`)
+    - MCP SDK 1.30.0 (already locked via litellm[proxy])
+  - Dashboard v2: live event stream over WebSocket (vulnerability / agent_started / agent_completed / agent_failed / tool_completed), `counters` frame, `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`, redesigned dark UI, WS auto-reconnect, severity filters
+  - Dashboard v2.1 ops panel: AI providers (live Test reachability, masked-key display, set active provider, PUT /api/providers/env with atomic .env rewrite + timestamped backup, chmod 600), update badge from PyPI (6h cache), Scan Control STOP button (executor should_stop boundary checks + StopScan), critical/high browser+audio alerts with localStorage mute, audit log (JSONL, /api/audit), Export All (.zip, /api/export/full), Print/PDF report CSS
+  - Docs: dual-audience SKILL.md (users + contributors); release docs moved under `docs/`; docs/MIGRATION-v3.1.md extended; README troubleshooting reorganized
+  - Tests: 222 passing (13 new dashboard tests, 7 new MCP tests); CI remains 5/5 green
 - Security: upgrade litellm `~1.79.1` -> `>=1.101.3,<1.102.0` (locked 1.101.6) to remediate Socket/PyPI alerts:
   - CVE-2026-37004 / GHSA-6wvf-77m9-58rm (CVSS 9.8, CRITICAL): LiteLLM SSTI in `/prompts/test` via unsandboxed jinja2 — fixed in 1.83.7
   - CVE-2026-49468 / GHSA-4xpc-pv4p-pm3w (CVSS 9.5, CRITICAL): Host-header auth bypass on proxy management routes — fixed in 1.84.0

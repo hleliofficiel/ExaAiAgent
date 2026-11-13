@@ -8,6 +8,8 @@ import httpx
 if os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "false":
     from exaaiagnt.runtime import get_runtime
 
+from exaaiagnt.scan_control import StopScan, should_stop
+
 from .argument_parser import convert_arguments
 from .registry import (
     get_tool_by_name,
@@ -34,6 +36,8 @@ async def _record_evidence(tool_name, result, agent_state, kwargs):
 
 
 async def execute_tool(tool_name: str, agent_state: Any | None = None, **kwargs: Any) -> Any:
+    if should_stop():
+        raise StopScan("scan stop requested by user")
     _scope_check(tool_name, kwargs)
     execute_in_sandbox = should_execute_in_sandbox(tool_name)
     sandbox_mode = os.getenv("EXAAI_SANDBOX_MODE", "false").lower() == "true"
@@ -241,6 +245,8 @@ async def execute_tool_with_validation(
 
     try:
         result = await execute_tool(tool_name, agent_state, **kwargs)
+    except StopScan:
+        raise
     except Exception as e:  # noqa: BLE001
         error_str = str(e)
         if len(error_str) > 500:
@@ -395,9 +401,26 @@ async def process_tool_invocations(
     tracer, agent_id = _get_tracer_and_agent_id(agent_state)
 
     for tool_inv in tool_invocations:
-        observation_xml, images, tool_should_finish = await _execute_single_tool(
-            tool_inv, agent_state, tracer, agent_id
-        )
+        if should_stop():
+            observation_parts.append(
+                "<tool_result>\n<tool_name>scan_control</tool_name>\n"
+                "<result>Scan stopped by user request; remaining tool calls skipped.</result>\n"
+                "</tool_result>"
+            )
+            should_agent_finish = True
+            break
+        try:
+            observation_xml, images, tool_should_finish = await _execute_single_tool(
+                tool_inv, agent_state, tracer, agent_id
+            )
+        except StopScan:
+            observation_parts.append(
+                "<tool_result>\n<tool_name>scan_control</tool_name>\n"
+                "<result>Scan stopped by user request; remaining tool calls skipped.</result>\n"
+                "</tool_result>"
+            )
+            should_agent_finish = True
+            break
         observation_parts.append(observation_xml)
         all_images.extend(images)
 

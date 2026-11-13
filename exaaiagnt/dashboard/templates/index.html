@@ -4,229 +4,193 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ExaAi Mission Control</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
-        .neon-text { text-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6; }
-        .neon-border { box-shadow: 0 0 5px #3b82f6; border-color: #3b82f6; }
-        .agent-card { transition: all 0.3s ease; }
-        .agent-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .vuln-critical { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1); }
-        .vuln-high { border-left: 4px solid #f97316; background: rgba(249, 115, 22, 0.1); }
-        .vuln-medium { border-left: 4px solid #eab308; background: rgba(234, 179, 8, 0.1); }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%233b82f6'/></svg>">
+    <link rel="stylesheet" href="/static/dashboard-v2.css">
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg z-10">
-        <div class="flex items-center gap-3">
-            <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-            <h1 class="text-2xl font-bold tracking-wider text-blue-400 neon-text">EXAAI <span class="text-white">MISSION CONTROL</span></h1>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 2 L28 9 V23 L16 30 L4 23 V9 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="4.5" fill="currentColor"/>
+        </svg>
+        <div class="brand-text">
+            <span class="brand-name">EXAAI<span class="brand-sub"> MISSION CONTROL</span></span>
+            <span class="run-name" id="run-name">no active run</span>
         </div>
-        <div class="flex gap-6 text-sm">
-            <div class="flex flex-col items-end">
-                <span class="text-slate-400">STATUS</span>
-                <span class="text-green-400 font-bold">ONLINE</span>
-            </div>
-            <div class="flex flex-col items-end">
-                <span class="text-slate-400">AGENTS</span>
-                <span id="total-agents" class="text-blue-400 font-bold">0</span>
-            </div>
-            <div class="flex flex-col items-end">
-                <span class="text-slate-400">VULNERABILITIES</span>
-                <span id="total-vulns" class="text-red-500 font-bold neon-text">0</span>
+    </div>
+    <div class="topbar-right">
+        <a class="update-badge update-unknown" id="update-badge" href="#" target="_blank" rel="noopener noreferrer" title="Checking for updates…">…</a>
+        <button class="icon-btn" id="mute-toggle" type="button" aria-label="Toggle alert sound and notifications" title="Mute alerts">🔔</button>
+        <div class="metric-block">
+            <span class="metric-label">UPTIME</span>
+            <span class="metric-value" id="uptime">--:--:--</span>
+        </div>
+        <div class="metric-block">
+            <span class="metric-label">CONNECTION</span>
+            <span class="conn"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">connecting</span></span>
+        </div>
+    </div>
+</header>
+
+<section class="tiles" aria-label="Summary counters">
+    <div class="tile tile-confirmed">
+        <span class="tile-label">Confirmed</span>
+        <span class="tile-value" id="tile-confirmed">0</span>
+    </div>
+    <div class="tile tile-suspected">
+        <span class="tile-label">Suspected</span>
+        <span class="tile-value" id="tile-suspected">0</span>
+    </div>
+    <div class="tile tile-tools">
+        <span class="tile-label">Tool calls</span>
+        <span class="tile-value" id="tile-tools">0</span>
+    </div>
+    <div class="tile tile-agents">
+        <span class="tile-label">Active agents</span>
+        <span class="tile-value" id="tile-agents">0</span>
+    </div>
+</section>
+
+<main class="grid">
+    <section class="panel panel-events" aria-label="Live event feed">
+        <div class="panel-header">
+            <h2>Live Events</h2>
+            <span class="panel-hint">auto-scrolling</span>
+        </div>
+        <div class="event-feed" id="event-feed" role="log" aria-live="polite"></div>
+    </section>
+
+    <section class="panel panel-findings" aria-label="Findings">
+        <div class="panel-header">
+            <h2>Findings</h2>
+            <div class="panel-controls">
+                <label class="sr-only" for="severity-filter">Filter by severity</label>
+                <select id="severity-filter">
+                    <option value="all">All severities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                    <option value="info">Info</option>
+                </select>
+                <div class="export-group" aria-label="Export report">
+                    <a class="btn" href="/api/export/json">JSON</a>
+                    <a class="btn" href="/api/export/sarif">SARIF</a>
+                    <a class="btn" href="/api/export/csv">CSV</a>
+                    <a class="btn" href="/api/export/html">HTML</a>
+                    <a class="btn" href="/api/export/md">MD</a>
+                    <button class="btn" id="export-full" type="button">Export All (.zip)</button>
+                    <button class="btn" id="print-pdf" type="button">Print / PDF</button>
+                </div>
             </div>
         </div>
-    </header>
+        <div class="table-wrap">
+            <table class="findings-table">
+                <thead>
+                    <tr><th>Severity</th><th>Title</th><th>Evidence</th><th>Tool</th></tr>
+                </thead>
+                <tbody id="findings-body">
+                    <tr class="empty-row"><td colspan="4">No findings yet</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex overflow-hidden">
-        <!-- Sidebar: Agent Tree -->
-        <aside class="w-1/4 bg-slate-900 border-r border-slate-700 flex flex-col">
-            <div class="p-3 border-b border-slate-700 bg-slate-800">
-                <h2 class="font-bold text-slate-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    Active Operations
-                </h2>
+    <aside class="panel panel-surface" aria-label="Attack surface">
+        <div class="panel-header">
+            <h2>Attack Surface</h2>
+            <span class="panel-hint" id="surface-mode">grouped by tool</span>
+        </div>
+        <div class="surface-body" id="surface-body">
+            <p class="empty-note">No data yet</p>
+        </div>
+    </aside>
+</main>
+
+<section class="ops-grid" aria-label="Operations">
+    <section class="panel panel-scan" aria-label="Scan control">
+        <div class="panel-header">
+            <h2>Scan Control</h2>
+            <span class="panel-hint" id="scan-status-hint">idle</span>
+        </div>
+        <div class="scan-body">
+            <div class="scan-meta">
+                <div class="scan-meta-row"><span class="scan-meta-label">Run</span><span class="scan-meta-value" id="scan-run-name">no active run</span></div>
+                <div class="scan-meta-row"><span class="scan-meta-label">Uptime</span><span class="scan-meta-value" id="scan-uptime">--:--:--</span></div>
+                <div class="scan-meta-row"><span class="scan-meta-label">Agents running</span><span class="scan-meta-value" id="scan-agents-running">0</span></div>
             </div>
-            <div id="agent-list" class="flex-1 overflow-y-auto p-3 space-y-2">
-                <!-- Agents injected here -->
+            <button class="stop-btn" id="stop-scan-btn" type="button" disabled>■ STOP SCAN</button>
+            <p class="scan-note">Stops the current scan gracefully. Requires confirmation.</p>
+        </div>
+    </section>
+
+    <section class="panel panel-providers" aria-label="AI providers">
+        <div class="panel-header">
+            <h2>AI Providers</h2>
+            <span class="panel-hint" id="providers-hint">loading…</span>
+        </div>
+        <div class="providers-controls">
+            <label class="sr-only" for="active-provider">Set active provider</label>
+            <select id="active-provider" aria-label="Set active provider">
+                <option value="">Set active provider…</option>
+            </select>
+            <label class="sr-only" for="model-input">Model</label>
+            <input type="text" id="model-input" class="text-input" placeholder="model (current shown as placeholder)" autocomplete="off" spellcheck="false">
+            <button class="btn btn-accent" id="save-active-provider" type="button">Apply</button>
+        </div>
+        <div class="providers-list" id="providers-list">
+            <p class="empty-note">Loading providers…</p>
+        </div>
+    </section>
+
+    <section class="panel panel-audit" aria-label="Audit log">
+        <details class="audit-details" id="audit-details">
+            <summary>
+                <span class="audit-summary-title">Audit Log</span>
+                <span class="panel-hint">last 20 entries · refreshes while open</span>
+            </summary>
+            <div class="audit-body">
+                <table class="audit-table">
+                    <thead>
+                        <tr><th>Time</th><th>Action</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="audit-body">
+                        <tr class="empty-row"><td colspan="3">No audit entries</td></tr>
+                    </tbody>
+                </table>
             </div>
-        </aside>
+        </details>
+    </section>
+</section>
 
-        <!-- Center: Live Feed & Stats -->
-        <section class="flex-1 flex flex-col bg-slate-900/50 relative">
-            <!-- Matrix Rain Background Effect (Optional/Subtle) -->
-            <div class="absolute inset-0 pointer-events-none opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMWUyOTNiIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMzMzQxNTUiLz4KPC9zdmc+')]"></div>
+<div class="modal-overlay" id="setkey-modal" hidden role="dialog" aria-modal="true" aria-labelledby="setkey-title">
+    <div class="modal">
+        <h3 id="setkey-title">Set key</h3>
+        <p class="modal-sub" id="setkey-sub">Provider</p>
+        <label class="modal-label" for="setkey-input">Value for <code id="setkey-envkey">ENV_KEY</code></label>
+        <input type="password" id="setkey-input" class="text-input modal-input" placeholder="Paste value…" autocomplete="off" spellcheck="false">
+        <p class="modal-hint">Stored server-side only. Never displayed after saving.</p>
+        <div class="modal-actions">
+            <button class="btn" id="setkey-cancel" type="button">Cancel</button>
+            <button class="btn btn-accent" id="setkey-save" type="button">Save</button>
+        </div>
+    </div>
+</div>
 
-            <div class="h-1/2 border-b border-slate-700 flex">
-                <!-- Live Terminal Log -->
-                <div class="w-2/3 border-r border-slate-700 flex flex-col">
-                    <div class="p-2 bg-slate-800 border-b border-slate-700 flex justify-between">
-                        <span class="text-xs font-mono text-slate-400">>_ SYSTEM LOGS</span>
-                        <span class="text-xs text-green-500">● LIVE</span>
-                    </div>
-                    <div id="console-logs" class="flex-1 overflow-y-auto p-4 font-mono text-xs text-slate-300 space-y-1 bg-black/40">
-                        <!-- Logs injected here -->
-                    </div>
-                </div>
+<div class="modal-overlay" id="stop-modal" hidden role="dialog" aria-modal="true" aria-labelledby="stop-title">
+    <div class="modal">
+        <h3 id="stop-title">إيقاف الفحص الحالي؟</h3>
+        <p class="modal-sub">This will request the running scan to stop. In-flight work may take a moment to wind down.</p>
+        <div class="modal-actions">
+            <button class="btn" id="stop-cancel" type="button">Cancel</button>
+            <button class="btn btn-danger" id="stop-confirm" type="button">Stop scan</button>
+        </div>
+    </div>
+</div>
 
-                <!-- Quick Stats Chart -->
-                <div class="w-1/3 p-4 bg-slate-800/30 flex flex-col items-center justify-center">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
 
-            <!-- Vulnerabilities Panel -->
-            <div class="h-1/2 flex flex-col bg-slate-900">
-                <div class="p-3 border-b border-slate-700 bg-slate-800 flex justify-between items-center">
-                    <h2 class="font-bold text-red-400 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        Detected Vulnerabilities
-                    </h2>
-                    <span class="text-xs text-slate-500">Auto-refreshing...</span>
-                </div>
-                <div id="vuln-list" class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Vulns injected here -->
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
-
-        // Chart setup
-        const ctx = document.getElementById('statusChart').getContext('2d');
-        const statusChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Active', 'Completed', 'Failed'],
-                datasets: [{
-                    data: [0, 0, 0],
-                    backgroundColor: ['#3b82f6', '#22c55e', '#ef4444'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#94a3b8' } }
-                },
-                cutout: '70%'
-            }
-        });
-
-        socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            updateDashboard(data);
-        };
-
-        function updateDashboard(data) {
-            // Update Headers
-            document.getElementById('total-agents').textContent = Object.keys(data.agents).length;
-
-            // Update Agent List
-            const agentList = document.getElementById('agent-list');
-            agentList.innerHTML = '';
-
-            Object.values(data.agents).forEach(agent => {
-                const div = document.createElement('div');
-                div.className = `agent-card p-3 rounded bg-slate-800 border border-slate-700 ${agent.status === 'running' ? 'border-l-4 border-l-blue-500' : ''}`;
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="font-bold text-xs text-slate-200 truncate" title="${agent.name}">${agent.name}</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded ${getStatusColor(agent.status)}">${agent.status}</span>
-                    </div>
-                    <div class="text-[10px] text-slate-500 truncate">${agent.id.substring(0, 8)}...</div>
-                    <div class="text-[11px] text-slate-400 mt-1 line-clamp-2">${agent.task || 'No task description'}</div>
-                `;
-                agentList.appendChild(div);
-            });
-
-            // Update Logs
-            const logContainer = document.getElementById('console-logs');
-            logContainer.innerHTML = '';
-            data.recent_logs.forEach(log => {
-                const div = document.createElement('div');
-                const time = new Date(log.timestamp * 1000).toLocaleTimeString();
-                const color = log.role === 'assistant' ? 'text-blue-400' : 'text-slate-400';
-                div.innerHTML = `<span class="text-slate-600">[${time}]</span> <span class="${color}">${log.role.toUpperCase()}:</span> <span class="text-slate-300">${escapeHtml(log.content.substring(0, 150))}...</span>`;
-                logContainer.appendChild(div);
-            });
-
-            // Update Chart
-            statusChart.data.datasets[0].data = [
-                data.stats.active,
-                data.stats.completed,
-                data.stats.failed
-            ];
-            statusChart.update();
-
-            // Update Vulns (Fetching separately or from WS if included)
-            fetchVulns();
-        }
-
-        async function fetchVulns() {
-            try {
-                const response = await fetch('/api/vulnerabilities');
-                const vulns = await response.json();
-                document.getElementById('total-vulns').textContent = vulns.length;
-
-                const container = document.getElementById('vuln-list');
-                container.innerHTML = '';
-
-                if (vulns.length === 0) {
-                    container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No vulnerabilities detected... yet.</div>';
-                    return;
-                }
-
-                vulns.forEach(v => {
-                    const div = document.createElement('div');
-                    const severityClass = `vuln-${v.severity.toLowerCase()}`;
-                    div.className = `p-4 rounded bg-slate-800 border border-slate-700 ${severityClass}`;
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="font-bold text-sm text-white">${v.title}</h3>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-black/30 rounded text-white">${v.severity}</span>
-                        </div>
-                        <p class="text-xs text-slate-400 line-clamp-3 mb-2">${v.content}</p>
-                        <div class="text-[10px] text-slate-500">ID: ${v.report_id}</div>
-                    `;
-                    container.appendChild(div);
-                });
-            } catch (e) {
-                console.error("Failed to fetch vulns", e);
-            }
-        }
-
-        function getStatusColor(status) {
-            switch(status) {
-                case 'running': return 'bg-blue-900 text-blue-300';
-                case 'completed': return 'bg-green-900 text-green-300';
-                case 'failed': return 'bg-red-900 text-red-300';
-                default: return 'bg-slate-700 text-slate-300';
-            }
-        }
-
-        function escapeHtml(text) {
-            if (!text) return "";
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // Initial load
-        fetchVulns();
-    </script>
+<script src="/static/dashboard-v2.js"></script>
 </body>
 </html>

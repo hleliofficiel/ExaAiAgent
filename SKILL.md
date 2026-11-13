@@ -125,6 +125,7 @@ Focus: authz/IDOR and injection first, then SSRF. Lightweight mode if possible.
 ## Basic usage reference
 
 ```bash
+exaai mcp                                # start MCP stdio server (any MCP client)
 exaai --target <path|url>                 # single target
 exaai -t <t1> -t <t2>                     # multi-target
 exaai -n --target <url>                   # headless
