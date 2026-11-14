@@ -3,12 +3,13 @@ import contextlib
 import logging
 import os
 import re
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -523,6 +524,287 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception:
         logging.exception("WebSocket error")
         manager.disconnect(websocket)
+
+
+# ================= Contributor Achievement System =================
+# All /api/contributors* routes sit under /api so the existing EXAAI_DASHBOARD_TOKEN
+# middleware applies. The HTML page and badge SVG cards are intentionally public.
+from exaaiagnt.contributors import badges as badge_defs  # noqa: E402
+from exaaiagnt.contributors import db as contrib_db  # noqa: E402
+from exaaiagnt.contributors import engine as contrib_engine  # noqa: E402
+from exaaiagnt.contributors import github as contrib_github  # noqa: E402
+from exaaiagnt.dashboard import contributors_assets  # noqa: E402
+
+_badges_assets_dir = Path(__file__).resolve().parents[2] / "contributor_system" / "badges"
+if _badges_assets_dir.is_dir():
+    app.mount(
+        "/assets/badges",
+        StaticFiles(directory=_badges_assets_dir),
+        name="contributor-badges",
+    )
+
+_LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+_REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+
+
+def _badge_dict(badge, awarded_at=None):
+    d = {
+        "id": badge.id,
+        "name": badge.name,
+        "medal": badge.icon,
+        "color": badge.color,
+        "description": badge.description,
+        "points": badge.points,
+    }
+    if awarded_at is not None:
+        d["awarded_at"] = awarded_at
+    return d
+
+
+def _contributor_summary(p: dict) -> dict:
+    badges_out = []
+    for a in p.get("achievements", []):
+        b = badge_defs.BADGES_BY_ID.get(a.get("badge_id"))
+        if b is None:
+            continue
+        badges_out.append(_badge_dict(b, a.get("awarded_at")))
+    return {
+        "login": p.get("login"),
+        "name": p.get("name"),
+        "avatar_url": p.get("avatar_url"),
+        "profile_url": p.get("profile_url"),
+        "level": p.get("level"),
+        "points": p.get("points", 0),
+        "badges": badges_out,
+        "counts": {"merged_prs": (p.get("events") or {}).get("pr_merged", 0)},
+    }
+
+
+def _achievement_keys() -> dict:
+    """Snapshot {(github_id, badge_id): login} for pre/post-sync attribution."""
+    keys: dict = {}
+    try:
+        conn = contrib_db.connect()
+        try:
+            rows = conn.execute(
+                "SELECT a.github_id, a.badge_id, c.login FROM achievements a "
+                "JOIN contributors c ON c.github_id = a.github_id"
+            ).fetchall()
+            for r in rows:
+                keys[(r["github_id"], r["badge_id"])] = r["login"]
+        finally:
+            conn.close()
+    except Exception:
+        logging.exception("contributors: achievement snapshot failed")
+    return keys
+
+
+@app.get("/api/contributors")
+async def get_contributors():
+    deadline = time.monotonic() + 5.0
+    out: list[dict] = []
+    try:
+        conn = contrib_db.connect()
+        try:
+            logins = [r["login"] for r in contrib_db.all_contributors(conn)]
+        finally:
+            conn.close()
+    except Exception:
+        logging.exception("contributors: database unavailable")
+        return {"contributors": []}
+    for login in logins:
+        if time.monotonic() > deadline:
+            logging.warning(
+                "contributors: 5s soft cap reached; skipping %d login(s)",
+                len(logins) - len(out),
+            )
+            break
+        try:
+            p = contrib_engine.profile(login)
+            if not p.get("found"):
+                continue
+            out.append(_contributor_summary(p))
+        except Exception:
+            logging.warning("contributors: profile failed for %s", login, exc_info=True)
+    out.sort(key=lambda c: c.get("points", 0), reverse=True)
+    return {"contributors": out}
+
+
+@app.get("/api/contributors/{login}")
+async def get_contributor(login: str):
+    if not _LOGIN_RE.match(login):
+        return JSONResponse({"detail": "invalid login"}, status_code=400)
+    try:
+        p = contrib_engine.profile(login)
+    except Exception:
+        logging.exception("contributors: profile failed for %s", login)
+        return JSONResponse({"detail": "profile unavailable"}, status_code=500)
+    if not p.get("found"):
+        return JSONResponse({"detail": "contributor not found"}, status_code=404)
+    return _contributor_summary(p)
+
+
+@app.get("/api/contributor-achievements")
+async def get_contributor_achievements():
+    badges_out = []
+    for b in badge_defs.BADGES:
+        d = _badge_dict(b)
+        d["palette"] = dict(b.palette)
+        d["criterion"] = b.description
+        d["criteria"] = b.criteria
+        d["manual_only"] = b.manual_only
+        badges_out.append(d)
+    return {
+        "badges": badges_out,
+        "levels": {name: threshold for name, threshold in badge_defs.LEVELS},
+    }
+
+
+class ContributorSyncIn(BaseModel):
+    user: str | None = None
+    repo: str | None = None
+
+
+@app.post("/api/contributors/sync")
+async def sync_contributors(body: ContributorSyncIn):
+    repo = (body.repo or contrib_github.DEFAULT_REPO).strip()
+    if not _REPO_RE.match(repo):
+        return JSONResponse({"detail": "repo must look like 'owner/name'"}, status_code=400)
+    user = body.user.strip() if body.user else None
+    if user and not _LOGIN_RE.match(user):
+        return JSONResponse({"detail": "invalid user login"}, status_code=400)
+    before = _achievement_keys()
+    try:
+        report = await asyncio.wait_for(
+            asyncio.to_thread(contrib_engine.sync, repo, user, None),
+            timeout=120,
+        )
+    except TimeoutError:
+        logging.warning("contributors: sync timed out after 120s")
+        return JSONResponse({"detail": "Sync timed out after 120s"}, status_code=504)
+    except contrib_github.RateLimitError:
+        return JSONResponse(
+            {"detail": "GitHub rate limited — set EXAAI_GITHUB_TOKEN"}, status_code=429
+        )
+    except contrib_github.GitHubError as e:
+        logging.warning("contributors: GitHub error during sync: %s", e)
+        return JSONResponse({"detail": f"GitHub error: {e}"}, status_code=502)
+    except Exception:
+        logging.exception("contributors: sync failed")
+        return JSONResponse({"detail": "sync failed"}, status_code=500)
+    if report.rate_limited:
+        return JSONResponse(
+            {"detail": "GitHub rate limited — set EXAAI_GITHUB_TOKEN"}, status_code=429
+        )
+    after = _achievement_keys()
+    awarded = [f"{login}:{badge_id}" for (gid, badge_id), login in after.items() if (gid, badge_id) not in before]
+    try:
+        conn = contrib_db.connect()
+        try:
+            contributors_seen = len(contrib_db.all_contributors(conn))
+        finally:
+            conn.close()
+    except Exception:
+        contributors_seen = 0
+    return {
+        "repo": report.repo,
+        "user": report.user,
+        "contributors_seen": contributors_seen,
+        "prs_seen": report.prs_seen,
+        "events_added": report.events_added,
+        "reviews_added": report.reviews_added,
+        "comments_added": report.comments_added,
+        "achievements_awarded": awarded,
+        "errors": report.errors,
+        "rate_limited": report.rate_limited,
+    }
+
+
+class ContributorGrantIn(BaseModel):
+    login: str
+    badge_id: str
+    reason: str | None = None
+
+
+@app.post("/api/contributors/grant")
+async def grant_contributor_badge(body: ContributorGrantIn):
+    login = body.login.strip()
+    if not _LOGIN_RE.match(login):
+        return JSONResponse({"detail": "invalid login"}, status_code=400)
+    if body.badge_id not in badge_defs.BADGES_BY_ID:
+        return JSONResponse({"detail": f"unknown badge_id: {body.badge_id}"}, status_code=400)
+    try:
+        return contrib_engine.grant(login, body.badge_id, reason=body.reason, by="dashboard")
+    except ValueError as e:
+        return JSONResponse({"detail": str(e)}, status_code=400)
+    except Exception:
+        logging.exception("contributors: grant failed for %s/%s", login, body.badge_id)
+        return JSONResponse({"detail": "grant failed"}, status_code=500)
+
+
+class ContributorRevokeIn(BaseModel):
+    login: str
+    badge_id: str
+
+
+@app.post("/api/contributors/revoke")
+async def revoke_contributor_badge(body: ContributorRevokeIn):
+    login = body.login.strip()
+    if not _LOGIN_RE.match(login):
+        return JSONResponse({"detail": "invalid login"}, status_code=400)
+    if body.badge_id not in badge_defs.BADGES_BY_ID:
+        return JSONResponse({"detail": f"unknown badge_id: {body.badge_id}"}, status_code=400)
+    try:
+        ok = contrib_engine.revoke(login, body.badge_id)
+    except Exception:
+        logging.exception("contributors: revoke failed for %s/%s", login, body.badge_id)
+        return JSONResponse({"detail": "revoke failed"}, status_code=500)
+    if not ok:
+        return JSONResponse({"detail": "achievement not found or not revoked"}, status_code=404)
+    return {"revoked": True, "login": login, "badge_id": body.badge_id}
+
+
+@app.get("/contributors/badge/{login}/{badge_id}.svg")
+async def contributor_badge_card(login: str, badge_id: str):
+    if not _LOGIN_RE.match(login) or badge_id not in badge_defs.BADGES_BY_ID:
+        return JSONResponse({"detail": "not found"}, status_code=404)
+    earned = False
+    canonical = login
+    try:
+        conn = contrib_db.connect()
+        try:
+            row = contrib_db.get_contributor_by_login(conn, login)
+            if row is not None:
+                canonical = row["login"]
+                earned = any(
+                    a["badge_id"] == badge_id
+                    for a in contrib_db.get_achievements(conn, row["github_id"])
+                )
+        finally:
+            conn.close()
+    except Exception:
+        logging.exception("contributors: badge card lookup failed for %s/%s", login, badge_id)
+        return JSONResponse({"detail": "unavailable"}, status_code=500)
+    if not earned:
+        return JSONResponse({"detail": "badge not earned"}, status_code=404)
+    svg = contributors_assets.render_badge_card(canonical, badge_id)
+    if svg is None:
+        return JSONResponse({"detail": "badge artwork unavailable"}, status_code=404)
+    return Response(
+        svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@app.get("/contributors", response_class=HTMLResponse)
+async def contributors_page():
+    html_path = Path(__file__).parent / "templates" / "contributors.html"
+    return FileResponse(
+        html_path,
+        media_type="text/html",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 def start_dashboard(host="127.0.0.1", port=8000):

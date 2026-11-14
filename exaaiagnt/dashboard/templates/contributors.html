@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contributor Achievement System — ExaAiAgent</title>
+<link rel="stylesheet" href="/static/dashboard-v2.css">
+<style>
+.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 20px 48px; width: 100%; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 6px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.page-head h1 { font-size: 20px; margin: 0; letter-spacing: 0.04em; }
+.page-head .sub { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+.head-links { display: flex; gap: 14px; align-items: center; font-size: 12px; }
+.head-links a { color: var(--text-dim); text-decoration: none; }
+.head-links a:hover { color: var(--text); }
+.badge-count { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px 10px; font-size: 11px; color: var(--info); }
+.panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 16px; }
+.sync-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sync-row .hint { color: var(--text-dim); font-size: 12px; }
+.btn { background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--border-strong);
+    border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn:disabled { opacity: 0.55; cursor: wait; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--bg-panel-2); }
+.who { min-width: 0; }
+.who a { color: var(--text); font-weight: 700; text-decoration: none; }
+.who a:hover { color: var(--accent); }
+.who .login { color: var(--text-dim); font-size: 12px; }
+.level { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    border-radius: 999px; padding: 2px 10px; margin-top: 4px; border: 1px solid; }
+.lvl-Novice { color: #9ca3af; border-color: #4b5563; }
+.lvl-Contributor { color: #4ade80; border-color: #166534; }
+.lvl-Veteran { color: #c084fc; border-color: #6b21a8; }
+.lvl-Maintainer { color: #fb923c; border-color: #9a3412; }
+.lvl-Legend { color: #facc15; border-color: #a16207; box-shadow: 0 0 8px rgba(250,204,21,.35); }
+.points { margin-left: auto; text-align: right; }
+.points .n { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.points .lbl { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; min-height: 34px; }
+.chip { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-strong);
+    background: var(--bg-panel-2); padding: 2px; cursor: pointer; transition: transform .12s ease; }
+.chip img { width: 100%; height: 100%; object-fit: contain; }
+.chip.earned { border-color: var(--accent); box-shadow: 0 0 8px rgba(59,130,246,.45); }
+.chip.locked { filter: grayscale(1); opacity: 0.25; cursor: default; }
+.chip.earned:hover { transform: scale(1.15); }
+.count-line { color: var(--text-dim); font-size: 11px; margin-top: 10px; }
+.empty { text-align: center; color: var(--text-dim); padding: 42px 12px; border: 1px dashed var(--border-strong);
+    border-radius: 10px; }
+details.howto { margin-bottom: 16px; }
+details.howto summary { cursor: pointer; color: var(--text-dim); font-size: 13px; padding: 4px 2px; }
+.badge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 12px; }
+.badge-item { display: flex; gap: 10px; align-items: flex-start; background: var(--bg-panel-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+.badge-item img { width: 44px; height: 55px; object-fit: contain; flex: 0 0 auto; }
+.badge-item .bn { font-size: 12px; font-weight: 700; }
+.badge-item .bd { font-size: 11px; color: var(--text-dim); margin: 2px 0; }
+.badge-item .bp { font-size: 10px; color: var(--info); }
+.levels-table { border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+.levels-table th, .levels-table td { border: 1px solid var(--border); padding: 4px 12px; text-align: left; }
+.levels-table th { color: var(--text-dim); font-weight: 600; }
+.admin { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 14px; }
+.admin h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 10px; text-transform: uppercase; }
+.admin-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.admin form { display: flex; flex-direction: column; gap: 8px; background: var(--bg-panel-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.admin label { font-size: 11px; color: var(--text-dim); }
+.admin input, .admin select { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border-strong);
+    border-radius: 6px; padding: 6px 8px; font-size: 12px; width: 100%; }
+footer.foot { text-align: center; color: var(--text-dim); font-size: 11px; padding: 18px 12px 26px;
+    border-top: 1px solid var(--border); margin-top: 8px; }
+footer.foot a { color: var(--text-dim); }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--bg-panel);
+    border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 16px; font-size: 13px;
+    z-index: 50; max-width: 90vw; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+.toast.ok { border-color: var(--ok); } .toast.err { border-color: var(--crit); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(2,6,16,.72); z-index: 60;
+    display: flex; align-items: center; justify-content: center; }
+.modal-overlay[hidden] { display: none; }
+.modal { background: var(--bg-panel); border: 1px solid var(--border-strong); border-radius: 12px;
+    padding: 20px; max-width: 320px; text-align: center; }
+.modal img { width: 128px; height: 160px; object-fit: contain; }
+.modal h3 { margin: 10px 0 4px; font-size: 16px; }
+.modal p { color: var(--text-dim); font-size: 12px; margin: 4px 0; }
+.modal .awarded { color: var(--info); font-size: 11px; }
+@media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    .admin-cols { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+    <header class="page-head">
+        <div>
+            <h1>Contributor Achievement System <span class="badge-count" id="badge-count">10 badges</span></h1>
+            <div class="sub">Earned from public GitHub activity on this repository.</div>
+        </div>
+        <nav class="head-links" aria-label="page links">
+            <a href="/">&larr; Dashboard</a>
+            <a href="/api/contributors" target="_blank" rel="noopener">JSON</a>
+        </nav>
+    </header>
+
+    <section class="panel" aria-label="sync">
+        <div class="sync-row">
+            <button class="btn primary" id="sync-btn" type="button">Sync from GitHub</button>
+            <span class="hint">Pulls merged PRs, reviews and issue comments, then re-evaluates badges. Needs a GitHub token for best results.</span>
+        </div>
+    </section>
+
+    <div id="leaderboard" class="grid" aria-live="polite"></div>
+    <div id="empty-state" class="empty" hidden>No contributors synced yet — press <strong>Sync from GitHub</strong>.</div>
+
+    <details class="panel howto">
+        <summary>How badges work</summary>
+        <div class="badge-list" id="badge-list"></div>
+        <table class="levels-table" id="levels-table" aria-label="levels"></table>
+    </details>
+
+    <section class="admin" aria-label="admin">
+        <h2>Admin</h2>
+        <div class="admin-cols">
+            <form id="grant-form">
+                <strong style="font-size:12px">Grant manually</strong>
+                <label for="grant-login">Login</label>
+                <input id="grant-login" name="login" required autocomplete="off" spellcheck="false" placeholder="octocat">
+                <label for="grant-badge">Badge</label>
+                <select id="grant-badge" name="badge_id" required></select>
+                <label for="grant-reason">Reason (optional)</label>
+                <input id="grant-reason" name="reason" autocomplete="off" placeholder="why this badge">
+                <button class="btn" type="submit">Grant badge</button>
+            </form>
+            <form id="revoke-form">
+                <strong style="font-size:12px">Revoke</strong>
+                <label for="revoke-login">Login</label>
+                <input id="revoke-login" name="login" required autocomplete="off" spellcheck="false" placeholder="octocat">
+                <label for="revoke-badge">Earned badge</label>
+                <select id="revoke-badge" name="badge_id" required><option value="">— enter a login to load earned badges —</option></select>
+                <button class="btn" type="submit">Revoke badge</button>
+            </form>
+        </div>
+    </section>
+
+</div>
+
+<footer class="foot">
+    ExaAiAgent Contributor Achievement System — earned badges are derived from public GitHub activity.
+    <a href="https://github.com/hleliofficiel/ExaAiAgent" target="_blank" rel="noopener">github.com/hleliofficiel/ExaAiAgent</a>
+</footer>
+
+<div class="modal-overlay" id="badge-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badge-modal-name">
+    <div class="modal">
+        <img id="badge-modal-img" alt="">
+        <h3 id="badge-modal-name"></h3>
+        <p id="badge-modal-desc"></p>
+        <p class="awarded" id="badge-modal-awarded"></p>
+        <button class="btn" id="badge-modal-close" type="button">Close</button>
+    </div>
+</div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+'use strict';
+/* Token handling mirrors dashboard-v2.js: ?token=... or localStorage 'exaai_dashboard_token'. */
+const authToken = (() => {
+    try {
+        const fromUrl = new URLSearchParams(window.location.search).get('token');
+        if (fromUrl) {
+            try { localStorage.setItem('exaai_dashboard_token', fromUrl); } catch (_) { /* noop */ }
+            return fromUrl;
+        }
+        return localStorage.getItem('exaai_dashboard_token') || '';
+    } catch (_) { return ''; }
+})();
+function apiFetch(path, options) {
+    const opts = options ? Object.assign({}, options) : {};
+    const headers = Object.assign({ 'Accept': 'application/json' }, opts.headers || {});
+    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    opts.headers = headers;
+    return fetch(path, opts);
+}
+const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const $ = (id) => document.getElementById(id);
+
+let ALL_BADGES = [];
+let LEVELS = {};
+let CONTRIBUTORS = [];
+
+function showToast(msg, kind) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (kind || 'ok');
+    t.hidden = false;
+    window.clearTimeout(showToast._tm);
+    showToast._tm = window.setTimeout(() => { t.hidden = true; }, 5000);
+}
+
+async function fetchJSON(path, options) {
+    const res = await apiFetch(path, options);
+    let body = null;
+    try { body = await res.json(); } catch (_) { /* non-JSON */ }
+    if (!res.ok) {
+        const detail = (body && body.detail) ? body.detail : ('HTTP ' + res.status);
+        const err = new Error(detail);
+        err.status = res.status;
+        throw err;
+    }
+    return body;
+}
+
+function badgeImg(id, size) {
+    return '<img src="/assets/badges/' + esc(id) + '.svg" alt="' + esc(id) + '" width="' + size + '" height="' + size + '" loading="lazy">';
+}
+
+function openModal(badge, awardedAt) {
+    $('badge-modal-img').src = '/assets/badges/' + badge.id + '.svg';
+    $('badge-modal-img').alt = badge.name;
+    $('badge-modal-name').textContent = badge.name;
+    $('badge-modal-desc').textContent = badge.description || '';
+    $('badge-modal-awarded').textContent = awardedAt ? ('Awarded ' + awardedAt) : 'Not earned yet';
+    $('badge-modal').hidden = false;
+}
+$('badge-modal-close').addEventListener('click', () => { $('badge-modal').hidden = true; });
+$('badge-modal').addEventListener('click', (e) => { if (e.target === $('badge-modal')) $('badge-modal').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('badge-modal').hidden = true; });
+
+function renderLeaderboard() {
+    const root = $('leaderboard');
+    const empty = $('empty-state');
+    if (!CONTRIBUTORS.length) {
+        root.innerHTML = '';
+        empty.hidden = false;
+        return;
+    }
+    empty.hidden = true;
+    root.innerHTML = CONTRIBUTORS.map((c) => {
+        const earned = new Map((c.badges || []).map((b) => [b.id, b]));
+        const chips = ALL_BADGES.map((b) => {
+            const got = earned.get(b.id);
+            const cls = got ? 'chip earned' : 'chip locked';
+            const title = got ? (b.name + ' — earned ' + (got.awarded_at || '')) : (b.name + ' — locked');
+            return '<button class="' + cls + '" type="button" data-badge="' + esc(b.id) + '" data-login="' + esc(c.login) +
+                '" title="' + esc(title) + '" aria-label="' + esc(title) + '">' + badgeImg(b.id, 30) + '</button>';
+        }).join('');
+        const name = c.name || c.login;
+        const avatar = c.avatar_url ? esc(c.avatar_url) : '';
+        const profile = c.profile_url ? esc(c.profile_url) : ('https://github.com/' + esc(c.login));
+        return '<article class="card">' +
+            '<div class="card-top">' +
+                (avatar ? '<img class="avatar" src="' + avatar + '" alt="@' + esc(c.login) + '" loading="lazy">' : '<div class="avatar"></div>') +
+                '<div class="who"><a href="' + profile + '" target="_blank" rel="noopener">' + esc(name) + '</a>' +
+                    '<div class="login">@' + esc(c.login) + '</div>' +
+                    '<span class="level lvl-' + esc(c.level) + '">' + esc(String(c.level || '').toUpperCase()) + '</span>' +
+                '</div>' +
+                '<div class="points"><div class="n">' + esc(c.points) + '</div><div class="lbl">POINTS</div></div>' +
+            '</div>' +
+            '<div class="chips">' + chips + '</div>' +
+            '<div class="count-line">' + esc((c.counts && c.counts.merged_prs) || 0) + ' merged PR(s) · ' + earned.size + '/' + ALL_BADGES.length + ' badges</div>' +
+        '</article>';
+    }).join('');
+    root.querySelectorAll('.chip.earned').forEach((el) => {
+        el.addEventListener('click', () => {
+            const badge = ALL_BADGES.find((b) => b.id === el.dataset.badge);
+            const c = CONTRIBUTORS.find((x) => x.login === el.dataset.login);
+            const got = c && (c.badges || []).find((b) => b.id === el.dataset.badge);
+            if (badge) openModal(badge, got && got.awarded_at);
+        });
+    });
+}
+
+function renderHowTo() {
+    $('badge-count').textContent = ALL_BADGES.length + ' badges';
+    $('badge-list').innerHTML = ALL_BADGES.map((b) =>
+        '<div class="badge-item">' + badgeImg(b.id, 44) +
+            '<div><div class="bn" style="color:' + esc(b.color) + '">' + esc(b.name) + '</div>' +
+            '<div class="bd">' + esc(b.description) + '</div>' +
+            '<div class="bp">+' + esc(b.points) + ' pts' + (b.manual_only ? ' · manual grant only' : '') + '</div></div>' +
+        '</div>'
+    ).join('');
+    const rows = Object.entries(LEVELS).sort((a, b) => a[1] - b[1])
+        .map(([name, pts]) => '<tr><td>' + esc(name) + '</td><td>' + esc(pts) + '+</td></tr>').join('');
+    $('levels-table').innerHTML = '<thead><tr><th>Level</th><th>Points</th></tr></thead><tbody>' + rows + '</tbody>';
+    const options = ALL_BADGES.map((b) => '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>').join('');
+    $('grant-badge').innerHTML = options;
+}
+
+async function loadAll() {
+    const [ach, list] = await Promise.all([
+        fetchJSON('/api/contributor-achievements'),
+        fetchJSON('/api/contributors'),
+    ]);
+    ALL_BADGES = ach.badges || [];
+    LEVELS = ach.levels || {};
+    CONTRIBUTORS = list.contributors || [];
+    renderHowTo();
+    renderLeaderboard();
+}
+
+$('sync-btn').addEventListener('click', async () => {
+    const btn = $('sync-btn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Syncing…';
+    try {
+        const r = await fetchJSON('/api/contributors/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+        const awards = (r.achievements_awarded || []);
+        showToast('Synced: ' + (r.contributors_seen || 0) + ' contributor(s), ' + (r.events_added || 0) +
+            ' new event(s), ' + awards.length + ' new award(s)' +
+            (awards.length ? ' — ' + awards.join(', ') : ''), 'ok');
+        await loadAll();
+    } catch (err) {
+        const msg = err.status === 429
+            ? 'GitHub rate limited — set EXAAI_GITHUB_TOKEN on the server, then retry.'
+            : ('Sync failed: ' + err.message);
+        showToast(msg, 'err');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+    }
+});
+
+$('grant-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login = $('grant-login').value.trim();
+    const badge_id = $('grant-badge').value;
+    const reason = $('grant-reason').value.trim();
+    try {
+        await fetchJSON('/api/contributors/grant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login: login, badge_id: badge_id, reason: reason || null }),
+        });
+        showToast('Granted ' + badge_id + ' to @' + login, 'ok');
+        $('grant-reason').value = '';
+        await loadAll();
+        await loadRevokeBadges(login);
+    } catch (err) {
+        showToast('Grant failed: ' + err.message, 'err');
+    }
+});
+
+async function loadRevokeBadges(login) {
+    const sel = $('revoke-badge');
+    sel.innerHTML = '<option value="">loading…</option>';
+    try {
+        const p = await fetchJSON('/api/contributors/' + encodeURIComponent(login));
+        const earned = p.badges || [];
+        sel.innerHTML = earned.length
+            ? earned.map((b) => '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>').join('')
+            : '<option value="">no earned badges for @' + esc(login) + '</option>';
+    } catch (err) {
+        sel.innerHTML = '<option value="">could not load badges: ' + esc(err.message) + '</option>';
+    }
+}
+$('revoke-login').addEventListener('change', () => {
+    const login = $('revoke-login').value.trim();
+    if (login) loadRevokeBadges(login);
+});
+
+$('revoke-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login = $('revoke-login').value.trim();
+    const badge_id = $('revoke-badge').value;
+    if (!badge_id) { showToast('Pick an earned badge to revoke', 'err'); return; }
+    try {
+        await fetchJSON('/api/contributors/revoke', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login: login, badge_id: badge_id }),
+        });
+        showToast('Revoked ' + badge_id + ' from @' + login, 'ok');
+        await loadAll();
+        await loadRevokeBadges(login);
+    } catch (err) {
+        showToast('Revoke failed: ' + err.message, 'err');
+    }
+});
+
+loadAll().catch((err) => {
+    showToast('Could not load contributors: ' + err.message, 'err');
+    $('empty-state').hidden = false;
+});
+</script>
+</body>
+</html>

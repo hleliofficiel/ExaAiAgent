@@ -573,6 +573,13 @@ def main() -> None:
 
         sys.exit(run_mcp_command(sys.argv[2:]))
 
+    # Light branch: `exaai contributors` runs the Contributor Achievement
+    # System CLI (no docker / TUI / LLM required).
+    if len(sys.argv) > 1 and sys.argv[1] == "contributors":
+        from exaaiagnt.interface.contributors_cli import run_contributors
+
+        sys.exit(run_contributors(sys.argv[2:]))
+
     args = parse_arguments()
 
     # Handle TUI-only mode (no target needed)
