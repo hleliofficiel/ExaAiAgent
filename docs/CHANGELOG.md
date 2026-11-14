@@ -2,6 +2,15 @@
 
 ## [3.1.1] - 2026-11-13
 - Features (this release):
+  - Contributor Achievement System: new `exaaiagnt/contributors/` package (badges, SQLite store, GitHub public-API client, deterministic engine) + `exaai contributors` CLI subgroup (`list`, `profile`, `sync`, `grant`, `revoke`, `badges`, `export`)
+    - 10 badges with metallic palettes and criteria (First Contributor, Code Contributor, Bug Hunter, Documentation Hero, Feature Builder, Testing Champion, Top Contributor, Core Maintainer (manual), Community Hero, Open Source Advocate); levels Novice/Contributor/Veteran/Maintainer/Legend; deterministic points (50/merged PR + badge points + 10/review + 2/issue comment)
+    - SQLite (WAL, FK on) at `$EXAAI_DATA_DIR/contributors.db` else `$XDG_DATA_HOME/exaai-agent/contributors.db` else `~/.local/share/exaai-agent/contributors.db`; idempotent re-sync via UNIQUE(github_id, kind, ref); sync never revokes achievements; manual grants never auto-revoked
+    - GitHub public API only, stdlib urllib, 4s timeout, UA `ExaAiAgent-Contributors/3.1.1`, token via `EXAAI_GITHUB_TOKEN`/`GH_TOKEN` (never printed or stored); 403/429 rate-limit notice with best-effort sync
+    - `contributors export <login>` prints ready-to-paste profile README Markdown with raw-URL badge embeds
+    - 10 hand-written transparent-background SVG badges under `contributor_system/badges/` (shared metallic identity, `<title>`, `viewBox="0 0 512 640"`) + embed docs
+    - Docs: `docs/contributor-achievements.md` (criteria table, levels, storage, API setup, CLI, embed, roadmap)
+  - Tests: 34 new tests under `tests/contributors/` (engine eligibility matrix, db schema/upsert, badge integrity, export, GitHub client with monkeypatched network)
+- Features (this release):
   - MCP: `exaai mcp` stdio server (also `ExaAiAgent mcp` / `exaaiagent mcp`) — exaai-agent exposes itself to any MCP client (Claude Desktop, Cursor, Continue, ...)
     - Tools: `exaai_run_scan` (full scan, requires EXAAI_TARGETS match, returns concise summary — never raw report), `exaai_cve_lookup` (pinned KB), `exaai_list_runs`, `exaai_get_report`
     - stdio-only, stderr logging, error-safe `isError` responses, run_name sanitized (`^[A-Za-z0-9_.-]+$`)
