@@ -31,7 +31,7 @@
 
 | | What's new |
 |---|---|
-| **MCP server** | `exaai mcp` — plug into any MCP client (Claude, Cursor) in one command |
+| **MCP server** | `exaai mcp` · `ExaAiAgent mcp` · `exaaiagent mcp` — any works; plug into any MCP client (Claude, Cursor) in one command |
 | **Dashboard v2** | Live WebSocket events; STOP scan; AI providers; Export All (.zip) |
 | **Contributors** | `exaai contributors` — GitHub-verified achievement badges |
 | **Security** | Zero-CVE litellm; CI gate: pip-audit + bandit; hardened container |
