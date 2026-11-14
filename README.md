@@ -31,7 +31,7 @@
 
 | | What's new |
 |---|---|
-| **MCP server** | `exaai mcp` — plug into any MCP client (Claude, Cursor) in one command |
+| **MCP server** | `exaai mcp` — plug into any MCP client (Claude, Cursor) in one command. Try: `exaai mcp` · `{"command":"exaai","args":["mcp"]}` in your client config, then ask the client `lookup CVE-2026-37004` — answered with evidence_id |
 | **Dashboard v2** | Live WebSocket events; STOP scan; AI providers; Export All (.zip) |
 | **Contributors** | `exaai contributors` — GitHub-verified achievement badges |
 | **Security** | Zero-CVE litellm; CI gate: pip-audit + bandit; hardened container |
