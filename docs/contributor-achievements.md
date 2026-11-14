@@ -73,7 +73,7 @@ Re-syncs are idempotent upserts. **Sync never revokes achievements.**
 Public data only; no private repositories are accessed.
 
 ```bash
-export EXAAI_GITHUB_TOKEN=ghp_...   # or GH_TOKEN
+export EXAAI_GITHUB_TOKEN=<token>   # or GH_TOKEN
 ```
 
 * Token is read from the environment, never printed, never written to disk.
