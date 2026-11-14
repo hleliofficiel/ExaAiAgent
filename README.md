@@ -29,14 +29,14 @@
 
 ## v3.1.1 at a glance
 
-| Area | What changed |
+| | What's new |
 |---|---|
-| MCP server | `exaai mcp` — ExaAiAgent works inside any MCP client (Claude Desktop, Cursor, Continue). Stdio-only, `EXAAI_TARGETS` scope enforced; exposes `exaai_run_scan`, `exaai_cve_lookup`, `exaai_list_runs`, `exaai_get_report` |
-| Dashboard v2 | Live WebSocket event stream, findings/agent/tool counters, live update badge, export buttons, dark UI with auto-reconnect. **v2.1**: AI providers panel, live update badge, exclusive STOP control, critical/high alerts, audit log, Export All (.zip) |
-| Contributor Achievement System | `exaai contributors` — 10 badges (metallic SVGs), levels Novice→Legend, GitHub public-API sync (~3 min), idempotent, README export snippet. Dedicated `/contributors` page, never in the main dashboard |
-| Security | Litellm → 1.101.x (CVE remediation), CI gate: pip-audit + bandit blocking, dependabot weekly, hardened container (no-new-privileges, no NET_RAW, loopback default), bandit 0/0 |
-| Grounding & CVE intel | Every finding requires an `evidence_id`; CVE matching against pinned KB + EPSS/CISA KEV/OSV/GitHub advisories; independent verification boosts confirmed vs suspected vs false positives |
-| Safety & budgets | `TargetScope` in executor, command guard + blocklist, per-scan token/tool/spawn caps, circuit breaker, auto-stop at 5 consecutive tool errors |
+| **MCP server** | `exaai mcp` — plug into any MCP client (Claude, Cursor) in one command |
+| **Dashboard v2** | Live WebSocket events; STOP scan; AI providers; Export All (.zip) |
+| **Contributors** | `exaai contributors` — GitHub-verified achievement badges |
+| **Security** | Zero-CVE litellm; CI gate: pip-audit + bandit; hardened container |
+| **CVE intel** | Evidence-required findings; EPSS + CISA KEV + OSV + GitHub advisories |
+| **Safety** | TargetScope enforced; command guard; token/tool/spawn budgets + circuit breaker |
 
 ### Previous versions (brief history)
 
