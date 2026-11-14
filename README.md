@@ -18,7 +18,7 @@
 <br>
 
 > [!TIP]
-> **v3.1.1 - latest.** Contributor Achievement System — `exaai contributors` (badges, levels, GitHub-verified, `export` for profile READMEs) + dedicated `/contributors` page on the dashboard (not on the main page). `exaai mcp` stdio server for any MCP client, dashboard v2 with a live WebSocket event stream, zero-CVE dependency remediation, hardened container/CI, friendly install experience — plus evidence-grounded findings, CVE intelligence (EPSS / CISA KEV / OSV), independent verification, scoped execution, token budgets, and reproducible reporting.
+> **v3.1.1 - latest.** `exaai mcp` plugs ExaAiAgent into any MCP client (Claude, Cursor) with one command; dashboard v2 streams live events over WebSocket; `exaai contributors` grants GitHub-verified badges to contributors.
 >
 > **Connect Your Agent:** Point another AI agent at the repository skill:
 > ```
@@ -31,21 +31,12 @@
 
 | Area | What changed |
 |---|---|
-| Contributor Achievement System | `exaai contributors list/profile/sync/grant/revoke/badges/export` + SQLite (WAL, idempotent re-sync, manual grants never auto-revoked) + levels Novice→Legend + GitHub-public-API verification + 10 transparent SVG badges + dashboard `/contributors` page + profile-README export |
-| MCP server | `exaai mcp` — MCP stdio server exposing `exaai_run_scan`, `exaai_cve_lookup`, `exaai_list_runs`, `exaai_get_report` to any MCP client (Claude Desktop, Cursor, Continue). Stdio-only, `EXAAI_TARGETS` enforced, stderr logs |
-| Dashboard v2 | WebSocket live event stream (findings/agents/tools), `/api/state`, `/api/report`, `/api/export/{json,sarif,csv,html,md}`, redesigned dark UI with auto-reconnect and severity filters. **v2.1 ops panel**: AI providers viewable/editable (masked, live Test), update badge from PyPI, Scan STOP control, critical/high alerts, audit log, Export All (.zip), print/PDF |
-| Grounding | Every tool result gets an `evidence_id`; reports require evidence, invented CVE/version claims are rejected. |
-| CVE intelligence | FIRST EPSS + CISA KEV + OSV + GitHub Advisories with provenance and version-range matching (`exaaiagnt/intelligence/`). |
-| Verification | `hypothesis -> evidence -> independent check -> conf-v1 -> confirmed / suspected / false_positive`, with hardening downgrades for high-severity injection, secret leak, and cross-tenant RAG evidence. |
-| Safety & scope | `TargetScope` enforced in the executor when `EXAAI_TARGETS` is set; command guard, blocklist, and proxy linkage deny out-of-scope execution with `ScopeDecision` evidence. Sandbox runs on 127.0.0.1, without host `~/.kube` mount, `no-new-privileges`, and without NET_RAW. |
-| Budgets | Per-scan token / tool-call / spawn caps (`EXAAI_MAX_SCAN_TOKENS`, `EXAAI_MAX_TOOL_CALLS`, `EXAAI_MAX_AGENTS`), token hard-stop, and a circuit breaker after 5 consecutive tool errors. `create_agent` defaults to `inherit_context=False` with a spawn cap of 8. |
-| Reporting | Unified `report.json` via `build_report`, plus SARIF / CSV / HTML / Markdown exports, persisted to `exaai_runs/<run-name>/`. |
-| Tools & wrappers | 78 registered tools. Nuclei (invoke-only, argv-only), ZAP, httpx/katana, and OAST wrappers with license tiers. HAR import/export, browser JS analysis (DOM XSS, postMessage, Service Worker, bundle secrets), API auth/OpenAPI checks, secrets scanning, SBOM triage, and cloud checks. |
-| Coordination | `RunState` save / load / resume, bounded task queue, budget guard, and stuck detection, exposed as `coordination_*` tools. |
-| LLM / MCP / RAG | Offline OWASP LLM Top 10 (2025) checkers: prompt-injection detection, secret-leak detection, MCP manifest audit, and RAG provenance / cross-tenant checks. |
-| Benchmark | Deterministic smoke harness for Juice Shop, DVWA, and WebGoat (`benchmark/`). |
-| Prompts | 64 prompt modules, including OWASP LLM Top 10 2025, supply-chain / SBOM triage, exceptional-conditions fail-open, and grounded CVE verification. |
-| CI | Lint, test, type-check, security (pip-audit + bandit), and smoke jobs green. Node pinned to 22 LTS in Docker. |
+| MCP server | `exaai mcp` — ExaAiAgent works inside any MCP client (Claude Desktop, Cursor, Continue). Stdio-only, `EXAAI_TARGETS` scope enforced; exposes `exaai_run_scan`, `exaai_cve_lookup`, `exaai_list_runs`, `exaai_get_report` |
+| Dashboard v2 | Live WebSocket event stream, findings/agent/tool counters, live update badge, export buttons, dark UI with auto-reconnect. **v2.1**: AI providers panel, live update badge, exclusive STOP control, critical/high alerts, audit log, Export All (.zip) |
+| Contributor Achievement System | `exaai contributors` — 10 badges (metallic SVGs), levels Novice→Legend, GitHub public-API sync (~3 min), idempotent, README export snippet. Dedicated `/contributors` page, never in the main dashboard |
+| Security | Litellm → 1.101.x (CVE remediation), CI gate: pip-audit + bandit blocking, dependabot weekly, hardened container (no-new-privileges, no NET_RAW, loopback default), bandit 0/0 |
+| Grounding & CVE intel | Every finding requires an `evidence_id`; CVE matching against pinned KB + EPSS/CISA KEV/OSV/GitHub advisories; independent verification boosts confirmed vs suspected vs false positives |
+| Safety & budgets | `TargetScope` in executor, command guard + blocklist, per-scan token/tool/spawn caps, circuit breaker, auto-stop at 5 consecutive tool errors |
 
 ### Previous versions (brief history)
 
