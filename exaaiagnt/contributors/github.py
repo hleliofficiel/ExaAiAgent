@@ -12,16 +12,45 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from concurrent.futures import ThreadPoolExecutor
 
 
 API = "https://api.github.com"
 DEFAULT_REPO = "hleliofficiel/ExaAiAgent"
 UA = "ExaAiAgent-Contributors/3.1.1"
+
+_GRAPHQL_QUERY = """
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: MERGED, first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      nodes {
+        number
+        title
+        mergedAt
+        url
+        author {
+          login
+          ... on User { databaseId name avatarUrl url }
+          ... on Bot { __typename }
+        }
+        labels(first: 20) { nodes { name } }
+        files(first: 100) { nodes { path changeType } }
+      }
+    }
+  }
+}
+"""
+
+_CHANGED = {"ADD": "added", "MODIFY": "modified", "DELETE": "removed", "RENAME": "modified"}
+
+def _node_dbid(login: str) -> int:
+    return -abs(zlib.crc32(login.encode("utf-8")))
 TIMEOUT = 6
 RETRIES = 3
 
@@ -68,6 +97,77 @@ def _get_json(url: str, timeout: int = TIMEOUT):
     raise GitHubError(f"GitHub API unreachable after {RETRIES} attempts for {url}: {last_error}") from last_error
 
 
+def _post_graphql(query: str, variables: dict, timeout: int = 10):
+    """POST a GraphQL query with retries. Raises RateLimitError/GitHubError on failure."""
+    tok = _token()
+    headers = {"User-Agent": UA, "Accept": "application/vnd.github+json"}
+    if tok:
+        headers["Authorization"] = f"Bearer {tok}"
+    body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
+    req = urllib.request.Request(f"{API}/graphql", data=body, headers=headers, method="POST")
+    last_error: Exception | None = None
+    for attempt in range(RETRIES):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 - fixed endpoint only
+                data = json.loads(r.read().decode("utf-8", "replace"))
+            if data.get("errors"):
+                err_type = ",".join(str(e.get("type", "")) for e in data["errors"] if isinstance(e, dict))
+                msg = str(data.get("message", ""))
+                if "RATE" in err_type.upper() or msg.lower().startswith(("rate", "abuse")):
+                    raise RateLimitError(f"GitHub GraphQL rate limit: {data.get('errors')}")
+                raise GitHubError(f"GitHub GraphQL errors: {err_type or data['errors']}")
+            return data.get("data") or {}
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429):
+                raise RateLimitError(f"GitHub GraphQL rate limit (HTTP {e.code})") from e
+            raise GitHubError(f"GitHub GraphQL error HTTP {e.code}") from e
+        except (urllib.error.URLError, TimeoutError) as e:
+            last_error = e
+            if attempt + 1 < RETRIES:
+                time.sleep(1.5 * (attempt + 1))
+    raise GitHubError(f"GitHub GraphQL unreachable after {RETRIES} attempts: {last_error}") from last_error
+
+
+def _graphql_merged_prs(repo: str) -> list[dict]:
+    owner, sep, name = repo.partition("/")
+    if not owner or not name or not sep:
+        raise GitHubError(f"invalid repo: {repo}")
+    data = _post_graphql(_GRAPHQL_QUERY, {"owner": owner, "name": name})
+    nodes = (((data or {}).get("repository") or {}).get("pullRequests") or {}).get("nodes") or []
+    out: list[dict] = []
+    for n in nodes:
+        author = n.get("author") or {}
+        login = author.get("login") or ""
+        is_bot = author.get("__typename") == "Bot"
+        dbid = author.get("databaseId")
+        github_id = int(dbid) if dbid is not None else (_node_dbid(login) if login else 0)
+        files = [
+            {"filename": f.get("path", ""), "status": _CHANGED.get((f.get("changeType") or "MODIFY").upper(), "modified")}
+            for f in ((n.get("files") or {}).get("nodes") or [])
+        ]
+        _ = is_bot
+        out.append(
+            {
+                "number": n.get("number"),
+                "title": n.get("title") or "",
+                "labels": [lbl.get("name", "") for lbl in ((n.get("labels") or {}).get("nodes") or [])],
+                "url": n.get("url"),
+                "merged_at": n.get("mergedAt"),
+                "author": login,
+                "author_id": github_id,
+                "author_info": {
+                    "github_id": github_id,
+                    "login": login,
+                    "name": author.get("name"),
+                    "avatar_url": author.get("avatarUrl"),
+                    "profile_url": author.get("url") or (f"https://github.com/{login}" if login else ""),
+                },
+                "files": files,
+            }
+        )
+    return out
+
+
 def _paginate(url: str, limit: int, timeout: int = TIMEOUT) -> list[dict]:
     out: list[dict] = []
     page = 1
@@ -108,6 +208,14 @@ def fetch_merged_prs(
     repo: str = DEFAULT_REPO, since: str | None = None, limit: int = 300
 ) -> list[dict]:
     """Return merged PRs (public repo). Each: number,title,labels,url,merged_at,author,files."""
+    if has_token():
+        try:
+            prs = _graphql_merged_prs(repo)
+            if since:
+                prs = [p for p in prs if p.get("merged_at") and p["merged_at"][:10] >= since]
+            return prs[:limit]
+        except (RateLimitError, GitHubError) as e:
+            print(f"[contributors] GraphQL path failed ({e}); falling back to REST", file=sys.stderr)
     q = f"repo:{repo} is:pr is:merged"
     if since:
         q += f" merged:>={since}"

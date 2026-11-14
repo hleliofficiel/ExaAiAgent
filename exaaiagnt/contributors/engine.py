@@ -120,15 +120,29 @@ class SyncReport:
 
 
 def _ensure_contributor(conn, user: dict) -> int:
+    # Reuse an existing row by login when the GitHub id differs
+    # (e.g. GraphQL Bot actors have no databaseId). Keeps FK references stable.
+    row = conn.execute(
+        "SELECT github_id FROM contributors WHERE login=? COLLATE NOCASE",
+        (user["login"],),
+    ).fetchone()
+    if row:
+        # refresh immutable name/avatar opportunistically
+        conn.execute(
+            "UPDATE contributors SET name=COALESCE(?, name), avatar_url=COALESCE(?, avatar_url), profile_url=COALESCE(?, profile_url) WHERE github_id=?",
+            (user.get("name"), user.get("avatar_url"), user.get("profile_url"), row["github_id"]),
+        )
+        return int(row["github_id"])
+    gid = int(user["github_id"])
     db.upsert_contributor(
         conn,
-        github_id=int(user["github_id"]),
+        github_id=gid,
         login=user["login"],
         name=user.get("name"),
         avatar_url=user.get("avatar_url"),
         profile_url=user.get("profile_url"),
     )
-    return int(user["github_id"])
+    return gid
 
 
 def sync(  # noqa: PLR0912, PLR0915 - linear orchestration of fetch/store/evaluate phases
@@ -155,8 +169,8 @@ def sync(  # noqa: PLR0912, PLR0915 - linear orchestration of fetch/store/evalua
             if user and (not author or author.lower() != user.lower()):
                 continue
             gid = pr.get("author_id")
-            info = None
-            if author:
+            info = pr.get("author_info")
+            if info is None and author:
                 try:
                     info = github.get_user(author)
                     gid = info["github_id"]
@@ -198,16 +212,23 @@ def sync(  # noqa: PLR0912, PLR0915 - linear orchestration of fetch/store/evalua
         if not targets:
             targets = [r["login"] for r in db.all_contributors(conn)]
         for login in targets:
-            try:
-                info = github.get_user(login)
-            except github.RateLimitError as e:
-                report.rate_limited = True
-                report.errors.append(str(e))
-                continue
-            except github.GitHubError as e:
-                report.errors.append(f"user lookup failed for {login}: {e}")
-                continue
-            gid = _ensure_contributor(conn, info)
+            row = conn.execute(
+                "SELECT github_id FROM contributors WHERE login=? COLLATE NOCASE",
+                (login,),
+            ).fetchone()
+            if row:
+                gid = int(row["github_id"])
+            else:
+                try:
+                    info = github.get_user(login)
+                except github.RateLimitError as e:
+                    report.rate_limited = True
+                    report.errors.append(str(e))
+                    continue
+                except github.GitHubError as e:
+                    report.errors.append(f"user lookup failed for {login}: {e}")
+                    continue
+                gid = _ensure_contributor(conn, info)
             try:
                 reviews = github.fetch_reviews(repo, login)
             except github.RateLimitError as e:
