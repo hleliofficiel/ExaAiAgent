@@ -243,6 +243,8 @@ class BaseAgent(metaclass=AgentMeta):
                     pass
                 should_finish = await self._process_iteration(tracer)
                 self._consecutive_errors = 0
+                with contextlib.suppress(Exception):
+                    supervisor.record_success(self.state.agent_id)
                 if should_finish:
                     if self.non_interactive:
                         self.state.set_completed({"success": True})
@@ -467,6 +469,8 @@ class BaseAgent(metaclass=AgentMeta):
         logger.exception(error_msg)
         self.state.add_error(error_msg)
         self._consecutive_errors += 1
+        with contextlib.suppress(Exception):
+            get_supervisor().record_error(self.state.agent_id, str(error))
         if tracer:
             tracer.update_agent_status(self.state.agent_id, "error")
         # v3.0.1 circuit breaker: stop burning iterations on identical fatal failures

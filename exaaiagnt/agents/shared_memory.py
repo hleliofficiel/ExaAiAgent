@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
+from collections.abc import Callable
 from typing import Any, Optional
 
 
@@ -67,21 +68,31 @@ class SharedMemory:
     """
 
     _instance: Optional["SharedMemory"] = None
+    _instance_lock = threading.Lock()
+
+    # Per-category cap so a long scan cannot grow memory without bound.
+    MAX_ENTRIES_PER_CATEGORY = 5000
 
     def __new__(cls) -> "SharedMemory":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+        with cls._instance_lock:
+            if cls._instance is None:
+                inst = super().__new__(cls)
+                inst._initialized = False
+                cls._instance = inst
         return cls._instance
 
     def __init__(self):
-        if self._initialized:
-            return
+        with self._instance_lock:
+            if self._initialized:
+                return
+            self._init_state()
 
+    def _init_state(self) -> None:
         self._data: dict[DataCategory, dict[str, MemoryEntry]] = defaultdict(dict)
         self._lock = threading.RLock()
         self._agent_permissions: dict[str, dict[DataCategory, AccessLevel]] = {}
-        self._subscribers: dict[DataCategory, list[callable]] = defaultdict(list)
+        self._subscribers: dict[DataCategory, list[Callable[..., Any]]] = defaultdict(list)
+        self._scanned: dict[str, set[str]] = defaultdict(set)
 
         # Deduplication sets
         self._seen_urls: set[str] = set()
@@ -111,32 +122,76 @@ class SharedMemory:
                 logger.warning(f"Agent {source_agent} lacks write permission for {category}")
                 return False
 
-            # Deduplication check
-            if deduplicate:
-                if category == DataCategory.URLS:
-                    if key in self._seen_urls:
-                        return False
-                    self._seen_urls.add(key)
-                elif category == DataCategory.ENDPOINTS:
-                    if key in self._seen_endpoints:
-                        return False
-                    self._seen_endpoints.add(key)
-                elif category == DataCategory.PARAMETERS:
-                    if key in self._seen_params:
-                        return False
-                    self._seen_params.add(key)
+            # Deduplication check: based on live (non-expired) entries so an
+            # expired or evicted key can be stored again.
+            existing = self._data[category].get(key)
+            if existing is not None and self._is_expired(existing):
+                self._remove(category, key)
+                existing = None
+            if deduplicate and existing is not None and category in self._DEDUP_CATEGORIES:
+                return False
 
             # Store entry
             entry = MemoryEntry(
                 key=key, value=value, category=category, source_agent=source_agent, ttl=ttl
             )
             self._data[category][key] = entry
+            if category in self._DEDUP_CATEGORIES:
+                self._seen_set(category).add(key)
+            self._evict_if_needed(category)
 
             # Notify subscribers
             self._notify_subscribers(category, key, value)
 
             logger.debug(f"Stored {category.value}/{key} from {source_agent}")
             return True
+
+    _DEDUP_CATEGORIES = frozenset(
+        {DataCategory.URLS, DataCategory.ENDPOINTS, DataCategory.PARAMETERS}
+    )
+
+    @staticmethod
+    def _is_expired(entry: MemoryEntry, now: float | None = None) -> bool:
+        if not entry.ttl:
+            return False
+        return (now if now is not None else time.time()) - entry.timestamp > entry.ttl
+
+    def _seen_set(self, category: DataCategory) -> set[str]:
+        return {
+            DataCategory.URLS: self._seen_urls,
+            DataCategory.ENDPOINTS: self._seen_endpoints,
+            DataCategory.PARAMETERS: self._seen_params,
+        }[category]
+
+    def _remove(self, category: DataCategory, key: str) -> None:
+        self._data[category].pop(key, None)
+        if category in self._DEDUP_CATEGORIES:
+            self._seen_set(category).discard(key)
+
+    def _evict_if_needed(self, category: DataCategory) -> None:
+        bucket = self._data[category]
+        overflow = len(bucket) - self.MAX_ENTRIES_PER_CATEGORY
+        if overflow <= 0:
+            return
+        # Drop expired first, then the oldest entries.
+        now = time.time()
+        for k in [k for k, e in bucket.items() if self._is_expired(e, now)]:
+            self._remove(category, k)
+        overflow = len(bucket) - self.MAX_ENTRIES_PER_CATEGORY
+        if overflow > 0:
+            for k in sorted(bucket, key=lambda k: bucket[k].timestamp)[:overflow]:
+                self._remove(category, k)
+
+    def purge_expired(self) -> int:
+        """Remove all expired entries. Returns how many were removed."""
+        removed = 0
+        with self._lock:
+            now = time.time()
+            for category in list(self._data):
+                for k in [k for k, e in self._data[category].items() if self._is_expired(e, now)]:
+                    self._remove(category, k)
+                    removed += 1
+        return removed
 
     def retrieve(self, category: DataCategory, key: str, requester_agent: str) -> Any | None:
         """Retrieve data from shared memory."""
@@ -149,8 +204,8 @@ class SharedMemory:
                 return None
 
             # Check TTL
-            if entry.ttl and (time.time() - entry.timestamp > entry.ttl):
-                del self._data[category][key]
+            if self._is_expired(entry):
+                self._remove(category, key)
                 return None
 
             # Track access
@@ -167,13 +222,11 @@ class SharedMemory:
             if not self._has_read_permission(requester_agent, category):
                 return []
 
-            entries = list(self._data.get(category, {}).values())
-
-            # Filter expired
             now = time.time()
-            valid_entries = [e for e in entries if not e.ttl or (now - e.timestamp <= e.ttl)]
+            for k in [k for k, e in self._data.get(category, {}).items() if self._is_expired(e, now)]:
+                self._remove(category, k)
 
-            return valid_entries[:limit]
+            return list(self._data.get(category, {}).values())[: max(limit, 0)]
 
     def bulk_store_urls(self, urls: list[str], source_agent: str) -> int:
         """Store multiple URLs with deduplication. Returns count of new URLs."""
@@ -193,15 +246,40 @@ class SharedMemory:
         return stored
 
     def get_unscanned_urls(self, requester_agent: str, limit: int = 50) -> list[str]:
-        """Get URLs that haven't been scanned by this agent."""
+        """Get live URLs this agent has not yet marked as scanned."""
         with self._lock:
-            urls = []
+            if not self._has_read_permission(requester_agent, DataCategory.URLS):
+                return []
+            now = time.time()
+            done = self._scanned[requester_agent]
+            urls: list[str] = []
             for entry in self._data.get(DataCategory.URLS, {}).values():
-                if requester_agent not in entry.accessed_by:
-                    urls.append(entry.value)
-                    if len(urls) >= limit:
-                        break
+                if self._is_expired(entry, now) or entry.key in done:
+                    continue
+                urls.append(entry.value)
+                if len(urls) >= limit:
+                    break
             return urls
+
+    def mark_scanned(self, url: str, requester_agent: str) -> None:
+        """Mark a URL as scanned by this agent so it is not handed out again."""
+        with self._lock:
+            self._scanned[requester_agent].add(url)
+
+    def claim_unscanned_urls(self, requester_agent: str, limit: int = 50) -> list[str]:
+        """Atomically fetch and mark URLs so two agents never get the same one."""
+        with self._lock:
+            claimed: list[str] = []
+            all_agents = set(self._scanned)
+            all_agents.add(requester_agent)
+            for url in self.get_unscanned_urls(requester_agent, limit * 4):
+                if any(url in self._scanned[a] for a in all_agents):
+                    continue
+                self._scanned[requester_agent].add(url)
+                claimed.append(url)
+                if len(claimed) >= limit:
+                    break
+            return claimed
 
     def set_agent_permissions(
         self, agent_id: str, permissions: dict[DataCategory, AccessLevel]
@@ -231,13 +309,14 @@ class SharedMemory:
         level = self._agent_permissions[agent_id].get(category)
         return level in [AccessLevel.WRITE, AccessLevel.READ_WRITE]
 
-    def subscribe(self, category: DataCategory, callback: callable) -> None:
+    def subscribe(self, category: DataCategory, callback: Callable[..., Any]) -> None:
         """Subscribe to updates in a category."""
-        self._subscribers[category].append(callback)
+        with self._lock:
+            self._subscribers[category].append(callback)
 
     def _notify_subscribers(self, category: DataCategory, key: str, value: Any) -> None:
         """Notify subscribers of new data."""
-        for callback in self._subscribers.get(category, []):
+        for callback in list(self._subscribers.get(category, [])):
             try:
                 callback(category, key, value)
             except Exception as e:
@@ -247,9 +326,9 @@ class SharedMemory:
         """Get memory statistics."""
         with self._lock:
             return {
-                "urls": len(self._seen_urls),
-                "endpoints": len(self._seen_endpoints),
-                "parameters": len(self._seen_params),
+                "urls": len(self._data.get(DataCategory.URLS, {})),
+                "endpoints": len(self._data.get(DataCategory.ENDPOINTS, {})),
+                "parameters": len(self._data.get(DataCategory.PARAMETERS, {})),
                 "total_entries": sum(len(d) for d in self._data.values()),
                 "categories": {cat.value: len(self._data.get(cat, {})) for cat in DataCategory},
             }
@@ -261,6 +340,7 @@ class SharedMemory:
             self._seen_urls.clear()
             self._seen_endpoints.clear()
             self._seen_params.clear()
+            self._scanned.clear()
             logger.info("SharedMemory cleared")
 
 

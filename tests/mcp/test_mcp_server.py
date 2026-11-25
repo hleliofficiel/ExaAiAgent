@@ -141,3 +141,34 @@ def test_mcp_help_exits_zero(capsys):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+def test_invoke_scan_pipeline_uses_subprocess(monkeypatch) -> None:
+    import subprocess
+    import sys
+
+    from exaaiagnt import mcp_server
+
+    seen = {}
+
+    class _Proc:
+        returncode = 2
+        stdout = b"scan output\n"
+
+    def fake_run(cmd, **kw):
+        seen["cmd"] = cmd
+        seen["env"] = kw["env"]
+        seen["shell"] = kw.get("shell", False)
+        return _Proc()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    code = mcp_server._invoke_scan_pipeline(
+        ["exaai", "--target", "https://t.example", "-n", "--run-name", "r1"],
+        {"EXAAI_MAX_SCAN_TOKENS": "123"},
+    )
+    assert code == 2
+    assert seen["cmd"][:3] == [sys.executable, "-m", "exaaiagnt.interface.main"]
+    assert seen["cmd"][3:] == ["--target", "https://t.example", "-n", "--run-name", "r1"]
+    assert seen["env"]["EXAAI_MAX_SCAN_TOKENS"] == "123"
+    assert not seen["shell"]
+

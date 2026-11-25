@@ -1,4 +1,4 @@
-from exaaiagnt.planning.chains import suggest_chains
+from exaaiagnt.planning.chains import add_suggested_chains, suggest_chains
 from exaaiagnt.planning.graph import (
     AttackGraph,
     EdgeType,
@@ -17,4 +17,5 @@ __all__ = [
     "NodeStatus",
     "NodeType",
     "suggest_chains",
+    "add_suggested_chains",
 ]
