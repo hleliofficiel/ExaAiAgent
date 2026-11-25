@@ -16,6 +16,6 @@ __all__ = [
     "GraphNode",
     "NodeStatus",
     "NodeType",
-    "suggest_chains",
     "add_suggested_chains",
+    "suggest_chains",
 ]

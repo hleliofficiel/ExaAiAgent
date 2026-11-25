@@ -20,7 +20,9 @@ def suggest_chains(graph: AttackGraph) -> list[GraphNode]:
                 node_id="chain_version_cve",
                 node_type=NodeType.FINDING,
                 label="version disclosure + CVE match",
-                prerequisites=sorted(set(matching("version", "fingerprint")) | set(matching("cve"))),
+                prerequisites=sorted(
+                    set(matching("version", "fingerprint")) | set(matching("cve"))
+                ),
                 expected_evidence="cve_match with fingerprinted version",
             )
         )
