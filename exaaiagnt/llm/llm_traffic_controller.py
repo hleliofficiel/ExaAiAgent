@@ -22,6 +22,25 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
+def _is_permanent_llm_error(exc: BaseException) -> bool:
+    """True for errors that retrying cannot fix (auth, model not found, bad request)."""
+    try:
+        import litellm
+
+        permanent: tuple[type[BaseException], ...] = (
+            litellm.AuthenticationError,
+            litellm.NotFoundError,
+            litellm.BadRequestError,
+            litellm.PermissionDeniedError,
+            litellm.ContextWindowExceededError,
+            litellm.ContentPolicyViolationError,
+            litellm.UnsupportedParamsError,
+        )
+    except (ImportError, AttributeError):
+        return False
+    return isinstance(exc, permanent)
+
+
 class RequestPriority(Enum):
     """Priority levels for LLM requests."""
 
@@ -202,6 +221,12 @@ class AdaptiveLLMController:
             except Exception as e:
                 last_error = e
                 error_str = str(e).lower()
+
+                # Permanent errors (bad key, unknown model, bad request) never
+                # succeed on retry. Fail fast so the agent can report the error
+                # instead of sitting silent for minutes.
+                if _is_permanent_llm_error(e):
+                    break
 
                 # Check for rate limit
                 if "rate" in error_str and "limit" in error_str:
