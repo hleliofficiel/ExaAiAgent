@@ -244,7 +244,7 @@ RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/
 # JAVA DESERIALIZATION (ysoserial)
 # ============================================
 RUN curl -fsSL -o /opt/ysoserial.jar \
-      https://github.com/frohoff/ysoserial/releases/download/v0.0.6/ysoserial-0.0.6-all.jar && \
+      https://github.com/frohoff/ysoserial/releases/download/v0.0.6/ysoserial-all.jar && \
     printf '#!/bin/sh\nexec java -jar /opt/ysoserial.jar "$@"\n' > /usr/local/bin/ysoserial && \
     chmod +x /usr/local/bin/ysoserial
 
@@ -313,17 +313,9 @@ RUN echo "# ExaaiAgnt Sandbox Environment" > README.md
 # ============================================
 # COPY EXAAIAGNT FILES
 # ============================================
-COPY exaaiagnt/__init__.py exaaiagnt/
-COPY exaaiagnt/runtime/tool_server.py exaaiagnt/runtime/__init__.py exaaiagnt/runtime/runtime.py /app/exaaiagnt/runtime/
-
-COPY exaaiagnt/tools/__init__.py exaaiagnt/tools/registry.py exaaiagnt/tools/executor.py exaaiagnt/tools/argument_parser.py /app/exaaiagnt/tools/
-
-COPY exaaiagnt/tools/browser/ /app/exaaiagnt/tools/browser/
-COPY exaaiagnt/tools/file_edit/ /app/exaaiagnt/tools/file_edit/
-COPY exaaiagnt/tools/notes/ /app/exaaiagnt/tools/notes/
-COPY exaaiagnt/tools/python/ /app/exaaiagnt/tools/python/
-COPY exaaiagnt/tools/terminal/ /app/exaaiagnt/tools/terminal/
-COPY exaaiagnt/tools/proxy/ /app/exaaiagnt/tools/proxy/
+# Copy the complete package: executor/registry imports also require safety,
+# scan_control, analyzers and other modules beyond the old hand-picked set.
+COPY --chown=pentester:pentester exaaiagnt/ /app/exaaiagnt/
 
 # PATH setup
 RUN echo 'export PATH="/home/pentester/go/bin:/home/pentester/.local/bin:/home/pentester/.npm-global/bin:$PATH"' >> /home/pentester/.bashrc && \
