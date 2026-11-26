@@ -164,10 +164,12 @@ RUN go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest && \
     go install -v github.com/ffuf/ffuf/v2@latest && \
     go install -v github.com/OJ/gobuster/v3@latest || true
 
+ENV PATH="/home/pentester/go/bin:/home/pentester/.local/bin:/home/pentester/.npm-global/bin:/app/venv/bin:$PATH"
+
 # New additions fail loudly (no silent skips like the old RustScan line)
 RUN go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest && naabu -version
 RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest && dnsx -version
-RUN go install -v github.com/PentestPad/subzy@latest && subzy -version || subzy -h
+RUN go install -v github.com/PentestPad/subzy@latest && subzy --help
 RUN go install -v github.com/sensepost/gowitness@latest && gowitness version
 
 # Update nuclei templates
@@ -192,6 +194,7 @@ RUN pipx install wapiti3 && \
     (pipx install xsser && pipx inject xsser setuptools || true)
 
 # Node.js LTS 22 (pinned - see .nvmrc)
+USER root
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     node --version && npm --version
@@ -199,6 +202,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 # ============================================
 # NPM TOOLS
 # ============================================
+USER pentester
 ENV NPM_CONFIG_PREFIX=/home/pentester/.npm-global
 RUN mkdir -p /home/pentester/.npm-global
 
