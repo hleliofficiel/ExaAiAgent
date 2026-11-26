@@ -265,7 +265,9 @@ class DockerRuntime(AbstractRuntime):
             f"EXAAI_SANDBOX_MODE=true CAIDO_API_TOKEN={caido_token} CAIDO_PORT={caido_port} "
             f"EXAAI_TOOL_SERVER_TOKEN={tool_server_token} "
             f"poetry run python exaaiagnt/runtime/tool_server.py "
-            f"--host 0.0.0.0 --port {tool_server_port} &'",
+            # --token must be passed explicitly: published sandbox images ship a
+            # tool_server.py that requires it (env-only startup exits immediately).
+            f"--token {tool_server_token} --host 0.0.0.0 --port {tool_server_port} &'",
             detach=True,
             user="pentester",
         )
