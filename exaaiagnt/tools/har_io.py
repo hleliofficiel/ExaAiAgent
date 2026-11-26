@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from exaaiagnt.version import __version__
+
 
 def normalize_har_entry(entry: dict[str, Any]) -> dict[str, Any] | None:
     req = entry.get("request") or {}
@@ -98,7 +100,7 @@ def export_har(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "log": {
             "version": "1.2",
-            "creator": {"name": "exaaiagnt", "version": "3.1.1"},
+            "creator": {"name": "exaaiagnt", "version": __version__},
             "entries": har_entries,
         }
     }
