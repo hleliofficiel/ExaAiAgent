@@ -422,6 +422,10 @@ class LLM:
         # Use Adaptive Traffic Controller for intelligent rate limiting with retries
         controller = get_traffic_controller()
         agent_id = self.agent_id or "unknown_agent"
+        if self.config.rate_limit_delay:
+            controller.set_base_delay(self.config.rate_limit_delay)
+        # NOTE: config.max_concurrent_requests is intentionally not wired: the
+        # controller serializes LLM calls (one at a time) by design.
 
         async def do_request():
             try:
@@ -429,42 +433,22 @@ class LLM:
 
                 return await acompletion(**completion_args, stream=False)
             except litellm.RateLimitError:
-                # Let tenacity (in controller) handle retry
+                # The traffic controller handles retries (single retry layer).
                 raise
             except Exception as e:
                 # Log other transient errors for potential retry
                 logger.warning(f"Transient LLM error: {e}")
                 raise
 
-        # Wrap in retry logic
-        import litellm
-        from tenacity import (
-            retry,
-            retry_if_exception_type,
-            stop_after_attempt,
-            wait_exponential,
-        )
-
-        @retry(
-            retry=retry_if_exception_type(
-                (
-                    litellm.RateLimitError,
-                    litellm.ServiceUnavailableError,
-                    litellm.APIConnectionError,
-                    litellm.Timeout,
-                )
-            ),
-            wait=wait_exponential(multiplier=1, min=4, max=60),
-            stop=stop_after_attempt(5),
-            reraise=True,
-        )
-        async def execute_with_retries():
-            return await controller.queue_request(
-                do_request, agent_id=agent_id, priority=RequestPriority.NORMAL
-            )
-
+        # Single retry layer lives in the traffic controller; wrapping this in
+        # tenacity too multiplied retries (controller attempts x tenacity attempts).
         try:
-            response = await execute_with_retries()
+            response = await controller.queue_request(
+                do_request,
+                agent_id=agent_id,
+                priority=RequestPriority.NORMAL,
+                timeout=self.config.timeout,
+            )
         except Exception:
             self._total_stats.failed_requests += 1
             raise

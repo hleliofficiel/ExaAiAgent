@@ -16,7 +16,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -73,22 +73,13 @@ class AdaptiveLLMController:
     3. Intelligent throttling with adaptive delays
     4. Tool-first execution mode
     5. Automatic recovery from rate limits
+
+    Instances are created per event loop by :func:`get_traffic_controller`.
+    A process-wide singleton would share one ``asyncio.Lock`` and its futures
+    across loops (multi-threaded sub-agents), which breaks cross-loop awaits.
     """
 
-    _instance: Optional["AdaptiveLLMController"] = None
-    _lock_cls = __import__("threading").Lock()
-
-    def __new__(cls) -> "AdaptiveLLMController":
-        with cls._lock_cls:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-                cls._instance._initialized = False
-        return cls._instance
-
     def __init__(self):
-        if self._initialized:
-            return
-
         # Core state
         self._queue: deque[QueuedRequest] = deque()
         self._is_processing = False
@@ -112,11 +103,12 @@ class AdaptiveLLMController:
         self._tool_execution_lock = asyncio.Lock()
 
         # Configuration
-        self._max_retries = 10  # Increased for Gemini
+        # Single retry layer: llm.py must not add its own retry wrapper on top.
+        # 2 retries = 3 attempts total.
+        self._max_retries = 2
         self._rate_limit_wait = 15.0  # Longer wait after rate limit
         self._enable_verbose_logging = False
 
-        self._initialized = True
         logger.info("AdaptiveLLMController initialized - Traffic Control Enabled")
 
     async def queue_request(
@@ -182,6 +174,10 @@ class AdaptiveLLMController:
                         break
                     request = self._queue.popleft()
 
+                # Caller gave up (cancelled/timeout) while queued: skip the LLM call
+                # entirely instead of burning a duplicate request nobody awaits.
+                if request.future.done():
+                    continue
                 # Wait if tool is executing
                 if self._tool_executing:
                     async with self._tool_execution_lock:
@@ -201,22 +197,21 @@ class AdaptiveLLMController:
         # Adaptive delay
         await self._apply_rate_limit_delay()
 
-        # Try request with retry
+        # Try request with retry. The future is resolved OUTSIDE the retry try:
+        # an InvalidStateError from set_result on an already-cancelled future must
+        # not be mistaken for a request failure (that used to trigger a duplicate
+        # LLM call on the next attempt).
         last_error = None
+        result: Any = None
+        succeeded = False
         for attempt in range(self._max_retries + 1):
             try:
                 # Execute the request
                 result = await self._call_with_timeout(
                     request.request_func, *request.args, **request.kwargs
                 )
-
-                # Success!
-                self._successful_requests += 1
-                self._consecutive_rate_limits = 0
-                self._current_delay = self._base_delay  # Reset delay
-
-                request.future.set_result(result)
-                return
+                succeeded = True
+                break
 
             except Exception as e:
                 last_error = e
@@ -253,8 +248,17 @@ class AdaptiveLLMController:
                     await asyncio.sleep(2.0 * (attempt + 1))
                     continue
 
+        if succeeded:
+            self._successful_requests += 1
+            self._consecutive_rate_limits = 0
+            self._current_delay = self._base_delay  # Reset delay
+            if not request.future.done():
+                request.future.set_result(result)
+            return
+
         # All retries failed
-        request.future.set_exception(last_error or Exception("Request failed"))
+        if not request.future.done():
+            request.future.set_exception(last_error or Exception("Request failed"))
 
     async def _call_with_timeout(self, func: Callable, *args, **kwargs) -> Any:
         """Call function with timeout."""

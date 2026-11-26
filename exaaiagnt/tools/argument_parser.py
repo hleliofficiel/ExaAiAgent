@@ -94,7 +94,8 @@ def _convert_to_bool(value: str) -> bool:
         return True
     if value.lower() in ("false", "0", "no", "off"):
         return False
-    return bool(value)
+    # Silently mapping an unrecognized string to True inverts the caller's intent.
+    raise ValueError(f"invalid boolean value: {value!r}")
 
 
 def _convert_to_list(value: str) -> list[Any]:
@@ -113,9 +114,9 @@ def _convert_to_list(value: str) -> list[Any]:
 def _convert_to_dict(value: str) -> dict[str, Any]:
     try:
         parsed = json.loads(value)
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        return {}
-    else:
-        return {}
+    except json.JSONDecodeError as e:
+        raise ValueError(f"invalid JSON object: {value!r}") from e
+    if not isinstance(parsed, dict):
+        # Silently dropping a non-dict payload loses the caller's arguments.
+        raise ValueError(f"expected a JSON object, got {type(parsed).__name__}: {value!r}")
+    return parsed
