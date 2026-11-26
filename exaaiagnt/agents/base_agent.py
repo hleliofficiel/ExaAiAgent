@@ -175,6 +175,11 @@ class BaseAgent(metaclass=AgentMeta):
         # Get supervisor for heartbeat
         supervisor = get_supervisor()
 
+        # Start the health-monitoring loop (idempotent): without this the
+        # supervisor only ever records heartbeats and never acts on them.
+        with contextlib.suppress(Exception):
+            await supervisor.start_monitoring()
+
         while True:
             # Send heartbeat to supervisor
             with contextlib.suppress(Exception):
