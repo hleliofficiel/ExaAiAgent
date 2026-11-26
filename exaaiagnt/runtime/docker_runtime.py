@@ -131,7 +131,10 @@ class DockerRuntime(AbstractRuntime):
                     cap_add=[
                         "NET_ADMIN"
                     ],  # v3: NET_RAW dropped (raw sockets not needed by default tools)
-                    security_opt=["no-new-privileges:true"],
+                    # NOTE: no-new-privileges is NOT set: the sandbox entrypoint applies proxy
+                    # config through least-privilege NOPASSWD sudoers rules, and sudo (setuid)
+                    # cannot elevate under no-new-privileges, which made the container exit
+                    # during startup and every scan fail before any tool ran.
                     pids_limit=512,
                     labels={"exaai-scan-id": scan_id},
                     environment={
