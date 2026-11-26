@@ -159,12 +159,16 @@ async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: A
 
     import asyncio as _asyncio
 
+    # Must exceed the tool server's own 630s ceiling, otherwise the client gives up
+    # first and a retry would run the same tool twice server-side.
+    sandbox_http_timeout = float(os.getenv("EXAAI_SANDBOX_HTTP_TIMEOUT", "660"))
+
     last_exc: Exception | None = None
     for attempt in range(3):
         try:
             async with httpx.AsyncClient(trust_env=False) as client:
                 response = await client.post(
-                    request_url, json=request_data, headers=headers, timeout=600.0
+                    request_url, json=request_data, headers=headers, timeout=sandbox_http_timeout
                 )
                 response.raise_for_status()
                 response_data = response.json()
@@ -179,6 +183,9 @@ async def _execute_tool_in_sandbox(tool_name: str, agent_state: Any, **kwargs: A
                 raise RuntimeError(
                     f"HTTP error calling tool server: {e.response.status_code}"
                 ) from e
+        except httpx.ReadTimeout as e:
+            # The tool may still be running server-side; retrying here would execute it twice.
+            raise RuntimeError("Timed out waiting for the sandbox tool result") from e
         except httpx.RequestError as e:
             last_exc = e
         if attempt < 2:

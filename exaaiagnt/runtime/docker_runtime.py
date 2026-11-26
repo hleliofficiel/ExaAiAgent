@@ -34,6 +34,17 @@ class DockerRuntime(AbstractRuntime):
     def _generate_sandbox_token(self) -> str:
         return secrets.token_urlsafe(32)
 
+    @staticmethod
+    def _build_port_bindings(caido_port: int, tool_server_port: int) -> dict[str, tuple[str, int]]:
+        # docker-py expects {container_port/proto: (host_ip, host_port)}. Putting the host IP
+        # in the key ("127.0.0.1:8080/tcp") is rejected by the daemon with
+        # "invalid port '127.0.0.1:8080': invalid syntax", which makes every scan fail to
+        # create its container.
+        return {
+            f"{caido_port}/tcp": ("127.0.0.1", caido_port),
+            f"{tool_server_port}/tcp": ("127.0.0.1", tool_server_port),
+        }
+
     def _find_available_port(self) -> int:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(("", 0))
@@ -115,10 +126,7 @@ class DockerRuntime(AbstractRuntime):
                     detach=True,
                     name=container_name,
                     hostname=f"exaai-scan-{scan_id}",
-                    ports={
-                        f"127.0.0.1:{caido_port}/tcp": caido_port,
-                        f"127.0.0.1:{tool_server_port}/tcp": tool_server_port,
-                    },
+                    ports=self._build_port_bindings(caido_port, tool_server_port),
                     volumes=volumes,
                     cap_add=[
                         "NET_ADMIN"
@@ -141,7 +149,7 @@ class DockerRuntime(AbstractRuntime):
                 self._initialize_container(
                     container, caido_port, tool_server_port, tool_server_token
                 )
-            except DockerException as e:
+            except (DockerException, RuntimeError) as e:
                 last_exception = e
                 if attempt == max_retries - 1:
                     logger.exception(f"Failed to create container after {max_retries} attempts")
