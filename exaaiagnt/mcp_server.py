@@ -287,35 +287,37 @@ def _load_report(run_name: str) -> dict[str, Any]:
 
 
 def _invoke_scan_pipeline(argv: list[str], env_overrides: dict[str, str]) -> int:
-    """Run the CLI pipeline synchronously (called in a worker thread).
+    """Run the CLI pipeline in a child process (called in a worker thread).
 
-    Equivalent to ``exaai --target ... -n``; stdout is redirected to stderr so
-    the MCP stdio channel is never polluted. Returns the process exit code
-    semantics (0 = ok, 2 = ok with vulnerabilities found, 1 = failure).
+    Equivalent to ``exaai --target ... -n``. A subprocess is used instead of
+    calling ``main()`` in-process because the CLI installs signal handlers,
+    calls ``sys.exit`` and prints to stdout, none of which is safe inside the
+    MCP server (worker thread, shared stdio channel, shared os.environ).
+    The child's stdout/stderr are forwarded to our stderr so the MCP JSON-RPC
+    channel on stdout is never polluted. Returns the exit code (0 = ok,
+    2 = ok with vulnerabilities found, anything else = failure).
     """
-    import exaaiagnt.interface.main as main_module
+    import subprocess  # nosec B404 - fixed argv, no shell
 
-    old_argv = sys.argv
-    old_env: dict[str, str | None] = {}
-    for key, value in env_overrides.items():
-        old_env[key] = os.environ.get(key)
-        os.environ[key] = value
-    sys.argv = argv
-    code = 0
+    env = dict(os.environ)
+    env.update(env_overrides)
+    cmd = [sys.executable, "-m", "exaaiagnt.interface.main", *argv[1:]]
     try:
-        with contextlib.redirect_stdout(sys.stderr):
-            try:
-                main_module.main()
-            except SystemExit as exc:
-                code = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
-    finally:
-        sys.argv = old_argv
-        for key, value in old_env.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-    return code
+        proc = subprocess.run(  # nosec B603 - argv list, validated inputs, shell=False
+            cmd,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except OSError as exc:
+        logger.error("could not start scan subprocess: %s", exc)
+        return 1
+    tail = proc.stdout.decode("utf-8", "replace")[-4000:] if proc.stdout else ""
+    if tail:
+        sys.stderr.write(tail if tail.endswith("\n") else tail + "\n")
+    return int(proc.returncode)
 
 
 # ---------------------------------------------------------------------------

@@ -32,14 +32,11 @@ class TestConvertToBool:
         """Test that falsy string values are converted to False."""
         assert _convert_to_bool(value) is False
 
-    def test_non_standard_truthy_string(self) -> None:
-        """Test that non-empty non-standard strings are truthy."""
-        assert _convert_to_bool("anything") is True
-        assert _convert_to_bool("hello") is True
-
-    def test_empty_string(self) -> None:
-        """Test that empty string is falsy."""
-        assert _convert_to_bool("") is False
+    @pytest.mark.parametrize("value", ["anything", "hello", ""])
+    def test_unrecognized_string_raises(self, value: str) -> None:
+        """Unrecognized strings must raise instead of silently becoming True/False."""
+        with pytest.raises(ValueError, match="invalid boolean value"):
+            _convert_to_bool(value)
 
 
 class TestConvertToList:
@@ -99,15 +96,15 @@ class TestConvertToDict:
         result = _convert_to_dict("{}")
         assert result == {}
 
-    def test_invalid_json_returns_empty_dict(self) -> None:
-        """Test that invalid JSON returns an empty dictionary."""
-        result = _convert_to_dict("not json")
-        assert result == {}
+    def test_invalid_json_raises(self) -> None:
+        """Invalid JSON must raise instead of silently dropping the arguments."""
+        with pytest.raises(ValueError, match="invalid JSON object"):
+            _convert_to_dict("not json")
 
-    def test_json_array_returns_empty_dict(self) -> None:
-        """Test that a JSON array returns an empty dictionary."""
-        result = _convert_to_dict("[1, 2, 3]")
-        assert result == {}
+    def test_json_array_raises(self) -> None:
+        """A JSON array is not a dict and must raise instead of returning {}."""
+        with pytest.raises(ValueError, match="expected a JSON object"):
+            _convert_to_dict("[1, 2, 3]")
 
     def test_nested_json_object(self) -> None:
         """Test parsing a nested JSON object."""

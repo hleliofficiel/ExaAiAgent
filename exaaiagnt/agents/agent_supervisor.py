@@ -6,6 +6,7 @@ Provides timeout detection, heartbeat monitoring, and self-healing capabilities.
 import asyncio
 import contextlib
 import logging
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -94,20 +95,27 @@ class AgentSupervisor:
     HEALTH_CHECK_INTERVAL = 5  # seconds
 
     _instance: Optional["AgentSupervisor"] = None
+    _instance_lock = threading.Lock()
 
     def __new__(cls) -> "AgentSupervisor":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+        with cls._instance_lock:
+            if cls._instance is None:
+                inst = super().__new__(cls)
+                inst._initialized = False
+                cls._instance = inst
         return cls._instance
 
     def __init__(self):
-        if self._initialized:
-            return
+        with self._instance_lock:
+            if self._initialized:
+                return
+            self._init_state()
 
+    def _init_state(self) -> None:
+        self._lock = threading.RLock()
         self._agents: dict[str, AgentHealth] = {}
         self._agent_instances: WeakValueDictionary = WeakValueDictionary()
-        self._timeout_handlers: dict[str, Callable] = {}
+        self._timeout_handlers: dict[str, float] = {}
         self._recovery_handlers: dict[str, Callable] = {}
         self._monitor_task: asyncio.Task | None = None
         self._running = False
@@ -139,14 +147,16 @@ class AgentSupervisor:
             priority=priority,
             token_budget=token_budget,
             role=role,
+            status=AgentStatus.RUNNING,
         )
-        self._agents[agent_id] = health
+        with self._lock:
+            self._agents[agent_id] = health
 
-        if agent_instance:
-            self._agent_instances[agent_id] = agent_instance
+            if agent_instance:
+                self._agent_instances[agent_id] = agent_instance
 
-        if timeout:
-            self._timeout_handlers[agent_id] = timeout
+            if timeout:
+                self._timeout_handlers[agent_id] = timeout
 
         logger.info(
             f"Registered agent: {agent_name} ({agent_id}) role={role.value} priority={priority.name}"
@@ -263,6 +273,17 @@ class AgentSupervisor:
                 health.status = AgentStatus.FAILED
                 self._notify_status_change(agent_id, old_status, AgentStatus.FAILED)
 
+    def record_success(self, agent_id: str) -> None:
+        """Record a successful iteration: resets the consecutive error count."""
+        health = self._agents.get(agent_id)
+        if health is not None:
+            health.error_count = 0
+            health.last_activity = time.time()
+            if health.status == AgentStatus.FAILED and health.recovery_attempts == 0:
+                old = health.status
+                health.status = AgentStatus.RUNNING
+                self._notify_status_change(agent_id, old, AgentStatus.RUNNING)
+
     def update_status(self, agent_id: str, status: AgentStatus) -> None:
         """Update agent status."""
         if agent_id in self._agents:
@@ -286,7 +307,7 @@ class AgentSupervisor:
         stuck = []
 
         for agent_id, health in self._agents.items():
-            if health.status in [AgentStatus.COMPLETED, AgentStatus.CANCELLED]:
+            if health.status in self._NO_TIMEOUT_STATUSES or self._is_intentionally_idle(agent_id):
                 continue
 
             inactive_time = now - health.last_activity
@@ -340,15 +361,45 @@ class AgentSupervisor:
                 logger.exception(f"Monitoring error: {e}")
                 await asyncio.sleep(1)
 
+    _NO_TIMEOUT_STATUSES = frozenset(
+        {
+            AgentStatus.COMPLETED,
+            AgentStatus.CANCELLED,
+            AgentStatus.FAILED,
+            AgentStatus.PAUSED,
+            AgentStatus.WAITING,
+            AgentStatus.BUDGET_EXCEEDED,
+        }
+    )
+
+    def _is_intentionally_idle(self, agent_id: str) -> bool:
+        """True when the agent is legitimately idle (waiting for input/stopped/done).
+
+        Such agents do not heartbeat, so they must never be flagged as stuck or
+        be "recovered" (which would wake them against the user's intent).
+        """
+        agent = self._agent_instances.get(agent_id)
+        state = getattr(agent, "state", None) if agent is not None else None
+        if state is None:
+            return False
+        return bool(
+            getattr(state, "waiting_for_input", False)
+            or getattr(state, "completed", False)
+            or getattr(state, "stop_requested", False)
+        )
+
     async def _check_agent_health(self) -> None:
         """Check health of all agents."""
         now = time.time()
 
         for agent_id, health in list(self._agents.items()):
-            if health.status in [AgentStatus.COMPLETED, AgentStatus.CANCELLED]:
+            if health.status in self._NO_TIMEOUT_STATUSES:
+                continue
+            if self._is_intentionally_idle(agent_id):
+                health.last_activity = now
                 continue
 
-            timeout = self._timeout_handlers.get(agent_id, self.DEFAULT_TIMEOUT)
+            timeout = self._timeout_handlers.get(agent_id) or self.DEFAULT_TIMEOUT
             inactive_time = now - health.last_activity
 
             if inactive_time > timeout and health.status != AgentStatus.TIMEOUT:
@@ -425,19 +476,12 @@ class AgentSupervisor:
 
     def get_status_summary(self) -> dict[str, Any]:
         """Get a summary of all agent statuses."""
-        summary = {
-            "total": len(self._agents),
-            "running": 0,
-            "waiting": 0,
-            "timeout": 0,
-            "failed": 0,
-            "completed": 0,
-        }
+        summary: dict[str, int] = {"total": len(self._agents)}
+        for status in AgentStatus:
+            summary[status.value] = 0
 
-        for health in self._agents.values():
-            status_key = health.status.value
-            if status_key in summary:
-                summary[status_key] += 1
+        for health in list(self._agents.values()):
+            summary[health.status.value] += 1
 
         return summary
 

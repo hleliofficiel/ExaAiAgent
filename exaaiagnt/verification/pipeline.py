@@ -109,8 +109,10 @@ def verify_finding(
             if downgrade:
                 final = "suspected"
                 reasons.append(f"hardening downgrade: {reason}")
-        except Exception:  # nosec B110 - noqa: BLE001, S110 - hardening is best-effort, never breaks verify  # best-effort
-            pass
+        except Exception as e:  # noqa: BLE001 - hardening must fail CLOSED
+            # A hardening crash must never let a tainted finding confirm.
+            final = "suspected"
+            reasons.append(f"hardening unavailable, failing closed: {type(e).__name__}: {e}")
     return VerificationResult(
         hypothesis=hypothesis,
         evidence_ids=evidence_ids,

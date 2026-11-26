@@ -150,17 +150,32 @@ def dedup_items(items: list[dict]) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+def _next_task_id(queue: list[dict]) -> str:
+    """Lowest unused ``task_N`` id; len(queue) is not safe after dequeues."""
+    max_n = -1
+    for entry in queue:
+        eid = str(entry.get("id", ""))
+        if eid.startswith("task_") and eid[5:].isdigit():
+            max_n = max(max_n, int(eid[5:]))
+    return f"task_{max_n + 1}"
+
+
 def enqueue(queue: list[dict], task: dict, max_depth: int = 8) -> list[dict]:
     """Enqueue ``task`` (``priority`` int, lower = first; ``depth`` int).
 
     Tasks whose ``depth`` exceeds ``max_depth`` are rejected (ValueError)
     so recursive decomposition cannot grow without bound (LLM06/LLM10).
+    Duplicate task ids are rejected: after a dequeue, ``len(queue)``-based
+    ids would collide with tasks still queued.
     """
     depth = int(task.get("depth", 0))
     if depth > max_depth:
         raise ValueError(f"task depth {depth} exceeds max_depth {max_depth}")
+    task_id = str(task.get("id") or "") or _next_task_id(queue)
+    if any(entry.get("id") == task_id for entry in queue):
+        raise ValueError(f"duplicate task id: {task_id}")
     entry = {
-        "id": str(task.get("id") or f"task_{len(queue)}"),
+        "id": task_id,
         "title": str(task.get("title") or task.get("id") or ""),
         "priority": int(task.get("priority", 0)),
         "depth": depth,

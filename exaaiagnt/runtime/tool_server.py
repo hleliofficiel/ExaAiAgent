@@ -142,12 +142,23 @@ def agent_worker(_agent_id: str, request_queue: Queue[Any], response_queue: Queu
                 response_queue.put({"error": f"Invalid arguments: {e}"})
             except (RuntimeError, ValueError, ImportError) as e:
                 response_queue.put({"error": f"Tool execution error: {e}"})
+            except Exception as e:  # noqa: BLE001 - report any tool failure, keep the worker alive
+                response_queue.put({"error": f"Tool execution error: {type(e).__name__}: {e}"})
 
         except (RuntimeError, ValueError, ImportError) as e:
             response_queue.put({"error": f"Worker error: {e}"})
 
 
 def ensure_agent_process(agent_id: str) -> tuple[Queue[Any], Queue[Any]]:
+    existing = agent_processes.get(agent_id)
+    if existing is not None:
+        if existing["process"].is_alive():
+            return agent_queues[agent_id]["request"], agent_queues[agent_id]["response"]
+        # Worker died (crash or unexpected error); drop it so the agent gets a fresh
+        # worker instead of silently timing out on every subsequent tool call.
+        agent_processes.pop(agent_id, None)
+        agent_queues.pop(agent_id, None)
+
     if agent_id not in agent_processes:
         request_queue: Queue[Any] = Queue()
         response_queue: Queue[Any] = Queue()

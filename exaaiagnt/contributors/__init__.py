@@ -17,6 +17,7 @@ from exaaiagnt.contributors.engine import (
     revoke,
     sync,
 )
+from exaaiagnt.version import __version__ as _pkg_version
 
 
 __all__ = [
@@ -33,4 +34,4 @@ __all__ = [
     "sync",
 ]
 
-__version__ = "3.1.1"
+__version__ = _pkg_version

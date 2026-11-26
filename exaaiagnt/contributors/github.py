@@ -2,7 +2,7 @@
 """GitHub public-API client for the Contributor Achievement System.
 
 Stdlib urllib only (same style as exaaiagnt/intelligence/feeds.py).
-4s timeout, UA ``ExaAiAgent-Contributors/3.1.1``. Token from
+4s timeout, UA ``ExaAiAgent-Contributors/<version>``. Token from
 ``EXAAI_GITHUB_TOKEN`` else ``GH_TOKEN``; never printed, never returned,
 never written to disk. Unauthenticated public API fallback with a clear
 rate-limit notice (403/429 -> RateLimitError surfaced, sync best-effort).
@@ -20,10 +20,12 @@ import urllib.request
 import zlib
 from concurrent.futures import ThreadPoolExecutor
 
+from exaaiagnt.version import __version__
+
 
 API = "https://api.github.com"
 DEFAULT_REPO = "hleliofficiel/ExaAiAgent"
-UA = "ExaAiAgent-Contributors/3.1.1"
+UA = f"ExaAiAgent-Contributors/{__version__}"
 
 _GRAPHQL_QUERY = """
 query($owner: String!, $name: String!) {

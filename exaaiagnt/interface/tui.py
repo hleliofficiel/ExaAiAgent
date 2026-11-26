@@ -81,7 +81,7 @@ class SplashScreen(Static):  # type: ignore[misc]
     NEON_ORANGE = "#ff8800"
     SOFT_WHITE = "#e0e0e0"
 
-    # Enhanced ASCII Logo - ExaAi v3.1.1
+    # Enhanced ASCII Logo - ExaAi v3.1.2
     BANNER = r"""
     ███████╗██╗  ██╗ █████╗      █████╗ ██╗
     ██╔════╝╚██╗██╔╝██╔══██╗    ██╔══██╗██║
@@ -192,7 +192,7 @@ class SplashScreen(Static):  # type: ignore[misc]
         return text
 
     def _build_new_features_text(self) -> Text:
-        """Build new features highlight for v3.1.1."""
+        """Build new features highlight for v3.1.2."""
         text = Text("🔥 ", style=Style(color=self.NEON_ORANGE))
         text.append("NEW: ", style=Style(color=self.NEON_ORANGE, bold=True))
         text.append("Recon Engine", style=Style(color=self.NEON_PINK))
@@ -393,6 +393,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         self._agent_dot_states: dict[str, int] = {}  # agent_id -> dot_count (0-3)
         self._dot_animation_timer: Any | None = None
         self._last_runtime_error: str | None = None
+        self._last_status: str | None = None
 
         self._setup_cleanup_handlers()
 
@@ -428,10 +429,11 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
             sys.exit(0)
 
         atexit.register(cleanup_on_exit)
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-        if hasattr(signal, "SIGHUP"):
-            signal.signal(signal.SIGHUP, signal_handler)
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
+            if hasattr(signal, "SIGHUP"):
+                signal.signal(signal.SIGHUP, signal_handler)
 
     def compose(self) -> ComposeResult:
         if self.show_splash:
@@ -770,6 +772,11 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         if stats_text:
             stats_content.append(stats_text)
 
+        if self._last_status and not self._last_runtime_error:
+            stats_content.append("\n")
+            stats_content.append("Status: ", style="bold green")
+            stats_content.append(self._last_status, style="green")
+
         if self._last_runtime_error:
             stats_content.append("\n")
             stats_content.append("Runtime: ", style="bold red")
@@ -929,7 +936,28 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
     def _record_runtime_error(self, message: str) -> None:
         self._last_runtime_error = message
+        self._last_status = None
         logging.error(message)
+
+    def _record_status(self, message: str) -> None:
+        """Informational message; shown as status, never as a red error."""
+        self._last_status = message
+        logging.info(message)
+
+    @staticmethod
+    def _docker_available() -> str | None:
+        """Return an error string if Docker is unreachable, else None.
+
+        Quiet on purpose: printing a Rich panel from inside a running Textual
+        app corrupts the screen and hides the real reason.
+        """
+        try:
+            import docker
+
+            docker.from_env().ping()
+        except Exception as e:  # noqa: BLE001
+            return f"Docker is not available ({type(e).__name__}). Start Docker and retry."
+        return None
 
     def _start_scan_if_ready(self) -> None:
         if not self.scan_config.get("targets"):
@@ -938,20 +966,19 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
             )
             return
 
-        try:
-            from exaaiagnt.interface.utils import check_docker_connection
-
-            check_docker_connection()
-        except RuntimeError as e:
-            self._record_runtime_error(f"Cannot start scan: {e}")
+        if self._scan_thread and self._scan_thread.is_alive():
+            self._record_status("A scan is already running; the new target was not started.")
             return
 
-        if self._scan_thread and self._scan_thread.is_alive():
+        docker_error = self._docker_available()
+        if docker_error:
+            self._record_runtime_error(f"Cannot start scan: {docker_error}")
             return
 
         self._scan_stop_event.clear()
         self._scan_completed.clear()
         self._last_runtime_error = None
+        self._record_status("Starting scan: preparing sandbox and agents...")
         self._start_scan_thread()
 
     def _submit_new_target(self, raw_text: str) -> bool:
@@ -981,7 +1008,7 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
         self.agent_config["local_sources"] = collect_local_sources(targets_info)
         self.tracer.set_scan_config(self.scan_config)
         self._displayed_events.clear()
-        self._record_runtime_error(f"Target queued: {target_text}")
+        self._record_status(f"Target queued: {target_text}")
         self._start_scan_if_ready()
         return True
 
@@ -1276,6 +1303,14 @@ class ExaaiTUIApp(App):  # type: ignore[misc]
 
     def _send_user_message(self, message: str) -> None:
         if not self.selected_agent_id:
+            if self._scan_thread and self._scan_thread.is_alive():
+                # Never re-interpret chat text as a new target while a scan is
+                # starting or running; there is just no agent selected yet.
+                self._record_status(
+                    "No agent selected yet. Wait for the root agent to appear, "
+                    "then select it and resend your message."
+                )
+                return
             if self._submit_new_target(message):
                 self.call_after_refresh(self._focus_chat_input)
             return

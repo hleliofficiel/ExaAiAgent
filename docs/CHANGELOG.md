@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.2] - 2026-11-26
+- Stability and reliability fixes (PR #44):
+  - MCP run_scan subprocess, TUI start/status handling, supervisor/shared-memory/planning hardening (568850d)
+  - LLM: fail fast on permanent errors (bad key/model) instead of silent retries (2925c32); queue/loop fixes - no duplicate calls on cancelled callers, singleton traffic controller across loops, retry layers no longer multiply (4eb0160)
+  - Runtime: valid Docker port bindings, resilient tool-server workers, sandbox client timeout, Dockerfile libasound2t64 (464353a); drop no-new-privileges that broke sandbox startup (a8d5fe2); pass --token explicitly to the in-container tool server (426c7c1)
+  - Executor: error detection in tool results, async-tool timeout, ConnectError-only retries so tools never double-run (4eb0160)
+  - Argument parser: strict bool/dict conversions, no silent wrong values (4eb0160)
+  - Coordination: file lock on shared state, corrupt-state rename instead of silent replacement, duplicate-id enqueue guard, new tools (dequeue, add-shared-item, persistent budget charge) (4eb0160)
+  - Verification: fail-closed hardening, pinned-KB default for claim validation (4eb0160)
+  - Version bump: single source of truth in pyproject.toml surfaced via exaaiagnt.version everywhere (CLI banner, HAR creator, feed/contributor User-Agents); version-consistency test
+
 ## [3.1.1] - 2026-11-13
 - Features (this release):
   - Contributor Achievement System: new `exaaiagnt/contributors/` package (badges, SQLite store, GitHub public-API client, deterministic engine) + `exaai contributors` CLI subgroup (`list`, `profile`, `sync`, `grant`, `revoke`, `badges`, `export`)
