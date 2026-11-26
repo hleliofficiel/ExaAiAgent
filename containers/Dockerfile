@@ -2,7 +2,7 @@ FROM kalilinux/kali-rolling:latest
 
 LABEL maintainer="ExaaiAgnt Team"
 LABEL description="ExaaiAgnt - AI Agent Penetration Testing Environment with Comprehensive Security Tools"
-LABEL version="3.1.1"
+LABEL version="3.1.2"
 
 # Update and install base packages
 RUN apt-get update && \
@@ -49,8 +49,19 @@ RUN apt-get update && \
     less man-db procps htop \
     # Network tools
     iproute2 iputils-ping netcat-traditional socat proxychains4 \
+    tcpdump \
+    # Password cracking
+    hashcat hydra john \
+    # SMB/AD/network service
+    enum4linux-ng smbclient netexec ldap-utils snmp \
+    # Database clients
+    mariadb-client postgresql-client redis-tools \
+    # Fast content discovery / injection
+    feroxbuster commix \
     # Kubernetes tools
     kubectl \
+    # Fast port scanner (Rust - NOT go-installable)
+    rustscan \
     # Node.js (pinned to LTS 22 - see .nvmrc)
     pipx \
     # System
@@ -151,8 +162,15 @@ RUN go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest && \
     go install -v github.com/tomnomnom/waybackurls@latest && \
     go install -v github.com/hahwul/dalfox/v2@latest && \
     go install -v github.com/ffuf/ffuf/v2@latest && \
-    go install -v github.com/OJ/gobuster/v3@latest && \
-    go install -v github.com/RustScan/RustScan@latest || true
+    go install -v github.com/OJ/gobuster/v3@latest || true
+
+ENV PATH="/home/pentester/go/bin:/home/pentester/.local/bin:/home/pentester/.npm-global/bin:/app/venv/bin:$PATH"
+
+# New additions fail loudly (no silent skips like the old RustScan line)
+RUN go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest && naabu -version
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest && dnsx -version
+RUN go install -v github.com/PentestPad/subzy@latest && subzy --help
+RUN go install -v github.com/sensepost/gowitness@latest && gowitness version
 
 # Update nuclei templates
 RUN nuclei -update-templates || true
@@ -167,9 +185,16 @@ RUN pipx install arjun && \
     pipx install semgrep && \
     pipx install bandit && \
     pipx install mitmproxy && \
+    pipx install impacket && \
     pipx install xsstrike || true
 
+# wapiti/xsser apt builds crash on Python 3.13; pipx installs with setuptools work
+RUN pipx install wapiti3 && \
+    pipx inject wapiti3 setuptools && \
+    (pipx install xsser && pipx inject xsser setuptools || true)
+
 # Node.js LTS 22 (pinned - see .nvmrc)
+USER root
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     node --version && npm --version
@@ -177,6 +202,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 # ============================================
 # NPM TOOLS
 # ============================================
+USER pentester
 ENV NPM_CONFIG_PREFIX=/home/pentester/.npm-global
 RUN mkdir -p /home/pentester/.npm-global
 
@@ -213,6 +239,17 @@ RUN mkdir -p /usr/share/wordlists && \
 RUN curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
 
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# ============================================
+# JAVA DESERIALIZATION (ysoserial)
+# ============================================
+RUN curl -fsSL -o /opt/ysoserial.jar \
+      https://github.com/frohoff/ysoserial/releases/download/v0.0.6/ysoserial-all.jar && \
+    printf '#!/bin/sh\nexec java -jar /opt/ysoserial.jar "$@"\n' > /usr/local/bin/ysoserial && \
+    chmod +x /usr/local/bin/ysoserial
+
+# testssl.sh alias (Kali ships the binary as testssl)
+RUN command -v testssl.sh >/dev/null || ln -sf "$(command -v testssl)" /usr/local/bin/testssl.sh
 
 # ============================================
 # PROXY TOOLS (Caido)
@@ -276,17 +313,9 @@ RUN echo "# ExaaiAgnt Sandbox Environment" > README.md
 # ============================================
 # COPY EXAAIAGNT FILES
 # ============================================
-COPY exaaiagnt/__init__.py exaaiagnt/
-COPY exaaiagnt/runtime/tool_server.py exaaiagnt/runtime/__init__.py exaaiagnt/runtime/runtime.py /app/exaaiagnt/runtime/
-
-COPY exaaiagnt/tools/__init__.py exaaiagnt/tools/registry.py exaaiagnt/tools/executor.py exaaiagnt/tools/argument_parser.py /app/exaaiagnt/tools/
-
-COPY exaaiagnt/tools/browser/ /app/exaaiagnt/tools/browser/
-COPY exaaiagnt/tools/file_edit/ /app/exaaiagnt/tools/file_edit/
-COPY exaaiagnt/tools/notes/ /app/exaaiagnt/tools/notes/
-COPY exaaiagnt/tools/python/ /app/exaaiagnt/tools/python/
-COPY exaaiagnt/tools/terminal/ /app/exaaiagnt/tools/terminal/
-COPY exaaiagnt/tools/proxy/ /app/exaaiagnt/tools/proxy/
+# Copy the complete package: executor/registry imports also require safety,
+# scan_control, analyzers and other modules beyond the old hand-picked set.
+COPY --chown=pentester:pentester exaaiagnt/ /app/exaaiagnt/
 
 # PATH setup
 RUN echo 'export PATH="/home/pentester/go/bin:/home/pentester/.local/bin:/home/pentester/.npm-global/bin:$PATH"' >> /home/pentester/.bashrc && \
