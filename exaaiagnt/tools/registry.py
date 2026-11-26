@@ -112,6 +112,10 @@ def register_tool(
     """
 
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(f)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return f(*args, **kwargs)
+
         func_dict = {
             "name": f.__name__,
             "function": f,
@@ -149,12 +153,23 @@ def register_tool(
                     "</tool>"
                 )
 
+        tool_name = str(func_dict["name"])
+        existing = _tools_by_name.get(tool_name)
+        if existing is not None:
+            if existing is f:
+                # Same function re-registered (e.g. module re-import): no-op.
+                return wrapper
+            logger.warning(
+                "Duplicate tool registration for %r: keeping %s.%s, ignoring %s.%s",
+                tool_name,
+                existing.__module__,
+                existing.__qualname__,
+                f.__module__,
+                f.__qualname__,
+            )
+            return wrapper
         tools.append(func_dict)
-        _tools_by_name[str(func_dict["name"])] = f
-
-        @wraps(f)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return f(*args, **kwargs)
+        _tools_by_name[tool_name] = f
 
         return wrapper
 
