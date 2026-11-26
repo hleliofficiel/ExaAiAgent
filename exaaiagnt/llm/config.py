@@ -66,6 +66,10 @@ class LLMConfig:
             os.getenv("LLM_RATE_LIMIT_CONCURRENT", "5")
         )
 
+        # Fallback chain: try alternate models on transient provider errors.
+        # Off by default so permanent misconfig (bad key/model) stays fail-fast.
+        self.fallback_enabled = os.getenv("EXAAI_LLM_FALLBACK", "false").lower() == "true"
+
         # v3 grounding / safety
         self.grounding_enabled = os.getenv("EXAAI_GROUNDING", "true").lower() == "true"
         self.confidence_threshold = float(os.getenv("EXAAI_CONFIDENCE_THRESHOLD", "0.85"))

@@ -10,6 +10,9 @@
   - Coordination: file lock on shared state, corrupt-state rename instead of silent replacement, duplicate-id enqueue guard, new tools (dequeue, add-shared-item, persistent budget charge) (4eb0160)
   - Verification: fail-closed hardening, pinned-KB default for claim validation (4eb0160)
   - Version bump: single source of truth in pyproject.toml surfaced via exaaiagnt.version everywhere (CLI banner, HAR creator, feed/contributor User-Agents); version-consistency test
+  - LLM fallback chain (opt-in via EXAAI_LLM_FALLBACK): transient provider errors try alternate models, one attempt each through the same traffic controller; permanent errors stay fail-fast (PR #45)
+  - Tool registry: duplicate registration keeps the first tool and warns instead of silently replacing it (PR #45)
+  - Supervisor health-monitoring loop actually started from agent_loop (timeout detection and recovery were previously dead code) (PR #45)
 
 ## [3.1.1] - 2026-11-13
 - Features (this release):
