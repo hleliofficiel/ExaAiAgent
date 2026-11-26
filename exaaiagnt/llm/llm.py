@@ -16,6 +16,7 @@ from litellm import ModelResponse, completion_cost
 from litellm.utils import supports_prompt_caching
 
 from exaaiagnt.llm.config import LLMConfig
+from exaaiagnt.llm.fallback import get_fallback_manager
 from exaaiagnt.llm.llm_traffic_controller import RequestPriority, get_traffic_controller
 from exaaiagnt.llm.memory_compressor import MemoryCompressor
 from exaaiagnt.llm.utils import parse_tool_invocations
@@ -37,6 +38,36 @@ api_base = (
 )
 if api_base:
     litellm.api_base = api_base
+
+
+# Provider errors where trying another model can succeed. Permanent
+# misconfiguration (bad key, unknown model) is deliberately NOT here: those
+# must stay fail-fast so the user fixes the config instead of silently
+# drifting to a different provider.
+FALLBACK_TRANSIENT_ERRORS = (
+    litellm.RateLimitError,
+    litellm.ServiceUnavailableError,
+    litellm.Timeout,
+    litellm.APIConnectionError,
+    litellm.InternalServerError,
+)
+
+
+def _strip_cache_control(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove Anthropic prompt-caching markers for non-primary fallback models."""
+    cleaned: list[dict[str, Any]] = []
+    for message in messages:
+        msg = {k: v for k, v in message.items() if k != "cache_control"}
+        content = msg.get("content")
+        if isinstance(content, list):
+            msg["content"] = [
+                {k: v for k, v in part.items() if k != "cache_control"}
+                if isinstance(part, dict)
+                else part
+                for part in content
+            ]
+        cleaned.append(msg)
+    return cleaned
 
 
 class LLMRequestFailedError(Exception):
@@ -449,6 +480,16 @@ class LLM:
                 priority=RequestPriority.NORMAL,
                 timeout=self.config.timeout,
             )
+        except FALLBACK_TRANSIENT_ERRORS:
+            if not getattr(self.config, "fallback_enabled", False):
+                self._total_stats.failed_requests += 1
+                raise
+            response = await self._request_with_fallback_models(
+                completion_args, controller, agent_id
+            )
+            if response is None:
+                self._total_stats.failed_requests += 1
+                raise
         except Exception:
             self._total_stats.failed_requests += 1
             raise
@@ -457,6 +498,66 @@ class LLM:
         self._last_request_stats = RequestStats(requests=1)
 
         return response
+
+    async def _request_with_fallback_models(
+        self,
+        completion_args: dict[str, Any],
+        controller: Any,
+        agent_id: str,
+    ) -> ModelResponse | None:
+        """Try alternate models from the fallback chain, one attempt each.
+
+        Only reached when fallback is enabled and the primary model failed
+        with a transient provider error after the controller's own retries.
+        The primary model is skipped (it just failed); permanent per-model
+        errors disable that model for the process instead of looping on it.
+        """
+        manager = get_fallback_manager()
+        primary = normalize_model_name(self.config.model_name)
+        candidates = sorted(
+            (m for m in manager.models if m.is_healthy()),
+            key=lambda m: -m.weight,
+        )
+
+        for model_config in candidates:
+            if normalize_model_name(model_config.name) == primary:
+                continue
+
+            args = dict(completion_args)
+            args["model"] = model_config.name
+            args["timeout"] = model_config.timeout
+            # Provider-specific knobs from the primary model may not apply.
+            args.pop("reasoning_effort", None)
+            args["messages"] = _strip_cache_control(args["messages"])
+
+            async def do_fallback(args: dict[str, Any] = args) -> ModelResponse:
+                from litellm import acompletion
+
+                return await acompletion(**args, stream=False)
+
+            try:
+                response = await controller.queue_request(
+                    do_fallback,
+                    agent_id=agent_id,
+                    priority=RequestPriority.NORMAL,
+                    timeout=self.config.timeout,
+                )
+            except (litellm.AuthenticationError, litellm.NotFoundError) as e:
+                model_config.enabled = False
+                logger.warning(
+                    f"Fallback model {model_config.name} disabled (permanent error): {e}"
+                )
+                continue
+            except Exception as e:  # noqa: BLE001 - a failing candidate must not break the chain
+                model_config.mark_failure()
+                logger.warning(f"Fallback model {model_config.name} failed: {e}")
+                continue
+
+            model_config.reset_failures()
+            logger.info(f"LLM fallback succeeded with model {model_config.name}")
+            return response
+
+        return None
 
     def _update_usage_stats(self, response: ModelResponse) -> None:
         try:
